@@ -12,6 +12,7 @@ Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("chrome://autoArchive/content/log.jsm");
 Cu.import("chrome://autoArchive/content/aop.jsm");
 //Cu.import("chrome://autoArchive/content/sprintf.jsm");
+Cu.import("chrome://autoArchive/content/autoArchiveService.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
@@ -29,8 +30,8 @@ let autoArchive = {
     try {
       autoArchiveLog.info("Load for " + aWindow.location.href);
       let doc = aWindow.document;
-      let winref = Cu.getWeakReference(aWindow);
-      let docref = Cu.getWeakReference(doc);
+      //let winref = Cu.getWeakReference(aWindow);
+      //let docref = Cu.getWeakReference(doc);
       if ( typeof(aWindow._autoarchive) != 'undefined' ) autoArchiveLog.info("Already loaded, return");
       aWindow._autoarchive = { createdElements:[], hookedFunctions:[] };
       if ( typeof(aWindow.MessageDisplayWidget) != 'undefined' || 1 ) { // messeage display window
@@ -46,13 +47,14 @@ let autoArchive = {
           //statusbarIcon.setAttribute('context', contextMenuID);
           status_bar.insertBefore(statusbarIcon, null);
           aWindow._autoarchive.createdElements.push(statusbarIconID);
+          autoArchiveLog.info("statusbarIcon");
         }
       }
       if ( aWindow._autoarchive.hookedFunctions.length ) {
         autoArchiveLog.info('create popup');
         //this.createPopup(aWindow);
-        aWindow.addEventListener("unload", autoArchive.onUnLoad, false);
       }
+      aWindow.addEventListener("unload", autoArchive.onUnLoad, false);
     }catch(err) {
       autoArchiveLog.logException(err);
     }
@@ -61,9 +63,7 @@ let autoArchive = {
   onUnLoad: function(event) {
     autoArchiveLog.info('onUnLoad');
     let aWindow = event.currentTarget;
-    if ( aWindow ) {
-      autoArchive.unLoad(aWindow);
-    }
+    if ( aWindow ) autoArchive.unLoad(aWindow);
   },
 
   unLoad: function(aWindow) {
@@ -96,15 +96,14 @@ let autoArchive = {
       autoArchiveLog.info('autoArchive cleanup');
       if ( this.timer ) this.timer.cancel();
       this.timer = null;
-      //autoArchiveFetch.cleanup();
-      //autoArchiveFetchOther.cleanup();
-      //autoArchiveUtil.cleanup();
+      autoArchiveService.cleanup();
       Cu.unload("chrome://autoArchive/content/aop.jsm");
+      Cu.unload("chrome://autoArchive/content/autoArchiveService.jsm");
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
     autoArchiveLog.info('autoArchive cleanup done');
     Cu.unload("chrome://autoArchive/content/log.jsm");
-    autoArchiveLog = autoArchiveaop = null;
+    //autoArchiveLog = autoArchiveaop = null;
   },
 };
