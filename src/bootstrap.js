@@ -7,7 +7,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 // http://mdn.beonex.com/en/JavaScript_code_modules/Using.html
 
 const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
-const userCSS = "chrome://autoArchive/content/autoArchive.css";
+const userCSS = Services.io.newURI("chrome://autoArchive/content/autoArchive.css", null, null);
 const targetWindows = [ "mail:3pane" ];
 
 function loadIntoWindow(window) {
@@ -17,7 +17,7 @@ function loadIntoWindow(window) {
   if ( targetWindows.indexOf(type) < 0 ) return;
   autoArchive.Load(window);
 }
- 
+
 var windowListener = {
   onOpenWindow: function(aWindow) {
     let onLoadWindow = function() {
@@ -59,23 +59,17 @@ function startup(aData, aReason) {
     }
   }
   // Wait for new windows
-  //Services.ww.registerNotification(windowListener); // nsIDOMWindow, can't get cached compose window open call
-  //Services.wm.addListener(windowListener); // nsIXULWindow, onOpenWindow, onCloseWindow, onWindowTitleChange, works with compose window
   Services.obs.addObserver(windowListener, "xul-window-registered", false);
-  //Services.obs.addObserver(windowListener, "domwindowopened", false);
-  // install userCSS, works for all document like userChrome.css, see https://developer.mozilla.org/en/docs/Using_the_Stylesheet_Service
-  let uri = Services.io.newURI(userCSS, null, null);
   // validator warnings on the below line, ignore it
-  if ( !sss.sheetRegistered(uri, sss.USER_SHEET) ) sss.loadAndRegisterSheet(uri, sss.USER_SHEET); // will be unregister when shutdown
+  if ( !sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.loadAndRegisterSheet(userCSS, sss.USER_SHEET); // will be unregister when shutdown
 }
  
 function shutdown(aData, aReason) {
   // When the application is shutting down we normally don't have to clean up any UI changes made
-  // but we have to abort LDAP related job or crash
+  // but we have to abort running jobs
   //Services.ww.unregisterNotification(windowListener);
   Services.obs.removeObserver(windowListener, "xul-window-registered");
-  let uri = Services.io.newURI(userCSS, null, null);
-  if ( sss.sheetRegistered(uri, sss.USER_SHEET) ) sss.unregisterSheet(uri, sss.USER_SHEET);
+  if ( sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.unregisterSheet(userCSS, sss.USER_SHEET);
   
   // Unload from any existing windows
   let windows = Services.wm.getEnumerator(null);
