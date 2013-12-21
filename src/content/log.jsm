@@ -6,7 +6,6 @@ Components.utils.import("resource://gre/modules/Services.jsm");
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 const popupImage = "chrome://messenger/skin/addressbook/icons/contact-generic.png";
 let autoArchiveLog = {
-  scriptError : Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError),
   popup: function(title, msg) {
     // alert-service won't work with bb4win, use xul instead
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_blank', 'chrome,titlebar=no,popup=yes', null);
@@ -46,11 +45,12 @@ let autoArchiveLog = {
   },
 
   log: function(msg,popup,info) {
-    if ( typeof(info) != 'undefined' && info ) {
+    if ( ( typeof(info) != 'undefined' && info ) || !Components || !Components.stack || !Components.stack.caller ) {
       Services.console.logStringMessage(msg);
     } else {
-      this.scriptError.init(msg, Components.stack.caller.filename, Components.stack.caller.sourceLine, Components.stack.caller.lineNumber, null, this.scriptError.warningFlag, "chrome javascript");
-      Services.console.logMessage(this.scriptError);
+      let scriptError = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
+      scriptError.init(msg, Components.stack.caller.filename, Components.stack.caller.sourceLine, Components.stack.caller.lineNumber, 0, scriptError.warningFlag, "chrome javascript");
+      Services.console.logMessage(scriptError);
     }
     if (popup) {
       if ( typeof(popup) == 'number' ) popup = 'Warning!';
@@ -148,8 +148,9 @@ let autoArchiveLog = {
     let fileName= e.fileName || e.filename || Components.stack.caller.filename;
     let lineNumber= e.lineNumber || Components.stack.caller.lineNumber;
     let sourceLine= e.sourceLine || Components.stack.caller.sourceLine;
-    this.scriptError.init(msg, fileName, sourceLine, lineNumber, e.columnNumber, this.scriptError.errorFlag, "chrome javascript");
-    Services.console.logMessage(this.scriptError);
+    let scriptError = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
+    scriptError.init(msg, fileName, sourceLine, lineNumber, e.columnNumber, scriptError.errorFlag, "chrome javascript");
+    Services.console.logMessage(scriptError);
     if ( typeof(popup) == 'undefined' || popup ) this.popup("Exception", msg);
   },
   
