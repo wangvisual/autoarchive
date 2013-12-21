@@ -13,6 +13,7 @@ Cu.import("chrome://autoArchive/content/log.jsm");
 Cu.import("chrome://autoArchive/content/aop.jsm");
 //Cu.import("chrome://autoArchive/content/sprintf.jsm");
 Cu.import("chrome://autoArchive/content/autoArchiveService.jsm");
+Cu.import("chrome://autoArchive/content/autoArchivePref.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
@@ -22,7 +23,6 @@ let autoArchive = {
   createPopup: function(aWindow) {
   },
   Load: function(aWindow) {
-    autoArchiveLog.setVerbose(true);
     return autoArchive.realLoad(aWindow);
   },
 
@@ -97,13 +97,13 @@ let autoArchive = {
       if ( this.timer ) this.timer.cancel();
       this.timer = null;
       autoArchiveService.cleanup();
+      autoArchivePref.cleanup();
       Cu.unload("chrome://autoArchive/content/aop.jsm");
       Cu.unload("chrome://autoArchive/content/autoArchiveService.jsm");
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
     autoArchiveLog.info('autoArchive cleanup done');
-    Cu.unload("chrome://autoArchive/content/log.jsm");
-    //autoArchiveLog = autoArchiveaop = null;
+    //autoArchiveaop = null;
   },
 };

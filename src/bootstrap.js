@@ -44,8 +44,9 @@ var windowListener = {
 // A toplevel window in a XUL app is an nsXULWindow.  Inside that there is an nsGlobalWindow (aka nsIDOMWindow).
 function startup(aData, aReason) {
   Services.console.logStringMessage("Awesome Auto Archive startup...");
-  //Cu.import("chrome://autoArchive/content/autoArchiveUtil.jsm");
-  //autoArchiveUtil.initPerf( __SCRIPT_URI_SPEC__.replace(/bootstrap\.js$/, "") );
+  Cu.import("chrome://autoArchive/content/log.jsm");
+  Cu.import("chrome://autoArchive/content/autoArchivePref.jsm");
+  autoArchivePref.initPerf(__SCRIPT_URI_SPEC__);
   Cu.import("chrome://autoArchive/content/autoArchive.jsm");
   //autoArchiveUtil.setChangeCallback( function(clean) { autoArchive.clearCache(clean); } );
   // Load into any existing windows, but not hidden/cached compose window, until compose window recycling is disabled by bug https://bugzilla.mozilla.org/show_bug.cgi?id=777732
@@ -67,25 +68,29 @@ function startup(aData, aReason) {
 function shutdown(aData, aReason) {
   // When the application is shutting down we normally don't have to clean up any UI changes made
   // but we have to abort running jobs
-  //Services.ww.unregisterNotification(windowListener);
-  Services.obs.removeObserver(windowListener, "xul-window-registered");
   if ( sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.unregisterSheet(userCSS, sss.USER_SHEET);
-  
-  // Unload from any existing windows
-  let windows = Services.wm.getEnumerator(null);
-  while (windows.hasMoreElements()) {
-    let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-    autoArchive.unLoad(domWindow); // won't check windowtype as unload will check
-    // Do CC & GC, comment out allTraces when release
-    domWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).garbageCollect(
-      // Cc["@mozilla.org/cycle-collector-logger;1"].createInstance(Ci.nsICycleCollectorListener).allTraces()
-    );
-  }
-  autoArchive.cleanup();
+  try {
+    Services.obs.removeObserver(windowListener, "xul-window-registered");
+    // Unload from any existing windows
+    let windows = Services.wm.getEnumerator(null);
+    while (windows.hasMoreElements()) {
+      let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
+      autoArchive.unLoad(domWindow); // won't check windowtype as unload will check
+      // Do CC & GC, comment out allTraces when release
+      domWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).garbageCollect(
+        // Cc["@mozilla.org/cycle-collector-logger;1"].createInstance(Ci.nsICycleCollectorListener).allTraces()
+      );
+    }
+    autoArchive.cleanup();
+  } catch (err) {Cu.reportError(err);}
   if (aReason == APP_SHUTDOWN) return;
   Services.strings.flushBundles(); // clear string bundles
   Cu.unload("chrome://autoArchive/content/autoArchive.jsm");
-  autoArchive = null;
+  Cu.unload("chrome://autoArchive/content/autoArchivePref.jsm");
+  Cu.unload("chrome://autoArchive/content/log.jsm");
+  try {
+    autoArchive = autoArchivePref = autoArchiveLog = null;
+  } catch (err) {}
   // flushStartupCache
   // Init this, so it will get the notification.
   //Cc["@mozilla.org/xul/xul-prototype-cache;1"].getService(Ci.nsISupports);
