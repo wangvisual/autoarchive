@@ -86,7 +86,6 @@ let autoArchivePrefDialog = {
     folderPicker.classList.add("folderMenuItem");
 
     folderPopup.setAttribute("type", "folder");
-    folderPopup.setAttribute("maxwidth", "300");
     folderPopup.setAttribute("mode", "newFolder");
     folderPopup.setAttribute("showFileHereLabel", "true");
     folderPopup.setAttribute("fileHereLabel", "here");
@@ -105,7 +104,7 @@ let autoArchivePrefDialog = {
     let msgFolder = {value: '', prettyName: 'N/A'};
     try {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      win.setTimeout( function() { // use timer to wait for the XBL bindings add selectFolder / _setCssSelectors to popup
+      win.setTimeout( function() { // use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
         try {
           folderPopup.selectFolder(msgFolder);
           folderPopup._setCssSelectors(msgFolder, folderPicker);
@@ -116,9 +115,16 @@ let autoArchivePrefDialog = {
     folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName));
   },
   
-  creatOneRule: function(doc, win, rule, parent) {
-    let checkbox = doc.createElementNS(XUL, "checkbox");
-    checkbox.setAttribute("checked", rule.enable);
+  creatNewRule: function(win) {
+    return self.creatOneRule(win.document, win, {action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days});
+  },
+
+  creatOneRule: function(doc, win, rule) {
+    let group = doc.getElementById('awsome_auto_archive-rules');
+    if ( !group ) return;
+    let enable = doc.createElementNS(XUL, "checkbox");
+    enable.setAttribute("checked", rule.enable);
+    enable.setAttribute("rule", 'enable');
 
     let menulistAction = doc.createElementNS(XUL, "menulist");
     let menupopupAction = doc.createElementNS(XUL, "menupopup");
@@ -129,12 +135,14 @@ let autoArchivePrefDialog = {
       menupopupAction.insertBefore(menuitem, null);
     } );
     menulistAction.insertBefore(menupopupAction, null);
-    menulistAction.setAttribute("value", rule.action);
+    menulistAction.setAttribute("value", rule.action || 'archive');
+    menulistAction.setAttribute("rule", 'action');
 
     let menulistSrc = doc.createElementNS(XUL, "menulist");
     let menupopupSrc = doc.createElementNS(XUL, "menupopup");
     menulistSrc.insertBefore(menupopupSrc, null);
-    menulistSrc.value = rule.src;
+    menulistSrc.value = rule.src || '';
+    menulistSrc.setAttribute("rule", 'src');
 
     let menulistSub = doc.createElementNS(XUL, "menulist");
     let menupopupSub = doc.createElementNS(XUL, "menupopup");
@@ -146,7 +154,8 @@ let autoArchivePrefDialog = {
       menupopupSub.insertBefore(menuitem, null);
     } );
     menulistSub.insertBefore(menupopupSub, null);
-    menulistSub.setAttribute("value", rule.sub);
+    menulistSub.setAttribute("value", rule.sub || 0);
+    menulistSub.setAttribute("rule", 'sub');
     
     let to = doc.createElementNS(XUL, "label");
     to.setAttribute("value", "To");
@@ -154,14 +163,16 @@ let autoArchivePrefDialog = {
     let menupopupDest = doc.createElementNS(XUL, "menupopup");
     menulistDest.insertBefore(menupopupDest, null);
     menulistDest.value = rule.dest || '';
+    menulistDest.setAttribute("rule", 'dest');
 
     let after = doc.createElementNS(XUL, "label");
     after.setAttribute("value", "After");
     let age = doc.createElementNS(XUL, "textbox");
     age.setAttribute("type", "number");
     age.setAttribute("min", "0");
-    age.setAttribute("value", rule.age);
-    age.setAttribute("maxwidth", "60");
+    age.setAttribute("value", rule.age || autoArchivePref.options.default_days);
+    age.setAttribute("rule", 'age');
+    age.setAttribute("size", "4");
     let days = doc.createElementNS(XUL, "label");
     days.setAttribute("value", "days");
     
@@ -170,43 +181,76 @@ let autoArchivePrefDialog = {
     //remove.setAttribute("oncommand", self.);
     
     let hbox = doc.createElementNS(XUL, "hbox");
-    [checkbox, menulistAction, menulistSrc, menulistSub, to, menulistDest, after, age, days, remove].forEach( function(item) {
+    hbox.classList.add("awsome_auto_archive-rule");
+    hbox.addEventListener('focus', function(aEvent) { self.focusRule(aEvent, doc); }, true);
+    hbox.addEventListener('blur', function(aEvent) { self.focusRule(aEvent, doc); }, true);
+    [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, after, age, days, remove].forEach( function(item) {
       hbox.insertBefore(item, null);
     } );
-    parent.insertBefore(hbox, null);
+    group.insertBefore(hbox, null);
     self.initFolderPick(doc, win, menulistSrc, menupopupSrc);
     self.initFolderPick(doc, win, menulistDest, menupopupDest);
+    self.checkAction(menulistAction, to, menulistDest);
+    self.checkEnable(enable, hbox);
+    menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); } );
+    enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); } );
+    return true;
+  },
+  
+  focusRule: function(aEvent, doc) {
+    let hbox = aEvent.currentTarget;
+    let blur = false;
+    if ( aEvent.type == 'blur' ) {
+      let focused = doc.commandDispatcher.focusedElement;
+      autoArchiveLog.logObject(focused,'focused',0);
+      blur = focused && hbox.parentNode.contains(focused);
+    }
+    hbox.setAttribute('focused',  blur ? 'false' : 'true');
+  },
+  
+  checkEnable: function(enable, hbox) {
+    if ( enable.checked ) {
+      hbox.classList.remove("awsome_auto_archive-disable");
+    } else {
+      hbox.classList.add("awsome_auto_archive-disable");
+    }
+  },
+  
+  checkAction: function(menulistAction, to, menulistDest) {
+    return to.style.visibility = menulistDest.style.visibility = ["archive", "delete"].indexOf(menulistAction.value) >= 0 ? 'hidden': 'visible';
   },
 
   loadPerfWindow: function(win) {
     try {
       let doc = win.document;
-      let group = doc.getElementById('awsome_auto_archive-rules');
-      autoArchiveLog.info('group:' + group);
       autoArchivePref.rules.forEach( function(rule) {
-        self.creatOneRule(doc, win, rule, group);
+        self.creatOneRule(doc, win, rule);
       } );
-    } catch (err) { /*autoArchiveLog.logException(err);*/ }
+    } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
   acceptPerfWindow: function(win) {
     try {
-      let disabled = [];
-      for ( let checkbox of win.document.getElementById('ldapinfoshow-enable-servers').childNodes ) {
-        if ( checkbox.key && !checkbox.checked ) disabled.push(checkbox.key);
-      }
-      this.prefs.setCharPref("disabled_servers", disabled.join(','));
-      if ( !this.options.warned_about_fbli && ( this.options.load_from_facebook || this.options.load_from_linkedin ) ) {
-        this.prefs.setBoolPref("warned_about_fbli", true);
-        let strBundle = Services.strings.createBundle('chrome://awsomeAutoArchive/locale/ldapinfoshow.properties');
-        this.loadUseProtocol("http://code.google.com/p/ldapinfo/wiki/Help");
-        let result = Services.prompt.confirm(win, strBundle.GetStringFromName("prompt.warning"), strBundle.GetStringFromName("prompt.confirm.fbli"));
-        if ( !result ) {
-          this.prefs.setBoolPref("load_from_facebook", false);
-          this.prefs.setBoolPref("load_from_linkedin", false);
-          return false;
+      let doc = win.document;
+      let group = doc.getElementById('awsome_auto_archive-rules');
+      if ( !group ) return;
+      let rules = [];
+      for ( let hbox of group.childNodes ) {
+        if ( hbox.classList.contains('awsome_auto_archive-rule') ) {
+          let rule = {};
+          for ( let item of hbox.childNodes ) {
+            let key = item.getAttribute('rule');
+            if ( key ) {
+              let value = item.value || item.checked;
+              if ( item.getAttribute("type") == 'number' ) value = item.valueNumber;
+              rule[key] = value;
+            }
+          }
+          if ( Object.keys(rule).length > 0 ) rules.push(rule);
         }
       }
+      autoArchiveLog.logObject(rules,'new rules',1);
+      autoArchivePref.setPerf('rules',JSON.stringify(rules));
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },

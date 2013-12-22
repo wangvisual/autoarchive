@@ -1,3 +1,25 @@
 @namespace url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
-@-moz-document regexp("chrome://(messenger|autoArchive|conversations)/content/.*") {
+@-moz-document regexp("chrome://awsomeautoarchive/content/.*") {
+  #awsome_auto_archive-perfpane {
+    overflow: auto;
+    min-width: 600px;
+  }
+  
+  #awsome_auto_archive-perfpane textbox[readonly="true"] {
+    color: grey !important;
+  }
+  
+  #awsome_auto_archive-perfpane .awsome_auto_archive-disable  * {
+    disabled: true;
+    color: grey !important;
+  }
+
+  #awsome_auto_archive-perfpane .awsome_auto_archive-rule[focused=true] {
+    border: 1px dotted blue !important;
+  }
+
+  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row{
+    box-align: center;
+    -moz-box-align: center;
+  }
 }

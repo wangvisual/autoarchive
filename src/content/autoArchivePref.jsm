@@ -49,6 +49,18 @@ let autoArchivePref = {
       self.observe('', 'nsPref:changed', key); // we fake one
     } );
   },
+  setPerf: function(key, value) {
+    switch (typeof(value)) {
+      case 'boolean':
+        this.prefs.setBoolPref(key, value);
+        break;
+      case 'number':
+        this.prefs.setIntPref(key, value);
+        break;
+      default:
+        this.prefs.setCharPref(key, value);
+    }
+  },
 
   prefPath: "extensions.awsome_auto_archive.",
   allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'startup_delay', 'idle_delay', 'start_next_delay', 'default_days'],

@@ -8,6 +8,11 @@
 <!ENTITY awsome_auto_archive.perf.general "General Settings">
 <!ENTITY awsome_auto_archive.perf.advanced "Advanced Settings">
 <!ENTITY awsome_auto_archive.perf.rules "Rules">
+<!ENTITY awsome_auto_archive.perf.new "New">
+<!ENTITY awsome_auto_archive.perf.remove "Remove">
+<!ENTITY awsome_auto_archive.perf.up "Up">
+<!ENTITY awsome_auto_archive.perf.down "Down">
+
 
 <!ENTITY awsome_auto_archive.perf.donate "Donate">
 <!ENTITY awsome_auto_archive.perf.debug "Debug">

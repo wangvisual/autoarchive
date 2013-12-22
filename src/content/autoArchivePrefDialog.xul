@@ -8,7 +8,7 @@
 <prefwindow id="awsome_auto_archive-prefs"
      title="&awsome_auto_archive.perf.title;"
      onload="autoArchivePrefDialog.loadPerfWindow(window)"
-     ondialogacceptxx="return autoArchivePrefDialog.acceptPerfWindow(window)"
+     ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow(window)"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <script>
   <![CDATA[
@@ -38,19 +38,19 @@
           <groupbox id='awsome_auto_archive-rules'>
             <caption label="&awsome_auto_archive.perf.rules;"/>
             <hbox>
-              <button label="New"/>
-              <button label="Remove"/>
-              <button label="Up"/>
-              <button label="Down"/>
+              <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule(window);"/>
+              <button label="&awsome_auto_archive.perf.remove;"/>
+              <button label="&awsome_auto_archive.perf.up;"/>
+              <button label="&awsome_auto_archive.perf.down;"/>
             </hbox>
           </groupbox>
           <!--groupbox>
             <caption label="&awsome_auto_archive.perf.donate;"/>
             <vbox align="center">
               <hbox>
-                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('mozilla');" />
+                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchivePrefDialog.loadDonate('mozilla');" />
                 <label value="               " flex="100"/>
-                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchiveUtil.loadDonate('alipay');" />
+                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchivePrefDialog.loadDonate('alipay');" />
               </hbox>
               <label/>
             </vbox>
