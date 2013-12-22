@@ -4,7 +4,7 @@
 var EXPORTED_SYMBOLS = ["autoArchivePref"];
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("chrome://autoArchive/content/log.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const mozIJSSubScriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 
 let autoArchivePref = {

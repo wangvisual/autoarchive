@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
   <Description about="urn:mozilla:install-manifest">
-    <em:id>autoarchive@opera.wang</em:id>
+    <em:id>awsomeautoarchive@opera.wang</em:id>
     <em:version>0.1</em:version>
     <em:type>2</em:type>
     <em:bootstrap>true</em:bootstrap>
@@ -11,8 +11,8 @@
     <em:name>Awesome Auto Archive</em:name>
     <em:description>Awesome Auto Archive</em:description>
     <em:creator>Opera Wang</em:creator>
-    <!--em:aboutURL>chrome://autoArchive/content/about.xul</em:aboutURL-->
-    <em:optionsURL>chrome://autoArchive/content/autoArchivePrefDialog.xul</em:optionsURL>
+    <!--em:aboutURL>chrome://awsomeAutoArchive/content/about.xul</em:aboutURL-->
+    <em:optionsURL>chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul</em:optionsURL>
     <em:homepageURL>https://github.com/wangvisual/autoArchive</em:homepageURL>
     
     <!-- Target -->

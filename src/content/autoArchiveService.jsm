@@ -9,9 +9,9 @@ Cu.import("resource:///modules/MailUtils.js");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 //Cu.import("resource://app/modules/gloda/utils.js");
 //Cu.import("resource://gre/modules/FileUtils.jsm");
-Cu.import("chrome://autoArchive/content/aop.jsm");
-Cu.import("chrome://autoArchive/content/autoArchivePref.jsm");
-Cu.import("chrome://autoArchive/content/log.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 
 let autoArchiveService = {
   timer: null,

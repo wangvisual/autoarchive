@@ -8,18 +8,18 @@ Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource://app/modules/gloda/utils.js");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 //Cu.import("resource://gre/modules/Dict.jsm");
-//Cu.import("chrome://autoArchive/content/autoArchiveUtil.jsm");
-Cu.import("chrome://autoArchive/content/log.jsm");
-Cu.import("chrome://autoArchive/content/aop.jsm");
-//Cu.import("chrome://autoArchive/content/sprintf.jsm");
-Cu.import("chrome://autoArchive/content/autoArchiveService.jsm");
-Cu.import("chrome://autoArchive/content/autoArchivePref.jsm");
+//Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
+//Cu.import("chrome://awsomeAutoArchive/content/sprintf.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
 
 let autoArchive = {
-  //strBundle: Services.strings.createBundle('chrome://autoArchive/locale/autoArchive.properties'),
+  //strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
   createPopup: function(aWindow) {
   },
   Load: function(aWindow) {
@@ -40,7 +40,7 @@ let autoArchive = {
           let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
           statusbarIcon.id = statusbarIconID;
           statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
-          statusbarIcon.setAttribute('src', 'chrome://autoArchive/content/icon.png');
+          statusbarIcon.setAttribute('src', 'chrome://awsomeAutoArchive/content/icon.png');
           statusbarIcon.setAttribute('tooltiptext', 'statusbarTooltipID');
           //statusbarIcon.setAttribute('tooltip', statusbarTooltipID);
           //statusbarIcon.setAttribute('popup', contextMenuID);
@@ -98,8 +98,8 @@ let autoArchive = {
       this.timer = null;
       autoArchiveService.cleanup();
       autoArchivePref.cleanup();
-      Cu.unload("chrome://autoArchive/content/aop.jsm");
-      Cu.unload("chrome://autoArchive/content/autoArchiveService.jsm");
+      Cu.unload("chrome://awsomeAutoArchive/content/aop.jsm");
+      Cu.unload("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
     } catch (err) {
       autoArchiveLog.logException(err);  
     }

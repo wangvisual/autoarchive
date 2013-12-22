@@ -7,7 +7,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 // http://mdn.beonex.com/en/JavaScript_code_modules/Using.html
 
 const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
-const userCSS = Services.io.newURI("chrome://autoArchive/content/autoArchive.css", null, null);
+const userCSS = Services.io.newURI("chrome://awsomeAutoArchive/content/autoArchive.css", null, null);
 const targetWindows = [ "mail:3pane" ];
 
 function loadIntoWindow(window) {
@@ -44,10 +44,11 @@ var windowListener = {
 // A toplevel window in a XUL app is an nsXULWindow.  Inside that there is an nsGlobalWindow (aka nsIDOMWindow).
 function startup(aData, aReason) {
   Services.console.logStringMessage("Awesome Auto Archive startup...");
-  Cu.import("chrome://autoArchive/content/log.jsm");
-  Cu.import("chrome://autoArchive/content/autoArchivePref.jsm");
+  Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
+  Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
   autoArchivePref.initPerf(__SCRIPT_URI_SPEC__);
-  Cu.import("chrome://autoArchive/content/autoArchive.jsm");
+  Cu.import("chrome://awsomeAutoArchive/content/autoArchive.jsm");
+  Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
   //autoArchiveUtil.setChangeCallback( function(clean) { autoArchive.clearCache(clean); } );
   // Load into any existing windows, but not hidden/cached compose window, until compose window recycling is disabled by bug https://bugzilla.mozilla.org/show_bug.cgi?id=777732
   let windows = Services.wm.getEnumerator(null);
@@ -85,9 +86,10 @@ function shutdown(aData, aReason) {
   } catch (err) {Cu.reportError(err);}
   if (aReason == APP_SHUTDOWN) return;
   Services.strings.flushBundles(); // clear string bundles
-  Cu.unload("chrome://autoArchive/content/autoArchive.jsm");
-  Cu.unload("chrome://autoArchive/content/autoArchivePref.jsm");
-  Cu.unload("chrome://autoArchive/content/log.jsm");
+  Cu.unload("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+  Cu.unload("chrome://awsomeAutoArchive/content/autoArchive.jsm");
+  Cu.unload("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+  Cu.unload("chrome://awsomeAutoArchive/content/log.jsm");
   try {
     autoArchive = autoArchivePref = autoArchiveLog = null;
   } catch (err) {}
