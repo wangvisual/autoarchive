@@ -1,0 +1,20 @@
+<!ENTITY about.about "About">
+<!ENTITY about.author "Author:">
+<!ENTITY about.help "Help">
+<!ENTITY about.homepage "Home Page:">
+<!ENTITY about.contributors.label "Contributors:">
+
+<!ENTITY awsome_auto_archive.perf.title "Awesome Auto Archive Options">
+<!ENTITY awsome_auto_archive.perf.general "General Settings">
+<!ENTITY awsome_auto_archive.perf.advanced "Advanced Settings">
+<!ENTITY awsome_auto_archive.perf.rules "Rules">
+
+<!ENTITY awsome_auto_archive.perf.donate "Donate">
+<!ENTITY awsome_auto_archive.perf.debug "Debug">
+<!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
+
+<!ENTITY awsome_auto_archive.perf.enable_tag "Delete tagged mails">
+<!ENTITY awsome_auto_archive.perf.enable_flag "Delete stared mails">
+<!ENTITY awsome_auto_archive.perf.startup_delay "startup delay">
+<!ENTITY awsome_auto_archive.perf.idle_delay "idle_delay">
+<!ENTITY awsome_auto_archive.perf.start_next_delay "start_next_delay">
