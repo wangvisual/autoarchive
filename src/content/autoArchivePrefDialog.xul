@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<!-- for folder selector -->
+<?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://awsomeAutoArchive/locale/awsome_auto_archive.dtd">
+<prefwindow id="awsome_auto_archive-prefs"
+     title="&awsome_auto_archive.perf.title;"
+     onload="autoArchivePrefDialog.loadPerfWindow(window)"
+     ondialogacceptxx="return autoArchivePrefDialog.acceptPerfWindow(window)"
+     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<script>
+  <![CDATA[
+    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+  ]]>
+</script>
+<prefpane id="awsome_auto_archive-perfpane">
+  <preferences>
+    <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
+    <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
+    <preference id="pref_enable_tag" name="extensions.awsome_auto_archive.enable_tag" type="bool"/>
+    <preference id="pref_enable_flag" name="extensions.awsome_auto_archive.enable_flag" type="bool"/>
+    <preference id="pref_startup_delay" name="extensions.awsome_auto_archive.startup_delay" type="int"/>
+    <preference id="pref_idle_delay" name="extensions.awsome_auto_archive.idle_delay" type="int"/>
+    <preference id="pref_start_next_delay" name="extensions.awsome_auto_archive.start_next_delay" type="int"/>
+    <preference id="pref_default_days" name="extensions.awsome_auto_archive.default_days" type="int"/>
+  </preferences>
+  
+  <tabbox>
+    <tabs>
+      <tab image="chrome://messenger/skin/accountcentral/account-settings.png" label=" &awsome_auto_archive.perf.general;"/>
+      <tab image="chrome://awsomeAutoArchive/skin/LDAP.png" label=" &awsome_auto_archive.perf.advanced;"/>
+    </tabs>
+    <tabpanels>
+      <tabpanel>
+        <vbox flex="1">
+          <groupbox id='awsome_auto_archive-rules'>
+            <caption label="&awsome_auto_archive.perf.rules;"/>
+            <hbox>
+              <button label="New"/>
+              <button label="Remove"/>
+              <button label="Up"/>
+              <button label="Down"/>
+            </hbox>
+          </groupbox>
+          <!--groupbox>
+            <caption label="&awsome_auto_archive.perf.donate;"/>
+            <vbox align="center">
+              <hbox>
+                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('mozilla');" />
+                <label value="               " flex="100"/>
+                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchiveUtil.loadDonate('alipay');" />
+              </hbox>
+              <label/>
+            </vbox>
+          </groupbox-->
+          <groupbox>
+            <caption label="&awsome_auto_archive.perf.debug;"/>
+            <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
+          </groupbox>
+        </vbox>
+      </tabpanel>
+      <tabpanel>
+        <vbox flex="1">
+          <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
+          <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
+          <hbox>
+            <label value="&awsome_auto_archive.perf.startup_delay;"/>
+            <textbox preference="pref_startup_delay"/>
+          </hbox>
+          <hbox>
+            <label value="&awsome_auto_archive.perf.idle_delay;"/>
+            <textbox preference="pref_idle_delay"/>
+          </hbox>
+          <hbox>
+            <label value="&awsome_auto_archive.perf.start_next_delay;"/>
+            <textbox preference="pref_start_next_delay"/>
+          </hbox>
+        </vbox>
+      </tabpanel>
+    </tabpanels>
+  </tabbox>
+  
+</prefpane>
+</prefwindow>
