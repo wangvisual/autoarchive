@@ -167,6 +167,12 @@ let autoArchivePrefDialog = {
       menulistDest.value = rule.dest || '';
       menulistDest.setAttribute("rule", 'dest');
       
+      let matches = doc.createElementNS(XUL, "label");
+      matches.setAttribute("value", "matches");
+      let subject = doc.createElementNS(XUL, "textbox");
+      subject.setAttribute("value", rule.subject || '');
+      subject.setAttribute("rule", 'subject');
+      
       let after = doc.createElementNS(XUL, "label");
       after.setAttribute("value", "After");
       let age = doc.createElementNS(XUL, "textbox");
@@ -194,7 +200,7 @@ let autoArchivePrefDialog = {
       
       let hbox = doc.createElementNS(XUL, "hbox");
       hbox.classList.add(ruleClass);
-      [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, after, age, days, up, down, remove].forEach( function(item) {
+      [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, matches, subject, after, age, days, up, down, remove].forEach( function(item) {
         hbox.insertBefore(item, null);
       } );
       group.insertBefore(hbox, ref);

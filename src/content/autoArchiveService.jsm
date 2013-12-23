@@ -87,11 +87,12 @@ let autoArchiveService = {
   },
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
   searchListener: function(rule) {
+    let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+    if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
     this.messages = [];
     this.msgHdrsArchive = function() {
       try {
-        let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-        if ( !this.messages.length || !mail3PaneWindow) return self.doMoveOrArchiveOne();
+        if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
         if ( rule.action != 'archive' ) {
           // group messages according to there src and dest
@@ -110,7 +111,7 @@ let autoArchiveService = {
         } else {
           let batchMover = new mail3PaneWindow.BatchMessageMover();
           autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, function(result) {
-            if ( batchMover._batches == null ) this.doMoveOrArchiveOne();
+            if ( batchMover._batches == null ) self.doMoveOrArchiveOne();
             return result;
           } );
           batchMover.archiveMessages(this.messages);
@@ -125,7 +126,7 @@ let autoArchiveService = {
       if ( !msgHdr.folder || msgHdr.folder.folderURL == rule.dest ) return;
       if ( ( !autoArchivePref.options.enable_flag && msgHdr.isFlagged ) || ( !autoArchivePref.options.enable_tag && msgHdr.getStringProperty('keywords').contains('$label') ) ) return;
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
-      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !msgHdr.folder.customIdentity || !msgHdr.folder.customIdentity.archiveEnabled ) ) {
+      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) {
         autoArchiveLog.info('return:' + msgHdr.subject + "   :" + msgHdr.folder.customIdentity);
         autoArchiveLog.logObject(msgHdr.folder,'msgHdr.folder',0);
         return;
@@ -166,7 +167,7 @@ let autoArchiveService = {
     MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest, true), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);  
   },
   doMoveOrArchiveOne: function() {
-    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "enable": true}]
+    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/, "enable": true}]
     if ( this.rules.length == 0 ) {
       autoArchiveLog.info("auto archive done for all rules, set next");
       return this.start(300);
@@ -194,12 +195,25 @@ let autoArchiveService = {
     let searchByAge = searchSession.createTerm();
     searchByAge.attrib = Ci.nsMsgSearchAttrib.AgeInDays;
     let value = searchByAge.value;
-    value.attrib = Ci.nsMsgSearchAttrib.AgeInDays;
+    value.attrib = searchByAge.attrib;
     value.age = rule.age;
     searchByAge.value = value;
     searchByAge.op = Ci.nsMsgSearchOp.IsGreaterThan;
     searchByAge.booleanAnd = true;
     searchSession.appendTerm(searchByAge);
+    if ( rule.subject ) {
+      //MailServices.filters.getCustomTerm('expressionsearch#subjectRegex');
+      //attr = { type:nsMsgSearchAttrib.Custom, customId: 'expressionsearch#subjectRegex' };
+      //nsMsgSearchOp.Contains;
+      /*let term = aTermCreator.createTerm();
+      term.attrib = Ci.nsMsgSearchAttrib.Custom;
+      let value = term.value;
+      value.attrib = term.attrib;
+      term.value = value;
+      term.op = Ci.nsMsgSearchOp.Contains;
+      term.booleanAnd = true;
+      term.customId = aCustomId;*/
+    }
     searchSession.registerListener(new self.searchListener(rule));
     searchSession.search(null);
   },
