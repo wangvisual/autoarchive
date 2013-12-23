@@ -14,6 +14,7 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const ruleClass = 'awsome_auto_archive-rule';
 
 let autoArchivePrefDialog = {
   Name: "Awesome Auto Archive xxx", // might get changed by getAddonByID function call
@@ -116,98 +117,119 @@ let autoArchivePrefDialog = {
   },
   
   creatNewRule: function(win) {
-    return self.creatOneRule(win.document, win, {action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days});
+    return self.creatOneRule(win.document, win, {action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
   },
 
-  creatOneRule: function(doc, win, rule) {
-    let group = doc.getElementById('awsome_auto_archive-rules');
-    if ( !group ) return;
-    let enable = doc.createElementNS(XUL, "checkbox");
-    enable.setAttribute("checked", rule.enable);
-    enable.setAttribute("rule", 'enable');
-
-    let menulistAction = doc.createElementNS(XUL, "menulist");
-    let menupopupAction = doc.createElementNS(XUL, "menupopup");
-    ["archive", "copy", "delete", "move"].forEach( function(action) {
-      let menuitem = doc.createElementNS(XUL, "menuitem");
-      menuitem.setAttribute("label", action);
-      menuitem.setAttribute("value", action);
-      menupopupAction.insertBefore(menuitem, null);
-    } );
-    menulistAction.insertBefore(menupopupAction, null);
-    menulistAction.setAttribute("value", rule.action || 'archive');
-    menulistAction.setAttribute("rule", 'action');
-
-    let menulistSrc = doc.createElementNS(XUL, "menulist");
-    let menupopupSrc = doc.createElementNS(XUL, "menupopup");
-    menulistSrc.insertBefore(menupopupSrc, null);
-    menulistSrc.value = rule.src || '';
-    menulistSrc.setAttribute("rule", 'src');
-
-    let menulistSub = doc.createElementNS(XUL, "menulist");
-    let menupopupSub = doc.createElementNS(XUL, "menupopup");
-    let types = [ {key: "only", value: 0}, { key: "sub", value: 1}, {key: "sub_keep", value: 2} ];
-    types.forEach( function(type) {
-      let menuitem = doc.createElementNS(XUL, "menuitem");
-      menuitem.setAttribute("label", type.key);
-      menuitem.setAttribute("value", type.value);
-      menupopupSub.insertBefore(menuitem, null);
-    } );
-    menulistSub.insertBefore(menupopupSub, null);
-    menulistSub.setAttribute("value", rule.sub || 0);
-    menulistSub.setAttribute("rule", 'sub');
-    
-    let to = doc.createElementNS(XUL, "label");
-    to.setAttribute("value", "To");
-    let menulistDest = doc.createElementNS(XUL, "menulist");
-    let menupopupDest = doc.createElementNS(XUL, "menupopup");
-    menulistDest.insertBefore(menupopupDest, null);
-    menulistDest.value = rule.dest || '';
-    menulistDest.setAttribute("rule", 'dest');
-
-    let after = doc.createElementNS(XUL, "label");
-    after.setAttribute("value", "After");
-    let age = doc.createElementNS(XUL, "textbox");
-    age.setAttribute("type", "number");
-    age.setAttribute("min", "0");
-    age.setAttribute("value", rule.age || autoArchivePref.options.default_days);
-    age.setAttribute("rule", 'age');
-    age.setAttribute("size", "4");
-    let days = doc.createElementNS(XUL, "label");
-    days.setAttribute("value", "days");
-    
-    let remove = doc.createElementNS(XUL, "button");
-    remove.setAttribute("label", "X");
-    //remove.setAttribute("oncommand", self.);
-    
-    let hbox = doc.createElementNS(XUL, "hbox");
-    hbox.classList.add("awsome_auto_archive-rule");
-    hbox.addEventListener('focus', function(aEvent) { self.focusRule(aEvent, doc); }, true);
-    hbox.addEventListener('blur', function(aEvent) { self.focusRule(aEvent, doc); }, true);
-    [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, after, age, days, remove].forEach( function(item) {
-      hbox.insertBefore(item, null);
-    } );
-    group.insertBefore(hbox, null);
-    self.initFolderPick(doc, win, menulistSrc, menupopupSrc);
-    self.initFolderPick(doc, win, menulistDest, menupopupDest);
-    self.checkAction(menulistAction, to, menulistDest);
-    self.checkEnable(enable, hbox);
-    menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); } );
-    enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); } );
+  creatOneRule: function(doc, win, rule, ref) {
+    try {
+      let group = doc.getElementById('awsome_auto_archive-rules');
+      if ( !group ) return;
+      let enable = doc.createElementNS(XUL, "checkbox");
+      enable.setAttribute("checked", rule.enable);
+      enable.setAttribute("rule", 'enable');
+      
+      let menulistAction = doc.createElementNS(XUL, "menulist");
+      let menupopupAction = doc.createElementNS(XUL, "menupopup");
+      ["archive", "copy", "delete", "move"].forEach( function(action) {
+        let menuitem = doc.createElementNS(XUL, "menuitem");
+        menuitem.setAttribute("label", action);
+        menuitem.setAttribute("value", action);
+        menupopupAction.insertBefore(menuitem, null);
+      } );
+      menulistAction.insertBefore(menupopupAction, null);
+      menulistAction.setAttribute("value", rule.action || 'archive');
+      menulistAction.setAttribute("rule", 'action');
+      
+      let menulistSrc = doc.createElementNS(XUL, "menulist");
+      let menupopupSrc = doc.createElementNS(XUL, "menupopup");
+      menulistSrc.insertBefore(menupopupSrc, null);
+      menulistSrc.value = rule.src || '';
+      menulistSrc.setAttribute("rule", 'src');
+      
+      let menulistSub = doc.createElementNS(XUL, "menulist");
+      let menupopupSub = doc.createElementNS(XUL, "menupopup");
+      let types = [ {key: "only", value: 0}, { key: "sub", value: 1}, {key: "sub_keep", value: 2} ];
+      types.forEach( function(type) {
+        let menuitem = doc.createElementNS(XUL, "menuitem");
+        menuitem.setAttribute("label", type.key);
+        menuitem.setAttribute("value", type.value);
+        menupopupSub.insertBefore(menuitem, null);
+      } );
+      menulistSub.insertBefore(menupopupSub, null);
+      menulistSub.setAttribute("value", rule.sub || 0);
+      menulistSub.setAttribute("rule", 'sub');
+      
+      let to = doc.createElementNS(XUL, "label");
+      to.setAttribute("value", "To");
+      let menulistDest = doc.createElementNS(XUL, "menulist");
+      let menupopupDest = doc.createElementNS(XUL, "menupopup");
+      menulistDest.insertBefore(menupopupDest, null);
+      menulistDest.value = rule.dest || '';
+      menulistDest.setAttribute("rule", 'dest');
+      
+      let after = doc.createElementNS(XUL, "label");
+      after.setAttribute("value", "After");
+      let age = doc.createElementNS(XUL, "textbox");
+      age.setAttribute("type", "number");
+      age.setAttribute("min", "0");
+      age.setAttribute("value", rule.age || autoArchivePref.options.default_days);
+      age.setAttribute("rule", 'age');
+      age.setAttribute("size", "4");
+      let days = doc.createElementNS(XUL, "label");
+      days.setAttribute("value", "days");
+      
+      let up = doc.createElementNS(XUL, "toolbarbutton");
+      up.setAttribute("label", '\u2191');
+      up.addEventListener("command", function(aEvent) { self.upDownRule(hbox, true, doc, win); }, false );
+      
+      let down = doc.createElementNS(XUL, "toolbarbutton");
+      down.setAttribute("label", '\u2193');
+      down.addEventListener("command", function(aEvent) { self.upDownRule(hbox, false, doc, win); }, false );
+      
+      let remove = doc.createElementNS(XUL, "toolbarbutton");
+      remove.setAttribute("label", "x");
+      remove.setAttribute("icon", "remove");
+      remove.classList.add("awsome_auto_archive-delete-rule");
+      remove.addEventListener("command", function(aEvent) { self.removeRule(hbox); }, false );
+      
+      let hbox = doc.createElementNS(XUL, "hbox");
+      hbox.classList.add(ruleClass);
+      [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, after, age, days, up, down, remove].forEach( function(item) {
+        hbox.insertBefore(item, null);
+      } );
+      group.insertBefore(hbox, ref);
+      self.initFolderPick(doc, win, menulistSrc, menupopupSrc);
+      self.initFolderPick(doc, win, menulistDest, menupopupDest);
+      self.checkAction(menulistAction, to, menulistDest);
+      self.checkEnable(enable, hbox);
+      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); } );
+      enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); } );
+    } catch(err) {
+      autoArchiveLog.logException(err);
+    }
     return true;
   },
   
-  focusRule: function(aEvent, doc) {
-    let hbox = aEvent.currentTarget;
-    let blur = false;
-    if ( aEvent.type == 'blur' ) {
-      let focused = doc.commandDispatcher.focusedElement;
-      autoArchiveLog.logObject(focused,'focused',0);
-      blur = focused && hbox.parentNode.contains(focused);
+  upDownRule: function(hbox, isUp, doc, win) {
+    try {
+      let ref = isUp ? hbox.previousSibling : hbox;
+      let remove = isUp ? hbox : hbox.nextSibling;
+      if ( ref.classList.contains(ruleClass) &&  remove.classList.contains(ruleClass) ) {
+        let rule = this.getOneRule(remove);
+        autoArchiveLog.logObject(rule, 'temp rule', 1);
+        remove.parentNode.removeChild(remove);
+        // remove.parentNode.insertBefore(remove, ref); // lost all unsaved values
+        this.creatOneRule(doc, win, rule, ref);
+      }
+    } catch(err) {
+      autoArchiveLog.logException(err);
     }
-    hbox.setAttribute('focused',  blur ? 'false' : 'true');
   },
   
+  removeRule: function(hbox) {
+    hbox.parentNode.removeChild(hbox);
+  },
+
   checkEnable: function(enable, hbox) {
     if ( enable.checked ) {
       hbox.classList.remove("awsome_auto_archive-disable");
@@ -223,11 +245,27 @@ let autoArchivePrefDialog = {
   loadPerfWindow: function(win) {
     try {
       let doc = win.document;
-      autoArchivePref.rules.forEach( function(rule) {
-        self.creatOneRule(doc, win, rule);
-      } );
+      if ( autoArchivePref.rules.length ) {
+        autoArchivePref.rules.forEach( function(rule) {
+          self.creatOneRule(doc, win, rule, null);
+        } );
+      } else {
+        self.creatNewRule(win);
+      }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
+  },
+  getOneRule: function(hbox) {
+    let rule = {};
+    for ( let item of hbox.childNodes ) {
+      let key = item.getAttribute('rule');
+      if ( key ) {
+        let value = item.value || item.checked;
+        if ( item.getAttribute("type") == 'number' ) value = item.valueNumber;
+        rule[key] = value;
+      }
+    }
+    return rule;
   },
   acceptPerfWindow: function(win) {
     try {
@@ -236,16 +274,8 @@ let autoArchivePrefDialog = {
       if ( !group ) return;
       let rules = [];
       for ( let hbox of group.childNodes ) {
-        if ( hbox.classList.contains('awsome_auto_archive-rule') ) {
-          let rule = {};
-          for ( let item of hbox.childNodes ) {
-            let key = item.getAttribute('rule');
-            if ( key ) {
-              let value = item.value || item.checked;
-              if ( item.getAttribute("type") == 'number' ) value = item.valueNumber;
-              rule[key] = value;
-            }
-          }
+        if ( hbox.classList.contains(ruleClass) ) {
+          let rule = this.getOneRule(hbox);
           if ( Object.keys(rule).length > 0 ) rules.push(rule);
         }
       }

@@ -89,30 +89,35 @@ let autoArchiveService = {
   searchListener: function(rule) {
     this.messages = [];
     this.msgHdrsArchive = function() {
-      let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-      if ( !this.messages.length || !mail3PaneWindow) return self.doMoveOrArchiveOne();
-      autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
-      if ( rule.action != 'archive' ) {
-        // group messages according to there src and dest
-        self.copyGroups = [];
-        let groups = {}; // { src-_|_-dest : 0, src2-_|_-dest2: 1 }
-        this.messages.forEach( function(msgHdr) {
-          let key = msgHdr.folder.folderURL + "-_|_-" + (rule.dest||'');
-          if ( typeof(groups.key) == 'undefined'  ) {
-            groups.key = self.copyGroups.length;
-            self.copyGroups.push({src: msgHdr.folder.folderURL, dest: rule.dest, action: rule.action, messages: []});
-          }
-          self.copyGroups[groups.key].messages.push(msgHdr);
-        } );
-        autoArchiveLog.logObject(self.copyGroups, 'copyGroups', 1);
-        self.doCopyDeleteMoveOne(self.copyGroups.shift());
-      } else {
-        let batchMover = new mail3PaneWindow.BatchMessageMover();
-        autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, function(result) {
-          if ( batchMover._batches == null ) this.doMoveOrArchiveOne();
-          return result;
-        } );
-        batchMover.archiveMessages(this.messages);
+      try {
+        let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+        if ( !this.messages.length || !mail3PaneWindow) return self.doMoveOrArchiveOne();
+        autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
+        if ( rule.action != 'archive' ) {
+          // group messages according to there src and dest
+          self.copyGroups = [];
+          let groups = {}; // { src-_|_-dest : 0, src2-_|_-dest2: 1 }
+          this.messages.forEach( function(msgHdr) {
+            let key = msgHdr.folder.folderURL + "-_|_-" + (rule.dest||'');
+            if ( typeof(groups.key) == 'undefined'  ) {
+              groups.key = self.copyGroups.length;
+              self.copyGroups.push({src: msgHdr.folder.folderURL, dest: rule.dest, action: rule.action, messages: []});
+            }
+            self.copyGroups[groups.key].messages.push(msgHdr);
+          } );
+          autoArchiveLog.logObject(self.copyGroups, 'copyGroups', 0);
+          self.doCopyDeleteMoveOne(self.copyGroups.shift());
+        } else {
+          let batchMover = new mail3PaneWindow.BatchMessageMover();
+          autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, function(result) {
+            if ( batchMover._batches == null ) this.doMoveOrArchiveOne();
+            return result;
+          } );
+          batchMover.archiveMessages(this.messages);
+        }
+      } catch(err) {
+        autoArchiveLog.logException(err);
+        return self.doMoveOrArchiveOne();
       }
     };
     this.onSearchHit = function(msgHdr, folder) {
@@ -120,7 +125,11 @@ let autoArchiveService = {
       if ( !msgHdr.folder || msgHdr.folder.folderURL == rule.dest ) return;
       if ( ( !autoArchivePref.options.enable_flag && msgHdr.isFlagged ) || ( !autoArchivePref.options.enable_tag && msgHdr.getStringProperty('keywords').contains('$label') ) ) return;
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
-      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !msgHdr.folder.customIdentity || !msgHdr.folder.customIdentity.archiveEnabled ) ) return;
+      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !msgHdr.folder.customIdentity || !msgHdr.folder.customIdentity.archiveEnabled ) ) {
+        autoArchiveLog.info('return:' + msgHdr.subject + "   :" + msgHdr.folder.customIdentity);
+        autoArchiveLog.logObject(msgHdr.folder,'msgHdr.folder',0);
+        return;
+      }
       if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
       if ( rule.action == 'delete' && ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) ) return;
       //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
@@ -141,9 +150,16 @@ let autoArchiveService = {
       // deleteMessages impacted by srcFolder.server.getIntValue('delete_model')
       // 0:mark as deleted, 1:move to trash, 2:remove it immediately
       let deleteModel = srcFolder.server.getIntValue('delete_model');
-      srcFolder.deleteMessages(xpcomHdrArray, msgWindow, /*deleteStorage*/(deleteModel == 2), /*isMove*/false, new self.copyListener(group), /* allow undo */false);
-      srcFolder.msgDatabase = null; /* don't leak */
-      return;
+      let isTrash = srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash);
+      autoArchiveLog.info('srcFolder:' + srcFolder.URI + " is trash? " + isTrash);
+      try {
+        srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/(deleteModel == 2 || srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash)), /*isMove*/false, new self.copyListener(group), /* allow undo */false);
+        //srcFolder.updateFolder(msgWindow);
+        srcFolder.msgDatabase = null; /* don't leak */
+        return;
+      } catch (err) {
+        autoArchiveLog.logException(err);
+      }
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");

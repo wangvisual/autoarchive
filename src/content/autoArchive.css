@@ -10,16 +10,15 @@
   }
   
   #awsome_auto_archive-perfpane .awsome_auto_archive-disable  * {
-    disabled: true;
     color: grey !important;
-  }
-
-  #awsome_auto_archive-perfpane .awsome_auto_archive-rule[focused=true] {
-    border: 1px dotted blue !important;
   }
 
   #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row{
     box-align: center;
     -moz-box-align: center;
+  }
+  
+  #awsome_auto_archive-perfpane  .awsome_auto_archive-delete-rule {
+    color: red !important;
   }
 }
