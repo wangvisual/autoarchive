@@ -5,6 +5,10 @@
     min-width: 600px;
   }
   
+  #awsome_auto_archive-rules {
+    min-height: 200px;
+  }
+  
   #awsome_auto_archive-perfpane textbox[readonly="true"] {
     color: grey !important;
   }

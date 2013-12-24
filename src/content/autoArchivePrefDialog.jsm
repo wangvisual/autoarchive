@@ -25,6 +25,7 @@ let autoArchivePrefDialog = {
     autoArchiveLog.log("autoArchivePrefDialog initName");
     if ( this.Version != 'unknown' ) return;
     AddonManager.getAddonByID('awsomeautoarchive@opera.wang', function(addon) {
+      if ( !self ) return;
       self.Version = addon.version;
       self.Name = addon.name;
     });
@@ -178,7 +179,7 @@ let autoArchivePrefDialog = {
       let age = doc.createElementNS(XUL, "textbox");
       age.setAttribute("type", "number");
       age.setAttribute("min", "0");
-      age.setAttribute("value", rule.age || autoArchivePref.options.default_days);
+      age.setAttribute("value", typeof(rule.age)!='undefined' ? rule.age : autoArchivePref.options.default_days);
       age.setAttribute("rule", 'age');
       age.setAttribute("size", "4");
       let days = doc.createElementNS(XUL, "label");

@@ -98,11 +98,11 @@ let autoArchive = {
       this.timer = null;
       autoArchiveService.cleanup();
       autoArchivePref.cleanup();
-      Cu.unload("chrome://awsomeAutoArchive/content/aop.jsm");
-      Cu.unload("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
+    Cu.unload("chrome://awsomeAutoArchive/content/aop.jsm");
+    Cu.unload("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
     autoArchiveLog.info('autoArchive cleanup done');
     //autoArchiveaop = null;
   },

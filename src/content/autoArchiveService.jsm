@@ -52,6 +52,10 @@ let autoArchiveService = {
     autoArchiveLog.info("autoArchiveService cleanup");
     this.rules = [];
     this.copyGroups = [];
+    this.hookedFunctions.forEach( function(hooked) {
+      hooked.unweave();
+    } );
+    this.hookedFunctions = [];
     if ( this.timer ) {
       this.timer.cancel();
       this.timer = null;
@@ -69,16 +73,32 @@ let autoArchiveService = {
     this.doMoveOrArchiveOne();
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
+    this.QueryInterface = function(iid) {
+      if (!iid.equals(Ci.nsIMsgCopyServiceListener) &&!iid.equals(Ci.nsISupports))
+        throw Components.results.NS_ERROR_NO_INTERFACE;
+      return this;
+    };
     this.OnStartCopy = function() {
       autoArchiveLog.info("OnStart " + group.action);
-      //gFolderDisplay.hintMassMoveStarting();
+      let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+      if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveStarting();
     };
     this.OnProgress = function(aProgress, aProgressMax) {
       autoArchiveLog.info("OnProgress " + aProgress + "/"+ aProgressMax);
     };
     this.OnStopCopy = function(aStatus) {
       autoArchiveLog.info("OnStop " + group.action);
-      //gFolderDisplay.hintMassMoveCompleted();
+      if ( group.action == 'delete' || group.action == 'move' ) {
+        let srcFolder = MailUtils.getFolderForURI(group.src, true);
+        if ( srcFolder ) srcFolder.updateFolder(null);
+      }
+      if ( group.action == 'copy' || group.action == 'move' ) {
+        let destFolder = MailUtils.getFolderForURI(group.dest, true);
+        if ( destFolder ) destFolder.updateFolder(null);
+      }
+      autoArchiveLog.info("OnStop " + group.action + " updateFolder done");
+      let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+      if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveCompleted();
       if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
       else self.doMoveOrArchiveOne();
     };
@@ -86,6 +106,7 @@ let autoArchiveService = {
     this.GetMessageId = function() {};
   },
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
+  hookedFunctions: [],
   searchListener: function(rule) {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
@@ -110,10 +131,21 @@ let autoArchiveService = {
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {
           let batchMover = new mail3PaneWindow.BatchMessageMover();
-          autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, function(result) {
-            if ( batchMover._batches == null ) self.doMoveOrArchiveOne();
+          let myFunc = function(result) {
+            autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl");
+            autoArchiveLog.logObject(batchMover._batches,'batchMover._batches',1);
+            if ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) {
+              autoArchiveLog.info("BatchMessageMover Done");
+              self.hookedFunctions.forEach( function(hooked) {
+                hooked.unweave();
+              } );
+              self.hookedFunctions = [];
+              self.doMoveOrArchiveOne();
+            }
             return result;
-          } );
+          }
+          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, myFunc )[0] );
+          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, myFunc )[0] );
           batchMover.archiveMessages(this.messages);
         }
       } catch(err) {
@@ -167,7 +199,7 @@ let autoArchiveService = {
     MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest, true), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);  
   },
   doMoveOrArchiveOne: function() {
-    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/, "enable": true}]
+    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
     if ( this.rules.length == 0 ) {
       autoArchiveLog.info("auto archive done for all rules, set next");
       return this.start(300);
@@ -192,31 +224,66 @@ let autoArchiveService = {
         searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
       }
     }
-    let searchByAge = searchSession.createTerm();
-    searchByAge.attrib = Ci.nsMsgSearchAttrib.AgeInDays;
-    let value = searchByAge.value;
-    value.attrib = searchByAge.attrib;
-    value.age = rule.age;
-    searchByAge.value = value;
-    searchByAge.op = Ci.nsMsgSearchOp.IsGreaterThan;
-    searchByAge.booleanAnd = true;
-    searchSession.appendTerm(searchByAge);
-    if ( rule.subject ) {
-      //MailServices.filters.getCustomTerm('expressionsearch#subjectRegex');
-      //attr = { type:nsMsgSearchAttrib.Custom, customId: 'expressionsearch#subjectRegex' };
-      //nsMsgSearchOp.Contains;
-      /*let term = aTermCreator.createTerm();
-      term.attrib = Ci.nsMsgSearchAttrib.Custom;
-      let value = term.value;
-      value.attrib = term.attrib;
-      term.value = value;
-      term.op = Ci.nsMsgSearchOp.Contains;
-      term.booleanAnd = true;
-      term.customId = aCustomId;*/
+    self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age || 0, Ci.nsMsgSearchOp.IsGreaterThan);
+    if ( typeof(rule.subject) != 'undefined' ) {
+      // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
+      let customId;
+      if ( rule.subject.match(/^\/.*\/[ismxpgc]*$/) ) {
+        // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
+        ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'].some( function(term) { // .find need TB >=25
+          if ( MailServices.filters.getCustomTerm(term) ) {
+            customId = term;
+            return true;
+          } else return false;
+        } );
+        if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule.subject + "' unless you installed addons like 'Expression Search / GMailUI' or 'FiltaQuilla'", 1);
+      }
+      if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, rule.subject, Ci.nsMsgSearchOp.Matches);
+      else self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.Subject, rule.subject, Ci.nsMsgSearchOp.Contains);
     }
     searchSession.registerListener(new self.searchListener(rule));
     searchSession.search(null);
   },
+
+  addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
+    let aCustomId;
+    if ( typeof(attr) == 'object' && attr.type == Ci.nsMsgSearchAttrib.Custom ) {
+      aCustomId = attr.customId;
+      attr = Ci.nsMsgSearchAttrib.Custom;
+    }
+    let term = searchSession.createTerm();
+    term.attrib = attr;
+    let value = term.value;
+    // This is tricky - value.attrib must be set before actual values, from searchTestUtils.js 
+    value.attrib = attr;
+    if (attr == Ci.nsMsgSearchAttrib.JunkPercent)
+      value.junkPercent = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Priority)
+      value.priority = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Date)
+      value.date = str;
+    else if (attr == Ci.nsMsgSearchAttrib.MsgStatus || attr == Ci.nsMsgSearchAttrib.FolderFlag || attr == Ci.nsMsgSearchAttrib.Uint32HdrProperty)
+      value.status = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Size)
+      value.size = str;
+    else if (attr == Ci.nsMsgSearchAttrib.AgeInDays)
+      value.age = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Label)
+      value.label = str;
+    else if (attr == Ci.nsMsgSearchAttrib.JunkStatus)
+      value.junkStatus = str;
+    else if (attr == Ci.nsMsgSearchAttrib.HasAttachmentStatus)
+      value.status = nsMsgMessageFlags.Attachment;
+    else
+      value.str = str;
+    if (attr == Ci.nsMsgSearchAttrib.Custom)
+      term.customId = aCustomId;
+    term.value = value;
+    term.op = op;
+    term.booleanAnd = true;
+    searchSession.appendTerm(term);
+  },
+  
 };
 let self = autoArchiveService;
 self.start(2);
