@@ -52,6 +52,8 @@ let autoArchiveService = {
     autoArchiveLog.info("autoArchiveService cleanup");
     this.rules = [];
     this.copyGroups = [];
+    if ( Object.keys(self.wait4Folders).length ) MailServices.mailSession.RemoveFolderListener(self.folderListener);
+    this.wait4Folders = {};
     this.hookedFunctions.forEach( function(hooked) {
       hooked.unweave();
     } );
@@ -64,6 +66,7 @@ let autoArchiveService = {
     autoArchiveLog.info("autoArchiveService cleanup done");
   },
   rules: [],
+  wait4Folders: {},
   doArchive: function() {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.rules = autoArchivePref.rules.filter( function(rule) {
@@ -71,6 +74,17 @@ let autoArchiveService = {
     } );
     autoArchiveLog.logObject(this.rules, 'this.rules',1);
     this.doMoveOrArchiveOne();
+  },
+  folderListener: {
+    OnItemEvent: function(folder, event) {
+      if ( event.toString() != "FolderLoaded" || !folder || !folder.folderURL ) return;
+      autoArchiveLog.info("FolderLoaded " + folder.folderURL);
+      if ( self.wait4Folders[folder.folderURL] ) delete self.wait4Folders[folder.folderURL];
+      if ( Object.keys(self.wait4Folders).length == 0 ) {
+        MailServices.mailSession.RemoveFolderListener(self.folderListener);
+        self.doMoveOrArchiveOne();
+      }
+    },
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
     this.QueryInterface = function(iid) {
@@ -88,19 +102,26 @@ let autoArchiveService = {
     };
     this.OnStopCopy = function(aStatus) {
       autoArchiveLog.info("OnStop " + group.action);
-      if ( group.action == 'delete' || group.action == 'move' ) {
-        let srcFolder = MailUtils.getFolderForURI(group.src, true);
-        if ( srcFolder ) srcFolder.updateFolder(null);
-      }
-      if ( group.action == 'copy' || group.action == 'move' ) {
-        let destFolder = MailUtils.getFolderForURI(group.dest, true);
-        if ( destFolder ) destFolder.updateFolder(null);
-      }
-      autoArchiveLog.info("OnStop " + group.action + " updateFolder done");
+      if ( group.action == 'delete' || group.action == 'move' ) self.wait4Folders[group.src] = true;
+      if ( group.action == 'copy' || group.action == 'move' ) self.wait4Folders[group.dest] = true;
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
       if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveCompleted();
       if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
-      else self.doMoveOrArchiveOne();
+      else {
+        let folders = [];
+        Object.keys(self.wait4Folders).forEach( function(uri) {
+          let folder = MailUtils.getFolderForURI(uri, true);
+          if ( folder ) folders.push(folder);
+          else delete self.wait4Folders[uri];
+        } );
+        if ( folders.length ) {
+          MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
+          folders.forEach( function(folder) {
+            autoArchiveLog.info("updateFolder " + folder.folderURL);
+            folder.updateFolder(null);
+          } );
+        } else self.doMoveOrArchiveOne();
+      }
     };
     this.SetMessageKey = function(aKey) {};
     this.GetMessageId = function() {};
@@ -140,6 +161,7 @@ let autoArchiveService = {
                 hooked.unweave();
               } );
               self.hookedFunctions = [];
+              // TODO: updateFolder
               self.doMoveOrArchiveOne();
             }
             return result;
@@ -186,7 +208,8 @@ let autoArchiveService = {
       let isTrash = srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash);
       autoArchiveLog.info('srcFolder:' + srcFolder.URI + " is trash? " + isTrash);
       try {
-        srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/(deleteModel == 2 || srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash)), /*isMove*/false, new self.copyListener(group), /* allow undo */false);
+        // http://code.google.com/p/reply-manager/source/browse/mailnews/base/test/unit/test_nsIMsgFolderListenerLocal.js
+        srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/(deleteModel == 2 || isTrash), /*isMove*/false, new self.copyListener(group), /* allow undo */false);
         //srcFolder.updateFolder(msgWindow);
         srcFolder.msgDatabase = null; /* don't leak */
         return;
@@ -196,7 +219,7 @@ let autoArchiveService = {
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-    MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest, true), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);  
+    MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest, true), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
   },
   doMoveOrArchiveOne: function() {
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
