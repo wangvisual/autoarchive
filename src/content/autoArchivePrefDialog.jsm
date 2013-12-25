@@ -74,17 +74,29 @@ let autoArchivePrefDialog = {
   showPrettyTooltip: function(URI,pretty) {
     return decodeURIComponent(URI).replace(/(.*\/)[^/]*/, '$1') + pretty;
   },
-  onFolderPick: function(folderPicker, aEvent) {
+  updateFolderStyle: function(folderPicker, folderPopup, win) {
+    let msgFolder = {value: '', prettyName: 'N/A'};
+    let updateStyle = function() {
+      folderPopup.selectFolder(msgFolder); // false alarm by addon validator
+      folderPopup._setCssSelectors(msgFolder, folderPicker);
+    };
+    try {
+      msgFolder = MailUtils.getFolderForURI(folderPicker.value);
+      if ( win ) win.setTimeout( updateStyle, 1 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
+      else updateStyle();
+    } catch(err) {}
+    folderPicker.setAttribute("label", msgFolder.prettyName);
+    folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName));
+  },
+  onFolderPick: function(folderPicker, aEvent, folderPopup) {
     let folder = aEvent.target._folder;
     if ( !folder ) return;
-    let label = folder.prettyName || folder.name;
     let value = folder.URI || folder.folderURL;
     folderPicker.value = value; // must set value before set label, or next line may fail when previous value is empty
-    folderPicker.setAttribute("label", label); 
-    folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(value, label));
+    self.updateFolderStyle(folderPicker, folderPopup, null);
   },
   initFolderPick: function(doc, win, folderPicker, folderPopup) {
-    folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent); }, false);
+    folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
     folderPicker.classList.add("folderMenuItem");
 
     folderPopup.setAttribute("type", "folder");
@@ -102,19 +114,7 @@ let autoArchivePrefDialog = {
     folderPopup.insertBefore(menuitem, null);
     let menuseparator = doc.createElementNS(XUL, "menuseparator");
     folderPopup.insertBefore(menuseparator, null);
-    
-    let msgFolder = {value: '', prettyName: 'N/A'};
-    try {
-      msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      win.setTimeout( function() { // use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
-        try {
-          folderPopup.selectFolder(msgFolder);
-          folderPopup._setCssSelectors(msgFolder, folderPicker);
-        } catch(err) {}
-      }, 1 );
-    } catch(err) {}
-    folderPicker.setAttribute("label", msgFolder.prettyName);
-    folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName));
+    self.updateFolderStyle(folderPicker, folderPopup, win);
   },
   
   creatNewRule: function(win) {
