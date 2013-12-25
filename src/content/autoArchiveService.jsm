@@ -24,15 +24,11 @@ let autoArchiveService = {
   STATUS_FINISH: 4,
   _status: [],
   start: function(time) {
-    autoArchiveLog.info('start: delay ' + time);
     let date = new Date(Date.now() + time*1000);
     this.updateStatus(this.STATUS_SLEEP, "Will wakeup @ " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
     if ( !this.timer ) this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this.timer.initWithCallback( function() {
-      if ( autoArchiveLog && self ) {
-        autoArchiveLog.info('autoArchiveService Timer reached');
-        self.waitTillIdle();
-      }
+      if ( autoArchiveLog && self ) self.waitTillIdle();
     }, time*1000, Ci.nsITimer.TYPE_ONE_SHOT );
   },
   idleService: Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService),
@@ -44,7 +40,6 @@ let autoArchiveService = {
     }
   },
   waitTillIdle: function() {
-    autoArchiveLog.info("autoArchiveService waitTillIdle");
     this.updateStatus(this.STATUS_WAITIDLE, "Wait for idle " + autoArchivePref.options.idle_delay + " seconds");
     this.idleObserver.delay = autoArchivePref.options.idle_delay;
     this.idleService.addIdleObserver(this.idleObserver, this.idleObserver.delay); // the notification may delay, as Gecko pool OS every 5 seconds
@@ -77,6 +72,10 @@ let autoArchiveService = {
   },
   rules: [],
   wait4Folders: {},
+  stop: function() {
+    this.clear();
+    this.start(autoArchivePref.options.start_next_delay);
+  },
   doArchive: function() {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.clear();
@@ -265,7 +264,7 @@ let autoArchiveService = {
       return this.start(autoArchivePref.options.start_next_delay);
     }
     let rule = this.rules.shift();
-    autoArchiveLog.logObject(rule, 'running rule', 1);
+    //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
       " with filter { " + "age: " + rule.age + " subject: " + rule.subject + " }");
     let srcFolder = null, destFolder = null;
@@ -355,6 +354,7 @@ let autoArchiveService = {
     if ( index ) this.statusListeners.splice(index, 1);
   },
   updateStatus: function(status, detail) {
+    if ( detail ) autoArchiveLog.info(detail);
     self._status = [status, detail];
     this.statusListeners.forEach( function(listener) {
       listener.apply(null, self._status);

@@ -18,8 +18,8 @@
 <!ENTITY awsome_auto_archive.perf.debug "Debug">
 <!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
 
-<!ENTITY awsome_auto_archive.perf.enable_tag "Delete tagged mails">
-<!ENTITY awsome_auto_archive.perf.enable_flag "Delete stared mails">
-<!ENTITY awsome_auto_archive.perf.startup_delay "startup delay">
-<!ENTITY awsome_auto_archive.perf.idle_delay "idle_delay">
-<!ENTITY awsome_auto_archive.perf.start_next_delay "start_next_delay">
+<!ENTITY awsome_auto_archive.perf.enable_tag "Include tagged mails">
+<!ENTITY awsome_auto_archive.perf.enable_flag "Include stared mails">
+<!ENTITY awsome_auto_archive.perf.startup_delay "First run after">
+<!ENTITY awsome_auto_archive.perf.idle_delay "Wait for computer becomes idle for">
+<!ENTITY awsome_auto_archive.perf.start_next_delay "Start next run after">

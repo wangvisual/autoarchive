@@ -29,8 +29,8 @@
   
   <tabbox>
     <tabs>
-      <tab image="chrome://messenger/skin/accountcentral/account-settings.png" label=" &awsome_auto_archive.perf.general;"/>
-      <tab image="chrome://awsomeAutoArchive/skin/LDAP.png" label=" &awsome_auto_archive.perf.advanced;"/>
+      <tab image="chrome://awsomeAutoArchive/content/icon.png" label=" &awsome_auto_archive.perf.general;"/>
+      <tab image="chrome://messenger/skin/accountcentral/account-settings.png" label=" &awsome_auto_archive.perf.advanced;"/>
     </tabs>
     <tabpanels>
       <tabpanel>
@@ -38,12 +38,12 @@
           <groupbox id='awsome_auto_archive-rules'>
             <caption label="&awsome_auto_archive.perf.rules;"/>
             <hbox>
-              <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule(window);"/>
-              <button label="&awsome_auto_archive.perf.remove;"/>
-              <button label="&awsome_auto_archive.perf.up;"/>
-              <button label="&awsome_auto_archive.perf.down;"/>
+              <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule();"/>
+              <button label="&awsome_auto_archive.perf.up;" oncommand="autoArchivePrefDialog.changeRule('up');"/>
+              <button label="&awsome_auto_archive.perf.down;" oncommand="autoArchivePrefDialog.changeRule('down');"/>
+              <button label="&awsome_auto_archive.perf.remove;" class='awsome_auto_archive-delete-rule' icon="remove" oncommand="autoArchivePrefDialog.changeRule('remove');"/>
               <label value="" flex="1"/>
-              <button id="awsome_auto_archive-action" label="&awsome_auto_archive.perf.action;"/>
+              <button id="awsome_auto_archive-action" label="&awsome_auto_archive.perf.action;" oncommand="autoArchivePrefDialog.starStopNow();"/>
             </hbox>
           </groupbox>
           <!--groupbox>
@@ -67,18 +67,26 @@
         <vbox flex="1">
           <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
           <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
-          <hbox>
-            <label value="&awsome_auto_archive.perf.startup_delay;"/>
-            <textbox preference="pref_startup_delay"/>
-          </hbox>
-          <hbox>
-            <label value="&awsome_auto_archive.perf.idle_delay;"/>
-            <textbox preference="pref_idle_delay"/>
-          </hbox>
-          <hbox>
-            <label value="&awsome_auto_archive.perf.start_next_delay;"/>
-            <textbox preference="pref_start_next_delay"/>
-          </hbox>
+          <grid>
+            <columns>
+              <column flex="1"/>
+              <column flex="1000"/>
+            </columns> 
+            <rows>
+              <row>
+                <label value="&awsome_auto_archive.perf.startup_delay;"/>
+                <hbox><textbox preference="pref_startup_delay"/></hbox>
+              </row>
+              <row>
+                <label value="&awsome_auto_archive.perf.idle_delay;"/>
+                <hbox><textbox preference="pref_idle_delay"/></hbox>
+              </row>
+              <row>
+                <label value="&awsome_auto_archive.perf.start_next_delay;"/>
+                <hbox><textbox preference="pref_start_next_delay"/></hbox>
+              </row>
+            </rows>
+          </grid>
         </vbox>
       </tabpanel>
     </tabpanels>

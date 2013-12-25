@@ -202,24 +202,33 @@ let autoArchivePrefDialog = {
       self.initFolderPick(menulistDest, menupopupDest);
       self.checkAction(menulistAction, to, menulistDest);
       self.checkEnable(enable, hbox);
-      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); } );
-      enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); } );
+      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); }, false );
+      enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); }, false );
+      hbox.addEventListener('focus', function(aEvent) { self.checkFocus(hbox); }, true );
+      return hbox;
     } catch(err) {
       autoArchiveLog.logException(err);
     }
-    return true;
+  },
+  
+  focusRow: null,
+  checkFocus: function(hbox) {
+    if ( this.focusRow && this.focusRow != hbox )  this.focusRow.removeAttribute('focused');
+    hbox.setAttribute('focused', true);
+    this.focusRow = hbox;
   },
   
   upDownRule: function(hbox, isUp) {
     try {
       let ref = isUp ? hbox.previousSibling : hbox;
       let remove = isUp ? hbox : hbox.nextSibling;
-      if ( ref.classList.contains(ruleClass) &&  remove.classList.contains(ruleClass) ) {
+      if ( ref && remove && ref.classList.contains(ruleClass) && remove.classList.contains(ruleClass) ) {
         let rule = this.getOneRule(remove);
         autoArchiveLog.logObject(rule, 'temp rule', 1);
         remove.parentNode.removeChild(remove);
         // remove.parentNode.insertBefore(remove, ref); // lost all unsaved values
-        this.creatOneRule(rule, ref);
+        let newBox = this.creatOneRule(rule, ref)
+        this.checkFocus( isUp ? newBox : hbox );
       }
     } catch(err) {
       autoArchiveLog.logException(err);
@@ -242,8 +251,15 @@ let autoArchivePrefDialog = {
     return to.style.visibility = menulistDest.style.visibility = ["archive", "delete"].indexOf(menulistAction.value) >= 0 ? 'hidden': 'visible';
   },
   
+  starStopNow: function() {
+    let button = self._doc.getElementById('awsome_auto_archive-action');
+    if ( !button ) return;
+    let action = button.getAttribute("action") || 'stop';
+    if ( action == 'run' ) autoArchiveService.doArchive();
+    else autoArchiveService.stop();
+  },
+  
   statusCallback: function(status, detail) {
-    autoArchiveLog.info("statusCallback " + status + ": " + detail);
     let button = self._doc.getElementById('awsome_auto_archive-action');
     if ( !button ) return;
     if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
@@ -257,6 +273,16 @@ let autoArchivePrefDialog = {
     }
     button.setAttribute("tooltiptext", detail);
   },
+  
+  creatNewRule: function() {
+    this.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
+  },
+  changeRule: function(how) {
+    if ( !this.focusRow ) return;
+    if ( how == 'up' ) this.upDownRule(this.focusRow, true);
+    else if ( how == 'down' ) this.upDownRule(this.focusRow, false);
+    else if ( how == 'remove' ) this.removeRule(this.focusRow);
+  },
 
   loadPerfWindow: function(win) {
     try {
@@ -268,7 +294,7 @@ let autoArchivePrefDialog = {
           self.creatOneRule(rule, null);
         } );
       } else {
-        self.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
+        this.creatNewRule();
       }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
