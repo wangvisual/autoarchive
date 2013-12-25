@@ -255,7 +255,10 @@ let autoArchivePrefDialog = {
     let button = self._doc.getElementById('awsome_auto_archive-action');
     if ( !button ) return;
     let action = button.getAttribute("action") || 'stop';
-    if ( action == 'run' ) autoArchiveService.doArchive();
+    if ( action == 'run' ) {
+      this.saveRules();
+      autoArchiveService.doArchive();
+    }
     else autoArchiveService.stop();
   },
   
@@ -264,7 +267,7 @@ let autoArchivePrefDialog = {
     if ( !button ) return;
     if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
       // change button to "Run"
-      button.setAttribute("label", "Run");
+      button.setAttribute("label", "Save & Run");
       button.setAttribute("action", "run");
     } else if ( status == autoArchiveService.STATUS_RUN ) {
       // change button to "Stop"
@@ -275,7 +278,9 @@ let autoArchivePrefDialog = {
   },
   
   creatNewRule: function() {
-    this.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
+    this.checkFocus(
+      this.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null)
+    );
   },
   changeRule: function(how) {
     if ( !this.focusRow ) return;
@@ -311,10 +316,10 @@ let autoArchivePrefDialog = {
     }
     return rule;
   },
-  acceptPerfWindow: function(win) {
+  
+  saveRules: function() {
     try {
-      let doc = win.document;
-      let group = doc.getElementById('awsome_auto_archive-rules');
+      let group = this._doc.getElementById('awsome_auto_archive-rules');
       if ( !group ) return;
       let rules = [];
       for ( let hbox of group.childNodes ) {
@@ -326,6 +331,9 @@ let autoArchivePrefDialog = {
       autoArchiveLog.logObject(rules,'new rules',1);
       autoArchivePref.setPerf('rules',JSON.stringify(rules));
     } catch (err) { autoArchiveLog.logException(err); }
+  },
+  acceptPerfWindow: function() {
+    this.saveRules();
     autoArchiveService.removeStatusListener(this.statusCallback);
     return true;
   },

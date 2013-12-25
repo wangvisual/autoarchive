@@ -7,7 +7,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/MailUtils.js");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
-Cu.import("resource://app/modules/activity/autosync.js");
+//Cu.import("resource://app/modules/activity/autosync.js");
 //Cu.import("resource://app/modules/gloda/utils.js");
 //Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
@@ -88,11 +88,12 @@ let autoArchiveService = {
   },
   folderListener: {
     OnItemEvent: function(folder, event) {
-      if ( event.toString() != "FolderLoaded" || !folder || !folder.folderURL ) return;
-      autoArchiveLog.info("FolderLoaded " + folder.folderURL);
-      if ( self.wait4Folders[folder.folderURL] ) delete self.wait4Folders[folder.folderURL];
+      if ( event.toString() != "FolderLoaded" || !folder || !folder.URI ) return;
+      autoArchiveLog.info("FolderLoaded " + folder.URI);
+      if ( self.wait4Folders[folder.URI] ) delete self.wait4Folders[folder.URI];
       if ( Object.keys(self.wait4Folders).length == 0 ) {
         MailServices.mailSession.RemoveFolderListener(self.folderListener);
+        autoArchiveLog.info("All FolderLoaded");
         self.doMoveOrArchiveOne();
       }
     },
@@ -131,13 +132,6 @@ let autoArchiveService = {
         let index = group.messages.indexOf(msgHdr);
         if ( index >= 0 ) group.messages.splice(index, 1);
       }
-      /*group.messages = group.messages.filter( function(msg) {
-        try {
-          let index = aMsgList.indexOf(0, msg);
-          if ( index >= 0 ) return true;
-        } catch(err) {};
-        return false;
-      } );*/
       if ( group.messages.length == 0 ) {
         autoArchiveLog.info("All msgsDeleted");
         MailServices.mfn.removeListener(this);
@@ -148,17 +142,32 @@ let autoArchiveService = {
     this.updateFolders = function() {
       let folders = [];
       Object.keys(self.wait4Folders).forEach( function(uri) {
-        let folder = MailUtils.getFolderForURI(uri, true);
+        let folder = MailUtils.getFolderForURI(uri);
         if ( folder ) folders.push(folder);
         else delete self.wait4Folders[uri];
       } );
       if ( folders.length ) {
         MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
+        let failCount = 0;
         folders.forEach( function(folder) {
-          autoArchiveLog.info("updateFolder " + folder.folderURL);
-          folder.updateFolder(null);
+          try {
+            autoArchiveLog.info("updateFolder " + folder.URI);
+            folder.updateFolder(null);
+          } catch(err) {
+            autoArchiveLog.logException(err);
+            failCount ++;
+            delete self.wait4Folders[folder.URI];
+          }
         } );
-      } else self.doMoveOrArchiveOne();
+        if ( folders.length == failCount ) { // updateFolder fail
+          autoArchiveLog.info("updateFolder fail all");
+          MailServices.mailSession.RemoveFolderListener(self.folderListener);
+          self.doMoveOrArchiveOne();
+        }
+      } else {
+        autoArchiveLog.info("no folder to update");
+        self.doMoveOrArchiveOne();
+      }
     };
   },
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
@@ -176,10 +185,10 @@ let autoArchiveService = {
           self.copyGroups = [];
           let groups = {}; // { src-_|_-dest : 0, src2-_|_-dest2: 1 }
           this.messages.forEach( function(msgHdr) {
-            let key = msgHdr.folder.folderURL + "-_|_-" + (rule.dest||'');
+            let key = msgHdr.folder.URI + "-_|_-" + (rule.dest||'');
             if ( typeof(groups.key) == 'undefined'  ) {
               groups.key = self.copyGroups.length;
-              self.copyGroups.push({src: msgHdr.folder.folderURL, dest: rule.dest, action: rule.action, messages: []});
+              self.copyGroups.push({src: msgHdr.folder.URI, dest: rule.dest, action: rule.action, messages: []});
             }
             self.copyGroups[groups.key].messages.push(msgHdr);
           } );
@@ -212,7 +221,7 @@ let autoArchiveService = {
     };
     this.onSearchHit = function(msgHdr, folder) {
       //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
-      if ( !msgHdr.folder || msgHdr.folder.folderURL == rule.dest ) return;
+      if ( !msgHdr.folder || msgHdr.folder.URI == rule.dest ) return;
       if ( ( !autoArchivePref.options.enable_flag && msgHdr.isFlagged ) || ( !autoArchivePref.options.enable_tag && msgHdr.getStringProperty('keywords').contains('$label') ) ) return;
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
       if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) {
@@ -232,7 +241,7 @@ let autoArchiveService = {
   },
   doCopyDeleteMoveOne: function(group) {
     let xpcomHdrArray = toXPCOMArray(group.messages, Ci.nsIMutableArray);
-    let srcFolder = MailUtils.getFolderForURI(group.src, true);
+    let srcFolder = MailUtils.getFolderForURI(group.src);
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     let msgWindow;
     if ( mail3PaneWindow ) msgWindow = mail3PaneWindow.msgWindow;
@@ -240,7 +249,14 @@ let autoArchiveService = {
       // deleteMessages impacted by srcFolder.server.getIntValue('delete_model')
       // 0:mark as deleted, 1:move to trash, 2:remove it immediately
       let deleteModel = srcFolder.server.getIntValue('delete_model');
+      autoArchiveLog.info('deleteModel ' + deleteModel);
       let isTrashFolder = srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash);
+      if ( !isTrashFolder ) {
+        let trashFolder = srcFolder.rootFolder.getFolderWithFlags(Ci.nsMsgFolderFlags.Trash);
+        if ( trashFolder && (trashFolder == srcFolder || trashFolder.folderURL == srcFolder.folderURL || trashFolder.folderURL == srcFolder.URI || trashFolder.URI == srcFolder.folderURL || trashFolder.URI == srcFolder.URI) ) {
+          isTrashFolder = true;
+        }
+      }
       autoArchiveLog.info('srcFolder:' + srcFolder.URI + " is trash? " + isTrashFolder);
       // http://code.google.com/p/reply-manager/source/browse/mailnews/base/test/unit/test_nsIMsgFolderListenerLocal.js
       // if (!isMove && (deleteStorage || isTrashFolder)) => msgsDeleted
@@ -248,13 +264,12 @@ let autoArchiveService = {
       let realDelete = deleteModel == 2 || isTrashFolder;
       if ( realDelete ) MailServices.mfn.addListener(new self.copyListener(group), MailServices.mfn.msgsDeleted );
       srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/realDelete, /*isMove*/false, realDelete ? null : new self.copyListener(group), /* allow undo */false);
-      //srcFolder.updateFolder(msgWindow);
       srcFolder.msgDatabase = null; /* don't leak */
       return;
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-    MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest, true), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
+    MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
   },
   doMoveOrArchiveOne: function() {
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
@@ -269,8 +284,8 @@ let autoArchiveService = {
       " with filter { " + "age: " + rule.age + " subject: " + rule.subject + " }");
     let srcFolder = null, destFolder = null;
     try {
-      srcFolder = MailUtils.getFolderForURI(rule.src, true);
-      if ( ["move", "copy"].indexOf(rule.action) >= 0 ) destFolder = MailUtils.getFolderForURI(rule.dest, true);
+      srcFolder = MailUtils.getFolderForURI(rule.src);
+      if ( ["move", "copy"].indexOf(rule.action) >= 0 ) destFolder = MailUtils.getFolderForURI(rule.dest);
     } catch (err) {
       autoArchiveLog.logException(err);
     }

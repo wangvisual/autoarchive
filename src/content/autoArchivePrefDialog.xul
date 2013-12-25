@@ -8,7 +8,7 @@
 <prefwindow id="awsome_auto_archive-prefs"
      title="&awsome_auto_archive.perf.title;"
      onload="autoArchivePrefDialog.loadPerfWindow(window)"
-     ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow(window)"
+     ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow()"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <script>
   <![CDATA[
@@ -41,7 +41,7 @@
               <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule();"/>
               <button label="&awsome_auto_archive.perf.up;" oncommand="autoArchivePrefDialog.changeRule('up');"/>
               <button label="&awsome_auto_archive.perf.down;" oncommand="autoArchivePrefDialog.changeRule('down');"/>
-              <button label="&awsome_auto_archive.perf.remove;" class='awsome_auto_archive-delete-rule' icon="remove" oncommand="autoArchivePrefDialog.changeRule('remove');"/>
+              <button label="&awsome_auto_archive.perf.remove;" class='awsome_auto_archive-delete-rule' oncommand="autoArchivePrefDialog.changeRule('remove');"/>
               <label value="" flex="1"/>
               <button id="awsome_auto_archive-action" label="&awsome_auto_archive.perf.action;" oncommand="autoArchivePrefDialog.starStopNow();"/>
             </hbox>
