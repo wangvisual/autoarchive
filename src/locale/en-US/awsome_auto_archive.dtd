@@ -12,7 +12,7 @@
 <!ENTITY awsome_auto_archive.perf.remove "Remove">
 <!ENTITY awsome_auto_archive.perf.up "Up">
 <!ENTITY awsome_auto_archive.perf.down "Down">
-
+<!ENTITY awsome_auto_archive.perf.action "">
 
 <!ENTITY awsome_auto_archive.perf.donate "Donate">
 <!ENTITY awsome_auto_archive.perf.debug "Debug">

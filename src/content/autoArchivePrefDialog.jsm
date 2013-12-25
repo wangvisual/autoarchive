@@ -10,6 +10,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/folderUtils.jsm");
 Cu.import("resource:///modules/MailUtils.js");
 Cu.import("resource://gre/modules/AddonManager.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
@@ -30,6 +31,8 @@ let autoArchivePrefDialog = {
       self.Name = addon.name;
     });
   },
+  _doc: null,
+  _win: null,
   loadInTopWindow: function(win, url) {
     win.openDialog("chrome://messenger/content/", "_blank", "chrome,dialog=no,all", null,
       { tabType: "contentTab", tabParams: {contentPage: Services.io.newURI(url, null, null) } });
@@ -61,20 +64,13 @@ let autoArchivePrefDialog = {
       tabmail.openTab(args.type, args);
     }
   },
-  onSyncFromPreference: function(doc,self) {
-    let textbox = self;
-    let preference = doc.getElementById('facebook_token_expire');
-    let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
-    let date = new Date((+actualValue)*1000);
-    return date.toLocaleFormat("%Y/%m/%d %H:%M:%S");
-  },
   cleanup: function() {
   },
   
   showPrettyTooltip: function(URI,pretty) {
     return decodeURIComponent(URI).replace(/(.*\/)[^/]*/, '$1') + pretty;
   },
-  updateFolderStyle: function(folderPicker, folderPopup, win) {
+  updateFolderStyle: function(folderPicker, folderPopup, init) {
     let msgFolder = {value: '', prettyName: 'N/A'};
     let updateStyle = function() {
       folderPopup.selectFolder(msgFolder); // false alarm by addon validator
@@ -82,7 +78,7 @@ let autoArchivePrefDialog = {
     };
     try {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      if ( win ) win.setTimeout( updateStyle, 1 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
+      if ( init ) this._win.setTimeout( updateStyle, 1 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
       else updateStyle();
     } catch(err) {}
     folderPicker.setAttribute("label", msgFolder.prettyName);
@@ -93,9 +89,9 @@ let autoArchivePrefDialog = {
     if ( !folder ) return;
     let value = folder.URI || folder.folderURL;
     folderPicker.value = value; // must set value before set label, or next line may fail when previous value is empty
-    self.updateFolderStyle(folderPicker, folderPopup, null);
+    self.updateFolderStyle(folderPicker, folderPopup, false);
   },
-  initFolderPick: function(doc, win, folderPicker, folderPopup) {
+  initFolderPick: function(folderPicker, folderPopup) {
     folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
     folderPicker.classList.add("folderMenuItem");
 
@@ -106,23 +102,20 @@ let autoArchivePrefDialog = {
     folderPopup.classList.add("menulist-menupopup");
     folderPopup.classList.add("searchPopup");
 
-    let menuitem = doc.createElementNS(XUL, "menuitem");
+    let menuitem = this._doc.createElementNS(XUL, "menuitem");
     menuitem.setAttribute("label", "N/A");
     menuitem.setAttribute("value", "");
     menuitem.setAttribute("class", "folderMenuItem");
     menuitem.setAttribute("SpecialFolder", "Virtual");
     folderPopup.insertBefore(menuitem, null);
-    let menuseparator = doc.createElementNS(XUL, "menuseparator");
+    let menuseparator = this._doc.createElementNS(XUL, "menuseparator");
     folderPopup.insertBefore(menuseparator, null);
-    self.updateFolderStyle(folderPicker, folderPopup, win);
+    self.updateFolderStyle(folderPicker, folderPopup, true);
   },
   
-  creatNewRule: function(win) {
-    return self.creatOneRule(win.document, win, {action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
-  },
-
-  creatOneRule: function(doc, win, rule, ref) {
+  creatOneRule: function(rule, ref) {
     try {
+      let doc = this._doc;
       let group = doc.getElementById('awsome_auto_archive-rules');
       if ( !group ) return;
       let enable = doc.createElementNS(XUL, "checkbox");
@@ -187,11 +180,11 @@ let autoArchivePrefDialog = {
       
       let up = doc.createElementNS(XUL, "toolbarbutton");
       up.setAttribute("label", '\u2191');
-      up.addEventListener("command", function(aEvent) { self.upDownRule(hbox, true, doc, win); }, false );
+      up.addEventListener("command", function(aEvent) { self.upDownRule(hbox, true); }, false );
       
       let down = doc.createElementNS(XUL, "toolbarbutton");
       down.setAttribute("label", '\u2193');
-      down.addEventListener("command", function(aEvent) { self.upDownRule(hbox, false, doc, win); }, false );
+      down.addEventListener("command", function(aEvent) { self.upDownRule(hbox, false); }, false );
       
       let remove = doc.createElementNS(XUL, "toolbarbutton");
       remove.setAttribute("label", "x");
@@ -205,8 +198,8 @@ let autoArchivePrefDialog = {
         hbox.insertBefore(item, null);
       } );
       group.insertBefore(hbox, ref);
-      self.initFolderPick(doc, win, menulistSrc, menupopupSrc);
-      self.initFolderPick(doc, win, menulistDest, menupopupDest);
+      self.initFolderPick(menulistSrc, menupopupSrc);
+      self.initFolderPick(menulistDest, menupopupDest);
       self.checkAction(menulistAction, to, menulistDest);
       self.checkEnable(enable, hbox);
       menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); } );
@@ -217,7 +210,7 @@ let autoArchivePrefDialog = {
     return true;
   },
   
-  upDownRule: function(hbox, isUp, doc, win) {
+  upDownRule: function(hbox, isUp) {
     try {
       let ref = isUp ? hbox.previousSibling : hbox;
       let remove = isUp ? hbox : hbox.nextSibling;
@@ -226,7 +219,7 @@ let autoArchivePrefDialog = {
         autoArchiveLog.logObject(rule, 'temp rule', 1);
         remove.parentNode.removeChild(remove);
         // remove.parentNode.insertBefore(remove, ref); // lost all unsaved values
-        this.creatOneRule(doc, win, rule, ref);
+        this.creatOneRule(rule, ref);
       }
     } catch(err) {
       autoArchiveLog.logException(err);
@@ -248,16 +241,34 @@ let autoArchivePrefDialog = {
   checkAction: function(menulistAction, to, menulistDest) {
     return to.style.visibility = menulistDest.style.visibility = ["archive", "delete"].indexOf(menulistAction.value) >= 0 ? 'hidden': 'visible';
   },
+  
+  statusCallback: function(status, detail) {
+    autoArchiveLog.info("statusCallback " + status + ": " + detail);
+    let button = self._doc.getElementById('awsome_auto_archive-action');
+    if ( !button ) return;
+    if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
+      // change button to "Run"
+      button.setAttribute("label", "Run");
+      button.setAttribute("action", "run");
+    } else if ( status == autoArchiveService.STATUS_RUN ) {
+      // change button to "Stop"
+      button.setAttribute("label", "Stop");
+      button.setAttribute("action", "stop");
+    }
+    button.setAttribute("tooltiptext", detail);
+  },
 
   loadPerfWindow: function(win) {
     try {
-      let doc = win.document;
+      this._win = win;
+      this._doc = win.document;
+      autoArchiveService.addStatusListener(this.statusCallback);
       if ( autoArchivePref.rules.length ) {
         autoArchivePref.rules.forEach( function(rule) {
-          self.creatOneRule(doc, win, rule, null);
+          self.creatOneRule(rule, null);
         } );
       } else {
-        self.creatNewRule(win);
+        self.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null);
       }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
@@ -289,6 +300,7 @@ let autoArchivePrefDialog = {
       autoArchiveLog.logObject(rules,'new rules',1);
       autoArchivePref.setPerf('rules',JSON.stringify(rules));
     } catch (err) { autoArchiveLog.logException(err); }
+    autoArchiveService.removeStatusListener(this.statusCallback);
     return true;
   },
 

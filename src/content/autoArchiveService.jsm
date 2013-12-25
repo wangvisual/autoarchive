@@ -16,14 +16,22 @@ Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 
 let autoArchiveService = {
   timer: null,
+  statusListeners: [],
+  STATUS_INIT: 0, // not used actually
+  STATUS_SLEEP: 1,
+  STATUS_WAITIDLE: 2,
+  STATUS_RUN: 3,
+  STATUS_FINISH: 4,
+  _status: [],
   start: function(time) {
     autoArchiveLog.info('start: delay ' + time);
+    let date = new Date(Date.now() + time*1000);
+    this.updateStatus(this.STATUS_SLEEP, "Will wakeup @ " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
     if ( !this.timer ) this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this.timer.initWithCallback( function() {
       if ( autoArchiveLog && self ) {
         autoArchiveLog.info('autoArchiveService Timer reached');
-        if ( 1 ) self.waitTillIdle();
-        else self.doArchive();
+        self.waitTillIdle();
       }
     }, time*1000, Ci.nsITimer.TYPE_ONE_SHOT );
   },
@@ -32,15 +40,13 @@ let autoArchiveService = {
     delay: null,
     observe: function(_idleService, topic, data) {
       // topic: idle, active
-      if ( topic == 'idle' ) {
-        self.cleanupIdleObserver();
-        self.doArchive();
-      }
+      if ( topic == 'idle' ) self.doArchive();
     }
   },
   waitTillIdle: function() {
     autoArchiveLog.info("autoArchiveService waitTillIdle");
-    this.idleObserver.delay = 2/*60*/;
+    this.updateStatus(this.STATUS_WAITIDLE, "Wait for idle " + autoArchivePref.options.idle_delay + " seconds");
+    this.idleObserver.delay = autoArchivePref.options.idle_delay;
     this.idleService.addIdleObserver(this.idleObserver, this.idleObserver.delay); // the notification may delay, as Gecko pool OS every 5 seconds
   },
   cleanupIdleObserver: function() {
@@ -51,28 +57,33 @@ let autoArchiveService = {
   },
   cleanup: function() {
     autoArchiveLog.info("autoArchiveService cleanup");
-    this.rules = [];
-    this.copyGroups = [];
+    this.clear();
+    this.statusListeners = [];
+    this.timer = null;
+    autoArchiveLog.info("autoArchiveService cleanup done");
+  },
+  clear: function() {
+    this.cleanupIdleObserver();
+    if ( this.timer ) this.timer.cancel();
     if ( Object.keys(self.wait4Folders).length ) MailServices.mailSession.RemoveFolderListener(self.folderListener);
-    this.wait4Folders = {};
     this.hookedFunctions.forEach( function(hooked) {
       hooked.unweave();
     } );
     this.hookedFunctions = [];
-    if ( this.timer ) {
-      this.timer.cancel();
-      this.timer = null;
-    }
-    this.cleanupIdleObserver();
-    autoArchiveLog.info("autoArchiveService cleanup done");
+    this.rules = [];
+    this.copyGroups = [];
+    this.status = [];
+    this.wait4Folders = {};
   },
   rules: [],
   wait4Folders: {},
   doArchive: function() {
     autoArchiveLog.info("autoArchiveService doArchive");
+    this.clear();
     this.rules = autoArchivePref.rules.filter( function(rule) {
       return rule.enable;
     } );
+    this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)");
     autoArchiveLog.logObject(this.rules, 'this.rules',1);
     this.doMoveOrArchiveOne();
   },
@@ -250,10 +261,13 @@ let autoArchiveService = {
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
     if ( this.rules.length == 0 ) {
       autoArchiveLog.info("auto archive done for all rules, set next");
-      return this.start(300);
+      this.updateStatus(this.STATUS_FINISH, '');
+      return this.start(autoArchivePref.options.start_next_delay);
     }
     let rule = this.rules.shift();
     autoArchiveLog.logObject(rule, 'running rule', 1);
+    this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
+      " with filter { " + "age: " + rule.age + " subject: " + rule.subject + " }");
     let srcFolder = null, destFolder = null;
     try {
       srcFolder = MailUtils.getFolderForURI(rule.src, true);
@@ -331,7 +345,22 @@ let autoArchiveService = {
     term.booleanAnd = true;
     searchSession.appendTerm(term);
   },
-  
+
+  addStatusListener: function(listener) {
+    this.statusListeners.push(listener);
+    listener.apply(null, self._status);
+  },
+  removeStatusListener: function(listener) {
+    let index = this.statusListeners.indexOf(listener);
+    if ( index ) this.statusListeners.splice(index, 1);
+  },
+  updateStatus: function(status, detail) {
+    self._status = [status, detail];
+    this.statusListeners.forEach( function(listener) {
+      listener.apply(null, self._status);
+    } );
+  },
+
 };
 let self = autoArchiveService;
-self.start(2);
+self.start(autoArchivePref.options.startup_delay);
