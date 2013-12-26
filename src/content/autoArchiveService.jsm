@@ -219,18 +219,27 @@ let autoArchiveService = {
         return self.doMoveOrArchiveOne();
       }
     };
+    let allTags = {};
+    for ( let tag of MailServices.tags.getAllTags({}) ) {
+      allTags[tag] = true;
+    };
+    this.hasTag = function(msgHdr) {
+      return msgHdr.getStringProperty('keywords').split(' ').some( function(key) { // may contains X-Keywords like NonJunk etc
+        return ( key in allTags );
+      } );
+    };
     this.onSearchHit = function(msgHdr, folder) {
       //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
       if ( !msgHdr.folder || msgHdr.folder.URI == rule.dest ) return;
-      if ( ( !autoArchivePref.options.enable_flag && msgHdr.isFlagged ) || ( !autoArchivePref.options.enable_tag && msgHdr.getStringProperty('keywords').contains('$label') ) ) return;
+      let age = ( Date().now /1000 - msgHdr.dateInSeconds ) / 3600 / 24;
+      if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
+        ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
+          ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ||
+          ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ) ) return;
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
-      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) {
-        autoArchiveLog.info('return:' + msgHdr.subject + "   :" + msgHdr.folder.customIdentity);
-        autoArchiveLog.logObject(msgHdr.folder,'msgHdr.folder',0);
-        return;
-      }
+      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
       if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
-      if ( rule.action == 'delete' && ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) ) return;
+      if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
       //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
       this.messages.push(msgHdr);
     };
@@ -297,14 +306,26 @@ let autoArchiveService = {
     searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
     if ( rule.sub ) {
       for (let folder in fixIterator(srcFolder.descendants /* >=TB21 */, Ci.nsIMsgFolder)) {
+        // We don't add special sub directories, same as AutoarchiveReloaded
+        if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
+        if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 && 
+          [Ci.nsMsgFolderFlags.Trash, Ci.nsMsgFolderFlags.Junk, Ci.nsMsgFolderFlags.Queue, Ci.nsMsgFolderFlags.Drafts, Ci.nsMsgFolderFlags.Templates].some( function(flag) {
+            return folder.getFlag(flag);
+          } ) ) continue;
+        if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) continue;
         searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
       }
     }
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age || 0, Ci.nsMsgSearchOp.IsGreaterThan);
-    if ( typeof(rule.subject) != 'undefined' ) {
+
+    if ( typeof(rule.subject) != 'undefined' && rule.subject != '' ) {
       // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
-      let customId;
-      if ( rule.subject.match(/^\/.*\/[ismxpgc]*$/) ) {
+      let customId, positive = true, subject = rule.subject;
+      if ( subject[0] == '!' ) {
+        positive = false;
+        subject = subject.substr(1);
+      }
+      if ( subject.match(/^\/.*\/[ismxpgc]*$/) ) {
         // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
         ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'].some( function(term) { // .find need TB >=25
           if ( MailServices.filters.getCustomTerm(term) ) {
@@ -314,9 +335,11 @@ let autoArchiveService = {
         } );
         if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule.subject + "' unless you installed addons like 'Expression Search / GMailUI' or 'FiltaQuilla'", 1);
       }
-      if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, rule.subject, Ci.nsMsgSearchOp.Matches);
-      else self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.Subject, rule.subject, Ci.nsMsgSearchOp.Contains);
+      if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, subject, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
+      else self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.Subject, subject, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
     }
+    
+    self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
     searchSession.registerListener(new self.searchListener(rule));
     searchSession.search(null);
   },

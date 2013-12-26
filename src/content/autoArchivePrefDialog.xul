@@ -21,6 +21,10 @@
     <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
     <preference id="pref_enable_tag" name="extensions.awsome_auto_archive.enable_tag" type="bool"/>
     <preference id="pref_enable_flag" name="extensions.awsome_auto_archive.enable_flag" type="bool"/>
+    <preference id="pref_enable_unread" name="extensions.awsome_auto_archive.enable_unread" type="bool"/>
+    <preference id="pref_age_tag" name="extensions.awsome_auto_archive.age_tag" type="int"/>
+    <preference id="pref_age_flag" name="extensions.awsome_auto_archive.age_flag" type="int"/>
+    <preference id="pref_age_unread" name="extensions.awsome_auto_archive.age_unread" type="int"/>
     <preference id="pref_startup_delay" name="extensions.awsome_auto_archive.startup_delay" type="int"/>
     <preference id="pref_idle_delay" name="extensions.awsome_auto_archive.idle_delay" type="int"/>
     <preference id="pref_start_next_delay" name="extensions.awsome_auto_archive.start_next_delay" type="int"/>
@@ -29,7 +33,7 @@
   
   <tabbox>
     <tabs>
-      <tab image="chrome://awsomeAutoArchive/content/icon.png" label=" &awsome_auto_archive.perf.general;"/>
+      <tab image="chrome://awsomeAutoArchive/content/icon_run.png" label=" &awsome_auto_archive.perf.general;"/>
       <tab image="chrome://messenger/skin/accountcentral/account-settings.png" label=" &awsome_auto_archive.perf.advanced;"/>
     </tabs>
     <tabpanels>
@@ -65,28 +69,52 @@
       </tabpanel>
       <tabpanel>
         <vbox flex="1">
-          <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
-          <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
-          <grid>
-            <columns>
-              <column flex="1"/>
-              <column flex="1000"/>
-            </columns> 
-            <rows>
-              <row>
-                <label value="&awsome_auto_archive.perf.startup_delay;"/>
-                <hbox><textbox preference="pref_startup_delay"/></hbox>
-              </row>
-              <row>
-                <label value="&awsome_auto_archive.perf.idle_delay;"/>
-                <hbox><textbox preference="pref_idle_delay"/></hbox>
-              </row>
-              <row>
-                <label value="&awsome_auto_archive.perf.start_next_delay;"/>
-                <hbox><textbox preference="pref_start_next_delay"/></hbox>
-              </row>
-            </rows>
-          </grid>
+          <groupbox>
+            <caption label="&awsome_auto_archive.perf.enable_special;"/>
+            <grid class='awsome_auto_archive-center-rows'>
+              <columns>
+                <column flex="1"/>
+                <column flex="1000"/>
+              </columns> 
+              <rows>
+                <row>
+                  <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
+                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='3' preference="pref_age_tag"/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                </row>
+                <row>
+                  <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
+                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='3' preference="pref_age_flag"/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                </row>
+                <row>
+                  <checkbox preference="pref_enable_unread" label="&awsome_auto_archive.perf.enable_unread;"/>
+                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='3' preference="pref_age_unread"/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                </row>
+              </rows>
+            </grid>
+          </groupbox>
+          <groupbox>
+            <caption label="&awsome_auto_archive.perf.active_time;"/>
+            <grid class='awsome_auto_archive-center-rows'>
+              <columns>
+                <column flex="1"/>
+                <column flex="1000"/>
+              </columns> 
+              <rows>
+                <row>
+                  <label value="&awsome_auto_archive.perf.startup_delay;"/>
+                  <hbox><textbox preference="pref_startup_delay"/></hbox>
+                </row>
+                <row>
+                  <label value="&awsome_auto_archive.perf.idle_delay;"/>
+                  <hbox><textbox preference="pref_idle_delay"/></hbox>
+                </row>
+                <row>
+                  <label value="&awsome_auto_archive.perf.start_next_delay;"/>
+                  <hbox><textbox preference="pref_start_next_delay"/></hbox>
+                </row>
+              </rows>
+            </grid>
+          </groupbox>
         </vbox>
       </tabpanel>
     </tabpanels>

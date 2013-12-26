@@ -7,11 +7,8 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource://app/modules/gloda/utils.js");
 Cu.import("resource://gre/modules/FileUtils.jsm");
-//Cu.import("resource://gre/modules/Dict.jsm");
-//Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
-//Cu.import("chrome://awsomeAutoArchive/content/sprintf.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
@@ -46,7 +43,6 @@ let autoArchive = {
           statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
           statusbarIcon.setAttribute('src', statusbarIconSrc);
           statusbarIcon.setAttribute('tooltiptext', autoArchivePrefDialog.Name + " " + autoArchivePrefDialog.Version);
-          //statusbarIcon.setAttribute('tooltip', statusbarTooltipID);
           statusbarIcon.setAttribute('popup', contextMenuID);
           statusbarIcon.setAttribute('context', contextMenuID);
           status_bar.insertBefore(statusbarIcon, null);
@@ -140,12 +136,7 @@ let autoArchive = {
       menupopup.insertBefore(item, null);
     } );
     popupset.insertBefore(menupopup, null);
-    //let tooltip = doc.createElementNS(XULNS, "tooltip");
-    //tooltip.id = statusbarTooltipID;
-    //popupset.insertBefore(tooltip, null);
     doc.documentElement.insertBefore(popupset, null);
-    //panel.addEventListener("popupshowing", awsomeAutoArchive.PopupShowing, true);
-    //tooltip.addEventListener("popupshowing", awsomeAutoArchive.PopupShowing, true);
     aWindow._autoarchive.createdElements.push(popupsetID);
   },
 };

@@ -31,7 +31,7 @@
     color: grey !important;
   }
 
-  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row{
+  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row, #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  hbox{
     box-align: center;
     -moz-box-align: center;
   }
