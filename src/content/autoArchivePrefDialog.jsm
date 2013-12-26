@@ -18,7 +18,7 @@ const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const ruleClass = 'awsome_auto_archive-rule';
 
 let autoArchivePrefDialog = {
-  Name: "Awesome Auto Archive xxx", // might get changed by getAddonByID function call
+  Name: "Awesome Auto Archive", // might get changed by getAddonByID function call
   Version: 'unknown',
   isSeaMonkey: Services.appinfo.ID == SEAMONKEY_ID,
   Applicaton: ( Services.appinfo.ID == SEAMONKEY_ID ) ? 'Seamonky' : 'Thunderbird',

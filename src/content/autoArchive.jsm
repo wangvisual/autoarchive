@@ -14,14 +14,18 @@ Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 //Cu.import("chrome://awsomeAutoArchive/content/sprintf.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
+const popupsetID = "autoArchive-statusbar-popup";
+const contextMenuID = "autoArchive-statusbar-contextmenu";
+const statusbarIconSrc = 'chrome://awsomeAutoArchive/content/icon.png';
+const statusbarIconSrcWait = 'chrome://awsomeAutoArchive/content/icon_wait.png';
+const statusbarIconSrcRun = 'chrome://awsomeAutoArchive/content/icon_run.png';
 
 let autoArchive = {
   //strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
-  createPopup: function(aWindow) {
-  },
   Load: function(aWindow) {
     return autoArchive.realLoad(aWindow);
   },
@@ -40,20 +44,28 @@ let autoArchive = {
           let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
           statusbarIcon.id = statusbarIconID;
           statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
-          statusbarIcon.setAttribute('src', 'chrome://awsomeAutoArchive/content/icon.png');
-          statusbarIcon.setAttribute('tooltiptext', 'statusbarTooltipID');
+          statusbarIcon.setAttribute('src', statusbarIconSrc);
+          statusbarIcon.setAttribute('tooltiptext', autoArchivePrefDialog.Name + " " + autoArchivePrefDialog.Version);
           //statusbarIcon.setAttribute('tooltip', statusbarTooltipID);
-          //statusbarIcon.setAttribute('popup', contextMenuID);
-          //statusbarIcon.setAttribute('context', contextMenuID);
+          statusbarIcon.setAttribute('popup', contextMenuID);
+          statusbarIcon.setAttribute('context', contextMenuID);
           status_bar.insertBefore(statusbarIcon, null);
           aWindow._autoarchive.createdElements.push(statusbarIconID);
-          autoArchiveLog.info("statusbarIcon");
+          aWindow._autoarchive.statusCallback = function(status, detail) {
+            if ( status == autoArchiveService.STATUS_SLEEP ) {
+              statusbarIcon.setAttribute('src', statusbarIconSrc);
+            } else if ( status == autoArchiveService.STATUS_WAITIDLE ) {
+              statusbarIcon.setAttribute('src', statusbarIconSrcWait);
+            } else if ( status == autoArchiveService.STATUS_RUN ) {
+              statusbarIcon.setAttribute('src', statusbarIconSrcRun);
+            }
+            statusbarIcon.setAttribute('tooltiptext', autoArchivePrefDialog.Name + " " + autoArchivePrefDialog.Version + "\n" + detail);
+          };
+          autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
         }
+        
       }
-      if ( aWindow._autoarchive.hookedFunctions.length ) {
-        autoArchiveLog.info('create popup');
-        //this.createPopup(aWindow);
-      }
+      this.createPopup(aWindow);
       aWindow.addEventListener("unload", autoArchive.onUnLoad, false);
     }catch(err) {
       autoArchiveLog.logException(err);
@@ -75,6 +87,7 @@ let autoArchive = {
         aWindow._autoarchive.hookedFunctions.forEach( function(hooked) {
           hooked.unweave();
         } );
+        if ( aWindow._autoarchive.statusCallback ) autoArchiveService.removeStatusListener(aWindow._autoarchive.statusCallback);
         let doc = aWindow.document;
         for ( let node of aWindow._autoarchive.createdElements ) {
           if ( typeof(node) == 'string' ) node = doc.getElementById(node);
@@ -105,5 +118,34 @@ let autoArchive = {
     Cu.unload("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
     autoArchiveLog.info('autoArchive cleanup done');
     //autoArchiveaop = null;
+  },
+  
+  createPopup: function(aWindow) {
+    let doc = aWindow.document;
+    let popupset = doc.createElementNS(XULNS, "popupset");
+    popupset.id = popupsetID;
+    let menupopup = doc.createElementNS(XULNS, "menupopup");
+    menupopup.id = contextMenuID;
+    [ ["Option", "chrome://messenger/skin/accountcentral/account-settings.png", function() { aWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul", "Opt", "chrome,dialog,modal"); }],
+      ["Addon Homepage", "chrome://mozapps/skin/extensions/category-extensions.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/"); }],
+      ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
+      ["Report Bug", "chrome://global/skin/icons/warning-64.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
+      //["Donate", "chrome://awsomeAutoArchive/skin/donate.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/developers"); }],
+    ].forEach( function(menu) {
+      let item = doc.createElementNS(XULNS, "menuitem");
+      item.setAttribute('label', menu[0]);
+      item.setAttribute('image', menu[1]);
+      item.addEventListener('command', menu[2], false);
+      item.setAttribute('class', "menuitem-iconic");
+      menupopup.insertBefore(item, null);
+    } );
+    popupset.insertBefore(menupopup, null);
+    //let tooltip = doc.createElementNS(XULNS, "tooltip");
+    //tooltip.id = statusbarTooltipID;
+    //popupset.insertBefore(tooltip, null);
+    doc.documentElement.insertBefore(popupset, null);
+    //panel.addEventListener("popupshowing", awsomeAutoArchive.PopupShowing, true);
+    //tooltip.addEventListener("popupshowing", awsomeAutoArchive.PopupShowing, true);
+    aWindow._autoarchive.createdElements.push(popupsetID);
   },
 };
