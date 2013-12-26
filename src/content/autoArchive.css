@@ -19,8 +19,10 @@
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule textbox[focused=true] {
-    flex: 1 1;
-    -moz-box-flex: 1;
+  }
+
+  #awsome_auto_archive-rules >.awsome_auto_archive-rule menulist.folderMenuItem {
+    width: 120px;
   }
   
   #awsome_auto_archive-perfpane textbox[readonly="true"] {

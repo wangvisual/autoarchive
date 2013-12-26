@@ -116,14 +116,13 @@
             </grid>
           </groupbox>
           <groupbox>
-            <caption label="&awsome_auto_archive.perf.active_time;"/>
+            <caption label="&awsome_auto_archive.perf.system_config;"/>
             <vbox>
               <hbox>
-                <button label="&awsome_auto_archive.perf.new;" oncommand="window.openDialog('chrome://messenger/content/AccountManager.xul');"/>
+                <button label="&awsome_auto_archive.perf.accountSettings;" oncommand="window.openDialog('chrome://messenger/content/AccountManager.xul');"/>
               </hbox>
-              <label value="test:"/>
-              <hbox id='awsome_auto_archive-IDs'>
-              </hbox>
+              <label value="&awsome_auto_archive.perf.identities;"/>
+              <hbox id='awsome_auto_archive-IDs'><!-- items will be added dynamically --></hbox>
             </vbox>
           </groupbox>
         </vbox>

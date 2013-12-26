@@ -28,3 +28,9 @@
 <!ENTITY awsome_auto_archive.perf.startup_delay "First run after">
 <!ENTITY awsome_auto_archive.perf.idle_delay "Wait for computer becomes idle for">
 <!ENTITY awsome_auto_archive.perf.start_next_delay "Start next run after">
+<!ENTITY awsome_auto_archive.perf.system_config "System Configration">
+<!ENTITY awsome_auto_archive.perf.accountSettings "Account Settings">
+<!ENTITY awsome_auto_archive.perf.identities "Identities">
+
+
+

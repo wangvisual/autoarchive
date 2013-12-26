@@ -32,6 +32,7 @@ let autoArchivePrefDialog = {
       self.Name = addon.name;
     });
   },
+  strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
   _doc: null,
   _win: null,
   loadInTopWindow: function(win, url) {
@@ -95,6 +96,7 @@ let autoArchivePrefDialog = {
   initFolderPick: function(folderPicker, folderPopup) {
     folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
     folderPicker.classList.add("folderMenuItem");
+    folderPicker.setAttribute("sizetopopup", "none");
 
     folderPopup.setAttribute("type", "folder");
     folderPopup.setAttribute("mode", "newFolder");
@@ -127,7 +129,7 @@ let autoArchivePrefDialog = {
       let menupopupAction = doc.createElementNS(XUL, "menupopup");
       ["archive", "copy", "delete", "move"].forEach( function(action) {
         let menuitem = doc.createElementNS(XUL, "menuitem");
-        menuitem.setAttribute("label", action);
+        menuitem.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action."+action));
         menuitem.setAttribute("value", action);
         menupopupAction.insertBefore(menuitem, null);
       } );
@@ -143,7 +145,7 @@ let autoArchivePrefDialog = {
       
       let menulistSub = doc.createElementNS(XUL, "menulist");
       let menupopupSub = doc.createElementNS(XUL, "menupopup");
-      let types = [ {key: "only", value: 0}, { key: "sub", value: 1}, {key: "sub_keep", value: 2} ];
+      let types = [ {key: self.strBundle.GetStringFromName("perfdialog.type.only"), value: 0}, { key: self.strBundle.GetStringFromName("perfdialog.type.sub"), value: 1}, {key: self.strBundle.GetStringFromName("perfdialog.type.sub_keep"), value: 2} ];
       types.forEach( function(type) {
         let menuitem = doc.createElementNS(XUL, "menuitem");
         menuitem.setAttribute("label", type.key);
@@ -155,7 +157,7 @@ let autoArchivePrefDialog = {
       menulistSub.setAttribute("rule", 'sub');
       
       let to = doc.createElementNS(XUL, "label");
-      to.setAttribute("value", "To");
+      to.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.to"));
       let menulistDest = doc.createElementNS(XUL, "menulist");
       let menupopupDest = doc.createElementNS(XUL, "menupopup");
       menulistDest.insertBefore(menupopupDest, null);
@@ -163,13 +165,13 @@ let autoArchivePrefDialog = {
       menulistDest.setAttribute("rule", 'dest');
       
       let matches = doc.createElementNS(XUL, "label");
-      matches.setAttribute("value", "matches");
+      matches.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.matches"));
       let subject = doc.createElementNS(XUL, "textbox");
       subject.setAttribute("value", rule.subject || '');
       subject.setAttribute("rule", 'subject');
       
       let after = doc.createElementNS(XUL, "label");
-      after.setAttribute("value", "After");
+      after.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.after"));
       let age = doc.createElementNS(XUL, "textbox");
       age.setAttribute("type", "number");
       age.setAttribute("min", "0");
@@ -177,7 +179,7 @@ let autoArchivePrefDialog = {
       age.setAttribute("rule", 'age');
       age.setAttribute("size", "4");
       let days = doc.createElementNS(XUL, "label");
-      days.setAttribute("value", "days");
+      days.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.days"));
       
       let up = doc.createElementNS(XUL, "toolbarbutton");
       up.setAttribute("label", '\u2191');
@@ -200,9 +202,9 @@ let autoArchivePrefDialog = {
       group.insertBefore(hbox, ref);
       self.initFolderPick(menulistSrc, menupopupSrc);
       self.initFolderPick(menulistDest, menupopupDest);
-      self.checkAction(menulistAction, to, menulistDest);
+      self.checkAction(menulistAction, to, menulistDest, menulistSub);
       self.checkEnable(enable, hbox);
-      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest); }, false );
+      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest, menulistSub); }, false );
       enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); }, false );
       hbox.addEventListener('focus', function(aEvent) { self.checkFocus(hbox); }, true );
       return hbox;
@@ -247,8 +249,10 @@ let autoArchivePrefDialog = {
     }
   },
   
-  checkAction: function(menulistAction, to, menulistDest) {
-    return to.style.visibility = menulistDest.style.visibility = ["archive", "delete"].indexOf(menulistAction.value) >= 0 ? 'hidden': 'visible';
+  checkAction: function(menulistAction, to, menulistDest, menulistSub) {
+    let limit = ["archive", "delete"].indexOf(menulistAction.value) >= 0;
+    if ( limit && menulistSub.value == 2 ) menulistSub.value = 1;
+    menulistSub.firstChild.lastChild.style.visibility = to.style.visibility = menulistDest.style.visibility = limit ? 'hidden': 'visible';
   },
   
   starStopNow: function() {
