@@ -115,6 +115,17 @@
               </rows>
             </grid>
           </groupbox>
+          <groupbox>
+            <caption label="&awsome_auto_archive.perf.active_time;"/>
+            <vbox>
+              <hbox>
+                <button label="&awsome_auto_archive.perf.new;" oncommand="window.openDialog('chrome://messenger/content/AccountManager.xul');"/>
+              </hbox>
+              <label value="test:"/>
+              <hbox id='awsome_auto_archive-IDs'>
+              </hbox>
+            </vbox>
+          </groupbox>
         </vbox>
       </tabpanel>
     </tabpanels>

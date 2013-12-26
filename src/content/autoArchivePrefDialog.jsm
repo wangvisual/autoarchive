@@ -5,8 +5,9 @@ var EXPORTED_SYMBOLS = ["autoArchivePrefDialog"];
 
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
-//Cu.import("resource:///modules/mailServices.js");
+Cu.import("resource:///modules/mailServices.js");
 //Cu.import("resource://gre/modules/FileUtils.jsm");
+Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/folderUtils.jsm");
 Cu.import("resource:///modules/MailUtils.js");
 Cu.import("resource://gre/modules/AddonManager.jsm");
@@ -188,7 +189,6 @@ let autoArchivePrefDialog = {
       
       let remove = doc.createElementNS(XUL, "toolbarbutton");
       remove.setAttribute("label", "x");
-      remove.setAttribute("icon", "remove");
       remove.classList.add("awsome_auto_archive-delete-rule");
       remove.addEventListener("command", function(aEvent) { self.removeRule(hbox); }, false );
       
@@ -301,6 +301,7 @@ let autoArchivePrefDialog = {
       } else {
         this.creatNewRule();
       }
+      this.fillIdentities(false);
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
@@ -337,7 +338,38 @@ let autoArchivePrefDialog = {
     autoArchiveService.removeStatusListener(this.statusCallback);
     return true;
   },
+  
+  //https://github.com/protz/thunderbird-stdlib/blob/master/misc.js
+  fillIdentities: function(aSkipNntp) {
+    let doc = this._doc;
+    let group = doc.getElementById('awsome_auto_archive-IDs');
+    if ( !group ) return;
+    let firstNonNull = null, gIdentities = {}, gAccounts = {};
+    for (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {
+      let server = account.incomingServer;
+      if (aSkipNntp && (!server || server.type != "pop3" && server.type != "imap")) {
+        continue;
+      }
+      for (let id in fixIterator(account.identities, Ci.nsIMsgIdentity)) {
+        // We're only interested in identities that have a real email.
+        if (id.email) {
+          gIdentities[id.email.toLowerCase()] = id;
+          gAccounts[id.email.toLowerCase()] = account;
+          if (!firstNonNull) firstNonNull = id;
+        }
+      }
+    }
+    gIdentities["default"] = MailServices.accounts.defaultAccount.defaultIdentity || firstNonNull;
+    gAccounts["default"] = MailServices.accounts.defaultAccount;
+    Object.keys(gIdentities).sort().forEach( function(id) {
+      let button = doc.createElementNS(XUL, "button");
+      button.setAttribute("label", id);
+      button.addEventListener("command", function(aEvent) { self._win.openDialog("chrome://messenger/content/am-identity-edit.xul", "dlg", "", {identity: gIdentities[id], account: gAccounts[id], result:false }); }, false );
+      group.insertBefore(button, null);
+    } );
+  },
 
 }
+
 let self = autoArchivePrefDialog;
 self.initName();

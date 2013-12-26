@@ -231,7 +231,7 @@ let autoArchiveService = {
     this.onSearchHit = function(msgHdr, folder) {
       //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
       if ( !msgHdr.folder || msgHdr.folder.URI == rule.dest ) return;
-      let age = ( Date().now /1000 - msgHdr.dateInSeconds ) / 3600 / 24;
+      let age = ( Date().now / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
       if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
         ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ||
