@@ -172,27 +172,57 @@ let autoArchiveService = {
   },
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
   hookedFunctions: [],
-  searchListener: function(rule) {
+  searchListener: function(rule, canDoSub) {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
     this.messages = [];
-    this.msgHdrsArchive = function() {
+    let allTags = {};
+    let searchHit = 0;
+    for ( let tag of MailServices.tags.getAllTags({}) ) {
+      allTags[tag.key.toLowerCase()] = true;
+    };
+    this.hasTag = function(msgHdr) {
+      return msgHdr.getStringProperty('keywords').toLowerCase().split(' ').some( function(key) { // may contains X-Keywords like NonJunk etc
+        return ( key in allTags );
+      } );
+    };
+    this.onSearchHit = function(msgHdr, folder) {
+      //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
+      //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
+      searchHit ++;
+      if ( !msgHdr.folder || msgHdr.folder.URI == rule.dest ) return;
+      if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
+      if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
+      let age = ( Date().now / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
+      if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
+        ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
+          ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
+          ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
+      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
+      //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
+      this.messages.push(msgHdr);
+    };
+    this.onSearchDone = function(status) {
       try {
         if ( !this.messages.length ) return self.doMoveOrArchiveOne();
+        autoArchiveLog.info("Total " + searchHit + " messages hit");
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
         if ( rule.action != 'archive' ) {
           // group messages according to there src and dest
           self.copyGroups = [];
           let groups = {}; // { src-_|_-dest : 0, src2-_|_-dest2: 1 }
           this.messages.forEach( function(msgHdr) {
-            let key = msgHdr.folder.URI + "-_|_-" + (rule.dest||'');
-            if ( typeof(groups.key) == 'undefined'  ) {
-              groups.key = self.copyGroups.length;
+            //TODO: nsIMsgDBHdr getMsgHdrForMessageID(in string messageID);
+            //msgHdr.messageId
+            let key = msgHdr.folder.URI + "-_|_-" + ( ["copy", "move"].indexOf(rule.action) >= 0 ? (rule.dest||'') : '' );
+            if ( typeof(groups[key]) == 'undefined'  ) {
+              groups[key] = self.copyGroups.length;
               self.copyGroups.push({src: msgHdr.folder.URI, dest: rule.dest, action: rule.action, messages: []});
             }
-            self.copyGroups[groups.key].messages.push(msgHdr);
+            self.copyGroups[groups[key]].messages.push(msgHdr);
           } );
-          autoArchiveLog.logObject(self.copyGroups, 'copyGroups', 0);
+          autoArchiveLog.info("will do " + rule.action + " in " + self.copyGroups.length + " steps");
+          autoArchiveLog.logObject(groups, 'groups', 0);
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {
           let batchMover = new mail3PaneWindow.BatchMessageMover();
@@ -218,33 +248,6 @@ let autoArchiveService = {
         autoArchiveLog.logException(err);
         return self.doMoveOrArchiveOne();
       }
-    };
-    let allTags = {};
-    for ( let tag of MailServices.tags.getAllTags({}) ) {
-      allTags[tag] = true;
-    };
-    this.hasTag = function(msgHdr) {
-      return msgHdr.getStringProperty('keywords').split(' ').some( function(key) { // may contains X-Keywords like NonJunk etc
-        return ( key in allTags );
-      } );
-    };
-    this.onSearchHit = function(msgHdr, folder) {
-      //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
-      if ( !msgHdr.folder || msgHdr.folder.URI == rule.dest ) return;
-      let age = ( Date().now / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
-      if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
-        ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
-          ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ||
-          ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ) ) return;
-      //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
-      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
-      if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
-      if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
-      //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
-      this.messages.push(msgHdr);
-    };
-    this.onSearchDone = function(status) {
-      this.msgHdrsArchive();
     };
     this.onNewSearch = function() {};
   },
@@ -302,6 +305,7 @@ let autoArchiveService = {
       autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 1);
       return this.doMoveOrArchiveOne();
     }
+    let srcSupportSub = !srcFolder.getFlag(Ci.nsMsgFolderFlags.Virtual);
     let searchSession = Cc["@mozilla.org/messenger/searchSession;1"].createInstance(Ci.nsIMsgSearchSession);
     searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
     if ( rule.sub ) {
@@ -340,7 +344,7 @@ let autoArchiveService = {
     }
     
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
-    searchSession.registerListener(new self.searchListener(rule));
+    searchSession.registerListener(new self.searchListener(rule, srcSupportSub));
     searchSession.search(null);
   },
 
@@ -389,7 +393,7 @@ let autoArchiveService = {
   },
   removeStatusListener: function(listener) {
     let index = this.statusListeners.indexOf(listener);
-    if ( index ) this.statusListeners.splice(index, 1);
+    if ( index >= 0 ) this.statusListeners.splice(index, 1);
   },
   updateStatus: function(status, detail) {
     if ( detail ) autoArchiveLog.info(detail);
