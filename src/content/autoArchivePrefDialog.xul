@@ -55,9 +55,9 @@
             <caption label="&awsome_auto_archive.perf.donate;"/>
             <vbox align="center">
               <hbox>
-                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchivePrefDialog.loadDonate('mozilla');" />
+                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('mozilla');" />
                 <label value="               " flex="100"/>
-                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchivePrefDialog.loadDonate('alipay');" />
+                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchiveUtil.loadDonate('alipay');" />
               </hbox>
               <label/>
             </vbox>
@@ -72,7 +72,7 @@
         <vbox flex="1">
           <groupbox>
             <caption label="&awsome_auto_archive.perf.enable_special;"/>
-            <grid class='awsome_auto_archive-center-rows'>
+            <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked'>
               <columns>
                 <column flex="1"/>
                 <column flex="1000"/>

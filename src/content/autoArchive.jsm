@@ -11,7 +11,7 @@ Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
-Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
@@ -42,7 +42,7 @@ let autoArchive = {
           statusbarIcon.id = statusbarIconID;
           statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
           statusbarIcon.setAttribute('src', statusbarIconSrc);
-          statusbarIcon.setAttribute('tooltiptext', autoArchivePrefDialog.Name + " " + autoArchivePrefDialog.Version);
+          statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version);
           statusbarIcon.setAttribute('popup', contextMenuID);
           statusbarIcon.setAttribute('context', contextMenuID);
           status_bar.insertBefore(statusbarIcon, null);
@@ -55,7 +55,7 @@ let autoArchive = {
             } else if ( status == autoArchiveService.STATUS_RUN ) {
               statusbarIcon.setAttribute('src', statusbarIconSrcRun);
             }
-            statusbarIcon.setAttribute('tooltiptext', autoArchivePrefDialog.Name + " " + autoArchivePrefDialog.Version + "\n" + detail);
+            statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + detail);
           };
           autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
         }
@@ -110,10 +110,7 @@ let autoArchive = {
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
-    Cu.unload("chrome://awsomeAutoArchive/content/aop.jsm");
-    Cu.unload("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
     autoArchiveLog.info('autoArchive cleanup done');
-    //autoArchiveaop = null;
   },
   
   createPopup: function(aWindow) {
@@ -123,10 +120,10 @@ let autoArchive = {
     let menupopup = doc.createElementNS(XULNS, "menupopup");
     menupopup.id = contextMenuID;
     [ ["Option", "chrome://messenger/skin/accountcentral/account-settings.png", function() { aWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul", "Opt", "chrome,dialog,modal,resizable"); }],
-      ["Addon Homepage", "chrome://mozapps/skin/extensions/category-extensions.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/"); }],
-      ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
-      ["Report Bug", "chrome://global/skin/icons/warning-64.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
-      //["Donate", "chrome://awsomeAutoArchive/skin/donate.png", function(){ autoArchivePrefDialog.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/developers"); }],
+      ["Addon Homepage", "chrome://mozapps/skin/extensions/category-extensions.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/"); }],
+      ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
+      ["Report Bug", "chrome://global/skin/icons/warning-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
+      //["Donate", "chrome://awsomeAutoArchive/skin/donate.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/developers"); }],
     ].forEach( function(menu) {
       let item = doc.createElementNS(XULNS, "menuitem");
       item.setAttribute('label', menu[0]);

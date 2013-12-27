@@ -15,8 +15,7 @@
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule[awsome_auto_archive-focused=true] {
-    border: 1px dotted blue;
-    background-color: grey;
+    background-image: linear-gradient(to bottom right, grey, rgba(0,0,255,0));
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule textbox[focused=true] {
@@ -31,6 +30,10 @@
   }
   
   #awsome_auto_archive-perfpane .awsome_auto_archive-disable  * {
+    color: grey !important;
+  }
+  
+  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  row checkbox:not([checked]), #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  row checkbox:not([checked]) + hbox {
     color: grey !important;
   }
 

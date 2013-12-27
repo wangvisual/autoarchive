@@ -6,8 +6,6 @@ var EXPORTED_SYMBOLS = ["autoArchiveUtil"];
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
-Cu.import("resource:///modules/iteratorUtils.jsm");
-Cu.import("resource:///modules/folderUtils.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
@@ -19,15 +17,15 @@ let autoArchiveUtil = {
   isSeaMonkey: Services.appinfo.ID == SEAMONKEY_ID,
   Applicaton: ( Services.appinfo.ID == SEAMONKEY_ID ) ? 'Seamonky' : 'Thunderbird',
   initName: function() {
-    autoArchiveLog.log("autoArchiveUtil initName");
+    autoArchiveLog.info("autoArchiveUtil initName");
     if ( this.Version != 'unknown' ) return;
     AddonManager.getAddonByID('awsomeautoarchive@opera.wang', function(addon) {
-      if ( !self ) return;
+      if ( !self || !autoArchiveLog ) return;
       self.Version = addon.version;
       self.Name = addon.name;
+      autoArchiveLog.info(self.Name + " " + self.Version);
     });
   },
-  strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
   loadInTopWindow: function(win, url) {
     win.openDialog("chrome://messenger/content/", "_blank", "chrome,dialog=no,all", null,
       { tabType: "contentTab", tabParams: {contentPage: Services.io.newURI(url, null, null) } });
