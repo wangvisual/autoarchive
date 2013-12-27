@@ -8,6 +8,7 @@
 <prefwindow id="awsome_auto_archive-prefs"
      title="&awsome_auto_archive.perf.title;"
      onload="autoArchivePrefDialog.loadPerfWindow(window)"
+     onunload="autoArchivePrefDialog.unLoadPerfWindow()"
      ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow()"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <script>

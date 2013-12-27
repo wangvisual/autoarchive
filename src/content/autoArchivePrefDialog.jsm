@@ -347,9 +347,13 @@ let autoArchivePrefDialog = {
   },
   acceptPerfWindow: function() {
     this.saveRules();
+    autoArchiveLog.info("acceptPerfWindow");
+  },
+  unLoadPerfWindow: function() {
     autoArchiveService.removeStatusListener(this.statusCallback);
     delete this._doc;
     delete this._win;
+    autoArchiveLog.info("prefwindow unload");
     return true;
   },
   
