@@ -16,6 +16,7 @@
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule[awsome_auto_archive-focused=true] {
     border: 1px dotted blue;
+    background-color: grey;
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule textbox[focused=true] {

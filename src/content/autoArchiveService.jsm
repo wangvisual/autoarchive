@@ -322,26 +322,30 @@ let autoArchiveService = {
     }
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age || 0, Ci.nsMsgSearchOp.IsGreaterThan);
 
-    if ( typeof(rule.subject) != 'undefined' && rule.subject != '' ) {
-      // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
-      let customId, positive = true, subject = rule.subject;
-      if ( subject[0] == '!' ) {
-        positive = false;
-        subject = subject.substr(1);
+    let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'] };
+    let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender };
+    ["subject", "from"].forEach( function(filter) {
+      if ( typeof(rule[filter]) != 'undefined' && rule[filter] != '' ) {
+        // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
+        let customId, positive = true, attribute = rule[filter];
+        if ( attribute[0] == '!' ) {
+          positive = false;
+          attribute = attribute.substr(1);
+        }
+        if ( attribute.match(/^\/.*\/[ismxpgc]*$/) ) {
+          // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
+          advanced[filter].some( function(term) { // .find need TB >=25
+            if ( MailServices.filters.getCustomTerm(term) ) {
+              customId = term;
+              return true;
+            } else return false;
+          } );
+          if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "' unless you installed addons like 'Expression Search / GMailUI' or 'FiltaQuilla'", 1);
+        }
+        if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
+        else self.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
       }
-      if ( subject.match(/^\/.*\/[ismxpgc]*$/) ) {
-        // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
-        ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'].some( function(term) { // .find need TB >=25
-          if ( MailServices.filters.getCustomTerm(term) ) {
-            customId = term;
-            return true;
-          } else return false;
-        } );
-        if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule.subject + "' unless you installed addons like 'Expression Search / GMailUI' or 'FiltaQuilla'", 1);
-      }
-      if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, subject, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
-      else self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.Subject, subject, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
-    }
+    } );
     
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
     searchSession.registerListener(new self.searchListener(rule, srcSupportSub));
