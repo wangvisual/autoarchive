@@ -80,7 +80,7 @@ let autoArchivePrefDialog = {
     };
     try {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      if ( init ) this._win.setTimeout( updateStyle, 1 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
+      if ( init ) this._win.setTimeout( updateStyle, 0 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
       else updateStyle();
     } catch(err) {}
     folderPicker.setAttribute("label", msgFolder.prettyName);
@@ -215,8 +215,8 @@ let autoArchivePrefDialog = {
   
   focusRow: null,
   checkFocus: function(hbox) {
-    if ( this.focusRow && this.focusRow != hbox )  this.focusRow.removeAttribute('focused');
-    hbox.setAttribute('focused', true);
+    if ( this.focusRow && this.focusRow != hbox )  this.focusRow.removeAttribute('awsome_auto_archive-focused');
+    hbox.setAttribute('awsome_auto_archive-focused', true);
     this.focusRow = hbox;
   },
   
@@ -305,6 +305,7 @@ let autoArchivePrefDialog = {
       } else {
         this.creatNewRule();
       }
+      //win.setTimeout( self.fillIdentities, 0 );
       this.fillIdentities(false);
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
@@ -340,12 +341,14 @@ let autoArchivePrefDialog = {
   acceptPerfWindow: function() {
     this.saveRules();
     autoArchiveService.removeStatusListener(this.statusCallback);
+    delete this._doc;
+    delete this._win;
     return true;
   },
   
   //https://github.com/protz/thunderbird-stdlib/blob/master/misc.js
   fillIdentities: function(aSkipNntp) {
-    let doc = this._doc;
+    let doc = self._doc;
     let group = doc.getElementById('awsome_auto_archive-IDs');
     if ( !group ) return;
     let firstNonNull = null, gIdentities = {}, gAccounts = {};

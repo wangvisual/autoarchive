@@ -14,7 +14,7 @@
     -moz-box-align: center;
   }
   
-  #awsome_auto_archive-rules >.awsome_auto_archive-rule[focused=true] {
+  #awsome_auto_archive-rules >.awsome_auto_archive-rule[awsome_auto_archive-focused=true] {
     border: 1px dotted blue;
   }
   
