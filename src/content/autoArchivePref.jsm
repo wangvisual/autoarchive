@@ -99,9 +99,14 @@ let autoArchivePref = {
             autoArchiveLog.log("Error: rule action must be one of move or archive", 1);
             error = true;
           }
-          if ( ["move", "copy"].indexOf(rule.action) >= 0 && typeof(rule.dest) == 'undefined' ) {
-            autoArchiveLog.log("Error: dest folder must be defined for move action", 1);
-            error = true;
+          if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
+            if ( typeof(rule.dest) == 'undefined' ) {
+              autoArchiveLog.log("Error: dest folder must be defined for copy/move action", 1);
+              error = true;
+            } else if ( rule.src == rule.dest ) {
+              autoArchiveLog.log("Error: dest folder must be different from src folder", 1);
+              error = true;
+            }
           }
           if ( error ) rule.enable = false;
         } );

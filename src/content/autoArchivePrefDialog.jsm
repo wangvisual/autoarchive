@@ -59,15 +59,6 @@ let autoArchivePrefDialog = {
     folderPopup.setAttribute("fileHereLabel", "here");
     folderPopup.classList.add("menulist-menupopup");
     folderPopup.classList.add("searchPopup");
-
-    let menuitem = this._doc.createElementNS(XUL, "menuitem");
-    menuitem.setAttribute("label", "N/A");
-    menuitem.setAttribute("value", "");
-    menuitem.setAttribute("class", "folderMenuItem");
-    menuitem.setAttribute("SpecialFolder", "Virtual");
-    folderPopup.insertBefore(menuitem, null);
-    let menuseparator = this._doc.createElementNS(XUL, "menuseparator");
-    folderPopup.insertBefore(menuseparator, null);
     self.updateFolderStyle(folderPicker, folderPopup, true);
   },
   
@@ -215,7 +206,8 @@ let autoArchivePrefDialog = {
   checkAction: function(menulistAction, to, menulistDest, menulistSub) {
     let limit = ["archive", "delete"].indexOf(menulistAction.value) >= 0;
     if ( limit && menulistSub.value == 2 ) menulistSub.value = 1;
-    menulistSub.firstChild.lastChild.style.visibility = to.style.visibility = menulistDest.style.visibility = limit ? 'hidden': 'visible';
+    to.style.visibility = menulistDest.style.visibility = limit ? 'hidden': 'visible';
+    menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
   },
   
   starStopNow: function() {

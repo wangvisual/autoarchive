@@ -25,15 +25,11 @@
     width: 120px;
   }
   
-  #awsome_auto_archive-perfpane textbox[readonly="true"] {
-    color: grey !important;
-  }
-  
-  #awsome_auto_archive-perfpane .awsome_auto_archive-disable  * {
-    color: grey !important;
-  }
-  
-  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  row checkbox:not([checked]), #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  row checkbox:not([checked]) + hbox {
+  #awsome_auto_archive-perfpane textbox[readonly="true"],
+  #awsome_auto_archive-perfpane .awsome_auto_archive-disable  *,
+  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]),
+  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox,
+  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox textbox {
     color: grey !important;
   }
 

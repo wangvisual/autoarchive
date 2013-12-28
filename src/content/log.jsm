@@ -3,8 +3,8 @@
 // debug utils
 "use strict";
 Components.utils.import("resource://gre/modules/Services.jsm");
-var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 const popupImage = "chrome://messenger/skin/addressbook/icons/contact-generic.png";
+var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
   popup: function(title, msg) {
     // alert-service won't work with bb4win, use xul instead
