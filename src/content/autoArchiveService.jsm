@@ -6,6 +6,7 @@ const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, ma
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/MailUtils.js");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 //Cu.import("resource://app/modules/activity/autosync.js");
 //Cu.import("resource://app/modules/gloda/utils.js");
@@ -99,15 +100,13 @@ let autoArchiveService = {
     },
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
-    this.QueryInterface = function(iid) {
-      if ( !iid.equals(Ci.nsIMsgCopyServiceListener) && !iid.equals(Ci.nsIMsgFolderListener) && !iid.equals(Ci.nsISupports) )
-        throw Components.results.NS_ERROR_NO_INTERFACE;
-      return this;
-    };
+    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]);
     this.OnStartCopy = function() {
       autoArchiveLog.info("OnStart " + group.action);
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-      if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveStarting();
+      try {
+        if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveStarting();
+      } catch(err) { autoArchiveLog.logException(err); }
     };
     this.OnProgress = function(aProgress, aProgressMax) {
       autoArchiveLog.info("OnProgress " + aProgress + "/"+ aProgressMax);
@@ -117,7 +116,9 @@ let autoArchiveService = {
       if ( group.action == 'delete' || group.action == 'move' ) self.wait4Folders[group.src] = true;
       if ( group.action == 'copy' || group.action == 'move' ) self.wait4Folders[group.dest] = true;
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-      if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveCompleted();
+      try {
+        if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveCompleted();
+      } catch(err) { autoArchiveLog.logException(err); }
       if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
       else this.updateFolders();
     };
@@ -175,12 +176,15 @@ let autoArchiveService = {
   searchListener: function(rule, srcFolder, destFolder) {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
+    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIUrlListener, Ci.nsIMsgSearchNotify]);
     this.messages = [];
-    this.createFolders = [];
-    let messagesDest = {};
+    this.missingFolders = {};
+    this.sequenceCreateFolders = [];
+    this.messagesDest = {};
     let allTags = {};
     let searchHit = 0;
     let foldersGotDB = {}; // in onSearchHit, we check if the message exists in dest folder and open it's DB, need to null them later
+    let listener = this;
     for ( let tag of MailServices.tags.getAllTags({}) ) {
       allTags[tag.key.toLowerCase()] = true;
     };
@@ -204,7 +208,7 @@ let autoArchiveService = {
       if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
       // check if dest folder has alreay has the message
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
-        let realDest = rule.dest;
+        let realDest = rule.dest, additonal = '';
         let supportHierarchy = ( rule.sub == 2 ) && !srcFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && !destFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && destFolder.canCreateSubfolders;
         if ( supportHierarchy && (destFolder.server instanceof Ci.nsIImapIncomingServer)) supportHierarchy = !destFolder.server.isGMailServer;
         if ( supportHierarchy ) {
@@ -213,45 +217,123 @@ let autoArchiveService = {
             autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " not from src folder?");
             return;
           }
-          realDest = rule.dest + msgHdr.folder.URI.substr(rule.src.length);
+          additonal = msgHdr.folder.URI.substr(rule.src.length);
+          realDest = rule.dest + additonal;
         }
+        //autoArchiveLog.info(msgHdr.mime2DecodedSubject + ":" + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
         // BatchMessageMover using createStorageIfMissing/createSubfolder
         // CopyFolders using createSubfolder
         // https://github.com/gark87/SmartFilters/blob/master/src/chrome/content/backend/imapfolders.jsm using createSubfolder
         // https://github.com/mozilla/releases-comm-central/blob/master/mailnews/imap/test/unit/test_localToImapFilter.js using CopyFolders, but it's empty folders
-        if ( !realDestFolder ) {
-          //autoArchiveLog.info("dest folder " + realDest + "not exists, need create");
-          let isAsync = destFolder.server.protocolInfo.foldersCreatedAsync;
-          //return;
+        // http://thunderbirddocs.blogspot.com/2005/12/mozilla-thunderbird-creating-folders.html
+        // http://mxr.mozilla.org/comm-central/source/mailnews/imap/src/nsImapMailFolder.cpp
+        // http://mxr.mozilla.org/comm-central/source/mailnews/local/src/nsLocalMailFolder.cpp
+        if ( !realDestFolder.parent ) {
+          //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
+          this.missingFolders[additonal] = true;
+        } else {
+          try {
+            // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
+            let destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
+            foldersGotDB[realDest] = 1;
+            if ( destHdr ) {
+              //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
+              return;
+            }
+          } catch(err) { autoArchiveLog.logException(err); }
         }
-        // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
-        try {
-          let destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
-          foldersGotDB[realDestFolder] = 1;
-          if ( destHdr ) {
-            autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
-            return;
-          }
-        } catch(err) { autoArchiveLog.logException(err); }
-        messagesDest[msgHdr] = realDest;
+        this.messagesDest[msgHdr.messageId] = realDest;
       }
       //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
       this.messages.push(msgHdr);
     };
     this.onSearchDone = function(status) {
       try {
-        // TODO: close opended DB
+        Object.keys(foldersGotDB).forEach( function(uri) {
+          let folder = MailUtils.getFolderForURI(uri);
+          if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) )
+            folder.msgDatabase = null;
+        } );
+        foldersGotDB = {};
         if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("Total " + searchHit + " messages hit");
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
+        // create missing folders first
+        if ( Object.keys(this.missingFolders).length ) { // for copy/move
+          // rule.dest: imap://a@b.com/1/2
+          // additonal:                   /3/4/5
+          //                              /3/4/6
+          //                              /7/8
+          // => 
+          // /3, /3/4, /3/4/5, /3/4/6, /7, /7/8
+          let needCreateFolders = {};
+          let isAsync = destFolder.server.protocolInfo.foldersCreatedAsync;
+          Object.keys(this.missingFolders).forEach( function(path) {
+            while ( path.length > 0 && path != "/" ) {
+              let checkPath = rule.dest + path;
+              if ( !needCreateFolders[checkPath] ) {
+                let checkFolder = MailUtils.getFolderForURI(checkPath);
+                if ( !checkFolder.parent ) needCreateFolders[checkPath] = true;
+              }
+              let index = path.lastIndexOf('/');
+              path = path.substr(0, index);
+            }
+          } );
+          
+          this.sequenceCreateFolders = Object.keys(needCreateFolders).sort();
+          autoArchiveLog.logObject(this.sequenceCreateFolders, 'this.sequenceCreateFolders', 1);
+          if ( !isAsync ) {
+            autoArchiveLog.info("create folders sync");
+            this.sequenceCreateFolders.forEach( function(path) {
+              let realDestFolder = MailUtils.getFolderForURI(path);
+              realDestFolder.createStorageIfMissing(this);
+            } );
+            this.sequenceCreateFolders = [];
+          } else {
+            autoArchiveLog.info("create folders async");
+            return this.OnStopRunningUrl(); // OnStopRunningUrl will chain to create next folder
+          }
+          this.missingFolders = {};
+        }
+        this.processHeaders();
+      } catch(err) {
+        autoArchiveLog.logException(err);
+        return self.doMoveOrArchiveOne();
+      }
+    };
+    this.onNewSearch = function() {};
+    this.OnStartRunningUrl = function(url) {
+      autoArchiveLog.info("OnStartRunningUrl:" + url.spec);
+    };
+    this.OnStopRunningUrl = function(url, result) {
+      //if (!Components.isSuccessCode(result)) => fail?
+      if ( url && url.spec ) {
+        autoArchiveLog.info("OnStopRunningUrl:" + url.spec +":"+result);
+        /*let index = this.sequenceCreateFolders.indexOf(url.spec);
+        if ( index >= 0 ) {
+          autoArchiveLog.info("OnStopRunningUrl:" + url.spec + " was found");
+          this.sequenceCreateFolders.splice(index, 1);
+        }*/
+        this.sequenceCreateFolders.splice(0, 1);
+      }
+      if ( this.sequenceCreateFolders.length ) {
+        let realDestFolder = MailUtils.getFolderForURI(this.sequenceCreateFolders[0]);
+        realDestFolder.createStorageIfMissing(this);
+      } else {
+        autoArchiveLog.info("All folders created");
+        this.processHeaders();
+      }
+    };
+    this.processHeaders = function() {
+      try {
         if ( rule.action != 'archive' ) {
           // group messages according to there src and dest
           self.copyGroups = [];
-          let groups = {}; // { src-_|_-dest : 0, src2-_|_-dest2: 1 }
+          let groups = {}; // { src => dest : 0, src2 => dest2: 1 }
           this.messages.forEach( function(msgHdr) {
-            let dest = messagesDest[msgHdr] || rule.dest|| '';
-            let key = msgHdr.folder.URI + ( ["copy", "move"].indexOf(rule.action) >= 0 ? "-_|_-" + dest : '' );
+            let dest = listener.messagesDest[msgHdr.messageId] || rule.dest|| '';
+            let key = msgHdr.folder.URI + ( ["copy", "move"].indexOf(rule.action) >= 0 ? " => " + dest : '' );
             if ( typeof(groups[key]) == 'undefined'  ) {
               groups[key] = self.copyGroups.length;
               self.copyGroups.push({src: msgHdr.folder.URI, dest: dest, action: rule.action, messages: []});
@@ -286,14 +368,6 @@ let autoArchiveService = {
         return self.doMoveOrArchiveOne();
       }
     };
-    this.onNewSearch = function() {};
-    
-  /*const nsMsgFolderFlags = Components.interfaces.nsMsgFolderFlags;
-  if (!MailServices.mailSession.IsFolderOpenInWindow(folder) &&
-      !(folder.flags & (nsMsgFolderFlags.Trash | nsMsgFolderFlags.Inbox)))
-  {
-    folder.msgDatabase = null;
-  }*/
   },
   doCopyDeleteMoveOne: function(group) {
     let xpcomHdrArray = toXPCOMArray(group.messages, Ci.nsIMutableArray);
@@ -320,7 +394,8 @@ let autoArchiveService = {
       let realDelete = deleteModel == 2 || isTrashFolder;
       if ( realDelete ) MailServices.mfn.addListener(new self.copyListener(group), MailServices.mfn.msgsDeleted );
       srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/realDelete, /*isMove*/false, realDelete ? null : new self.copyListener(group), /* allow undo */false);
-      srcFolder.msgDatabase = null; /* don't leak */
+      if ( !MailServices.mailSession.IsFolderOpenInWindow(srcFolder) && !(srcFolder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) )
+        srcFolder.msgDatabase = null; /* don't leak */
       return;
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
@@ -349,11 +424,7 @@ let autoArchiveService = {
       autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 1);
       return this.doMoveOrArchiveOne();
     }
-   
-    //let array = toXPCOMArray([srcFolder], Ci.nsIMutableArray);
-    //MailServices.copy.CopyFolders(array, destFolder, false, null, null);
-    //return;
-    
+
     let searchSession = Cc["@mozilla.org/messenger/searchSession;1"].createInstance(Ci.nsIMsgSearchSession);
     searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
     if ( rule.sub ) {
