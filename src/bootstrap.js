@@ -69,7 +69,9 @@ function startup(aData, aReason) {
 function shutdown(aData, aReason) {
   // When the application is shutting down we normally don't have to clean up any UI changes made
   // but we have to abort running jobs
-  if ( sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.unregisterSheet(userCSS, sss.USER_SHEET);
+  try {
+    if ( sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.unregisterSheet(userCSS, sss.USER_SHEET);
+  } catch (err) {Cu.reportError(err);}
   try {
     Services.obs.removeObserver(windowListener, "xul-window-registered");
     // Unload from any existing windows

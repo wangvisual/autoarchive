@@ -120,7 +120,7 @@ let autoArchive = {
     let menupopup = doc.createElementNS(XULNS, "menupopup");
     menupopup.id = contextMenuID;
     [ ["Option", "chrome://messenger/skin/accountcentral/account-settings.png", function() { aWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul", "Opt", "chrome,dialog,modal,resizable"); }],
-      ["Addon @ Mozilla", "chrome://mozapps/skin/extensions/category-extensions.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/"); }],
+      ["Addon @ Mozilla", "chrome://mozapps/skin/extensions/category-extensions.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awesome-auto-archive/"); }],
       ["Addon @ GitHub", "chrome://awsomeAutoArchive/content/github.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/"); }],
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/warning-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
