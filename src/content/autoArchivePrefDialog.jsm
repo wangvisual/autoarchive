@@ -48,15 +48,16 @@ let autoArchivePrefDialog = {
     folderPicker.value = value; // must set value before set label, or next line may fail when previous value is empty
     self.updateFolderStyle(folderPicker, folderPopup, false);
   },
-  initFolderPick: function(folderPicker, folderPopup) {
+  initFolderPick: function(folderPicker, folderPopup, isSrc) {
     folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
     folderPicker.classList.add("folderMenuItem");
     folderPicker.setAttribute("sizetopopup", "none");
 
     folderPopup.setAttribute("type", "folder");
-    folderPopup.setAttribute("mode", "newFolder");
-    folderPopup.setAttribute("showFileHereLabel", "true");
-    folderPopup.setAttribute("fileHereLabel", "here");
+    if ( !isSrc ) {
+      folderPopup.setAttribute("mode", "filing");
+      folderPopup.setAttribute("showFileHereLabel", "true");
+    }
     folderPopup.classList.add("menulist-menupopup");
     folderPopup.classList.add("searchPopup");
     self.updateFolderStyle(folderPicker, folderPopup, true);
@@ -153,8 +154,8 @@ let autoArchivePrefDialog = {
         hbox.insertBefore(item, null);
       } );
       group.insertBefore(hbox, ref);
-      self.initFolderPick(menulistSrc, menupopupSrc);
-      self.initFolderPick(menulistDest, menupopupDest);
+      self.initFolderPick(menulistSrc, menupopupSrc, true);
+      self.initFolderPick(menulistDest, menupopupDest, false);
       self.checkAction(menulistAction, to, menulistDest, menulistSub);
       self.checkEnable(enable, hbox);
       menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest, menulistSub); }, false );

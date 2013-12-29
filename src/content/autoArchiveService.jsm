@@ -6,6 +6,7 @@ const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, ma
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/MailUtils.js");
+Cu.import("resource:///modules/virtualFolderWrapper.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 //Cu.import("resource://app/modules/activity/autosync.js");
@@ -426,18 +427,38 @@ let autoArchiveService = {
     }
 
     let searchSession = Cc["@mozilla.org/messenger/searchSession;1"].createInstance(Ci.nsIMsgSearchSession);
-    searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
-    if ( rule.sub ) {
-      for (let folder in fixIterator(srcFolder.descendants /* >=TB21 */, Ci.nsIMsgFolder)) {
-        // We don't add special sub directories, same as AutoarchiveReloaded
-        if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
-        if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
-          folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
-        if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) continue;
-        searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
+    if (srcFolder.flags & Ci.nsMsgFolderFlags.Virtual) { // searchSession.addScopeTerm won't work for virtual folder 
+      let virtFolder = VirtualFolderHelper.wrapVirtualFolder(srcFolder);
+      let scope = virtFolder.onlineSearch ? Ci.nsMsgSearchScope.onlineMail : Ci.nsMsgSearchScope.offlineMail;
+      virtFolder.searchFolders.forEach( function(folder) {
+        autoArchiveLog.info("Add src folder " + folder.URI);
+        searchSession.addScopeTerm(scope, folder);
+      } );
+      let terms = virtFolder.searchTerms;
+      //for (let term in fixIterator(terms, Ci.nsIMsgSearchTerm)) {
+      let count = terms.Count();
+      if ( count ) {
+        for ( let i = 0; i < count; i++ ) {
+          let term = terms.GetElementAt(i).QueryInterface(Ci.nsIMsgSearchTerm);
+          if ( i == 0 ) term.beginsGrouping = true;
+          if ( i+1 == count ) term.endsGrouping = true;
+          searchSession.appendTerm(term);
+        }
+      }
+    } else {
+      searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
+      if ( rule.sub ) {
+        for (let folder in fixIterator(srcFolder.descendants /* >=TB21 */, Ci.nsIMsgFolder)) {
+          // We don't add special sub directories, same as AutoarchiveReloaded
+          if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
+          if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
+            folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
+          if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) continue;
+          searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
+        }
       }
     }
-    self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age || 0, Ci.nsMsgSearchOp.IsGreaterThan);
+    if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
     let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'] };
     let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender };
