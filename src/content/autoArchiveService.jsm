@@ -71,6 +71,7 @@ let autoArchiveService = {
     this.copyGroups = [];
     this.status = [];
     this.wait4Folders = {};
+    this._searchSession = null;
   },
   rules: [],
   wait4Folders: {},
@@ -121,7 +122,7 @@ let autoArchiveService = {
         if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay ) mail3PaneWindow.gFolderDisplay.hintMassMoveCompleted();
       } catch(err) { autoArchiveLog.logException(err); }
       if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
-      else this.updateFolders();
+      else self.updateFolders();
     };
     this.SetMessageKey = function(aKey) {};
     this.GetMessageId = function() {};
@@ -138,39 +139,43 @@ let autoArchiveService = {
         autoArchiveLog.info("All msgsDeleted");
         MailServices.mfn.removeListener(this);
         if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
-        else this.updateFolders();
+        else self.updateFolders();
       }
     };
-    this.updateFolders = function() {
-      let folders = [];
-      Object.keys(self.wait4Folders).forEach( function(uri) {
-        let folder = MailUtils.getFolderForURI(uri);
-        if ( folder ) folders.push(folder);
-        else delete self.wait4Folders[uri];
-      } );
-      if ( folders.length ) {
-        MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
-        let failCount = 0;
-        folders.forEach( function(folder) {
-          try {
-            autoArchiveLog.info("updateFolder " + folder.URI);
-            folder.updateFolder(null);
-          } catch(err) {
-            autoArchiveLog.logException(err);
-            failCount ++;
-            delete self.wait4Folders[folder.URI];
-          }
-        } );
-        if ( folders.length == failCount ) { // updateFolder fail
-          autoArchiveLog.info("updateFolder fail all");
-          MailServices.mailSession.RemoveFolderListener(self.folderListener);
-          self.doMoveOrArchiveOne();
+  },
+  
+  // updateFolders may get called before when we run search ( when _searchSession was set )
+  // or get called after we doing one group of Move/Delete/Copy, or one Archive ( when _searchSession was null )
+  // any case we will chain doMoveOrArchiveOne here or in folderListener, and let it to decide either start process a new rule, or continue to search
+  updateFolders: function() {
+    let folders = [];
+    Object.keys(self.wait4Folders).forEach( function(uri) {
+      let folder = MailUtils.getFolderForURI(uri);
+      if ( folder ) folders.push(folder);
+      else delete self.wait4Folders[uri];
+    } );
+    if ( folders.length ) {
+      MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
+      let failCount = 0;
+      folders.forEach( function(folder) {
+        try {
+          autoArchiveLog.info("updateFolder " + folder.URI);
+          folder.updateFolder(null);
+        } catch(err) {
+          autoArchiveLog.logException(err);
+          failCount ++;
+          delete self.wait4Folders[folder.URI];
         }
-      } else {
-        autoArchiveLog.info("no folder to update");
+      } );
+      if ( folders.length == failCount ) { // updateFolder fail
+        autoArchiveLog.info("updateFolder fail all");
+        MailServices.mailSession.RemoveFolderListener(self.folderListener);
         self.doMoveOrArchiveOne();
       }
-    };
+    } else {
+      autoArchiveLog.info("no folder to update");
+      self.doMoveOrArchiveOne();
+    }
   },
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
   hookedFunctions: [],
@@ -251,6 +256,7 @@ let autoArchiveService = {
     };
     this.onSearchDone = function(status) {
       try {
+        self._searchSession = null;
         Object.keys(foldersGotDB).forEach( function(uri) {
           let folder = MailUtils.getFolderForURI(uri);
           if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) )
@@ -405,7 +411,9 @@ let autoArchiveService = {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
   },
+  _searchSession: null,
   doMoveOrArchiveOne: function() {
+    if ( this._searchSession ) return this._searchSession.search(null);
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
     if ( this.rules.length == 0 ) {
       autoArchiveLog.info("auto archive done for all rules, set next");
@@ -419,7 +427,10 @@ let autoArchiveService = {
     let srcFolder = null, destFolder = null;
     try {
       srcFolder = MailUtils.getFolderForURI(rule.src);
-      if ( ["move", "copy"].indexOf(rule.action) >= 0 ) destFolder = MailUtils.getFolderForURI(rule.dest);
+      if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
+        destFolder = MailUtils.getFolderForURI(rule.dest);
+        self.wait4Folders[rule.dest] = true;
+      }
     } catch (err) {
       autoArchiveLog.logException(err);
     }
@@ -435,6 +446,7 @@ let autoArchiveService = {
       virtFolder.searchFolders.forEach( function(folder) {
         autoArchiveLog.info("Add src folder " + folder.URI);
         searchSession.addScopeTerm(scope, folder);
+        self.wait4Folders[folder.URI] = true;
       } );
       let terms = virtFolder.searchTerms;
       //for (let term in fixIterator(terms, Ci.nsIMsgSearchTerm)) {
@@ -449,6 +461,7 @@ let autoArchiveService = {
       }
     } else {
       searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
+      self.wait4Folders[rule.src] = true;
       if ( rule.sub ) {
         for (let folder in fixIterator(srcFolder.descendants /* >=TB21 */, Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
@@ -457,9 +470,12 @@ let autoArchiveService = {
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
           if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
+          self.wait4Folders[folder.URI] = true;
         }
       }
     }
+    
+    autoArchiveLog.logObject(self.wait4Folders, 'self.wait4Folders', 0);
     if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
     let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'] };
@@ -489,7 +505,9 @@ let autoArchiveService = {
     
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
     searchSession.registerListener(new self.searchListener(rule, srcFolder, destFolder));
-    searchSession.search(null);
+    this._searchSession = searchSession;
+    this.updateFolders(); // when updateFolders done, will call this function again, but have this._searchSession
+    //searchSession.search(null);
   },
 
   addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
