@@ -347,10 +347,10 @@ let autoArchiveService = {
         } else {
           let batchMover = new mail3PaneWindow.BatchMessageMover();
           let myFunc = function(result) {
-            autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl");
-            autoArchiveLog.logObject(batchMover._batches,'batchMover._batches',1);
-            if ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) {
+            autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl/processNextBatch");
+            if ( !batchMover.awsome_auto_archive_done && ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) ) {
               autoArchiveLog.info("BatchMessageMover Done");
+              batchMover.awsome_auto_archive_done = true; // prevent call doMoveOrArchiveOne twice
               self.hookedFunctions.forEach( function(hooked) {
                 hooked.unweave();
               } );
@@ -362,6 +362,8 @@ let autoArchiveService = {
           }
           self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, myFunc )[0] );
           self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, myFunc )[0] );
+          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'processNextBatch'}, myFunc )[0] );
+          autoArchiveLog.info("Start doing archive");
           batchMover.archiveMessages(this.messages);
         }
       } catch(err) {
