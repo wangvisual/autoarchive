@@ -361,8 +361,10 @@ let autoArchiveService = {
                 hooked.unweave();
               } );
               self.hookedFunctions = [];
-              // TODO: updateFolder
-              self.doMoveOrArchiveOne();
+              self.wait4Folders[rule.src] = self.wait4Folders[rule.dest] = true;
+              //TODO: get more detail folders
+              self.updateFolders(); // updateFolders will chain next doMoveOrArchiveOne
+              //self.doMoveOrArchiveOne();
             }
             return result;
           }
