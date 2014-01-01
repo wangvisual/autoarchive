@@ -63,10 +63,6 @@
               <label/>
             </vbox>
           </groupbox-->
-          <groupbox>
-            <caption label="&awsome_auto_archive.perf.debug;"/>
-            <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
-          </groupbox>
         </vbox>
       </tabpanel>
       <tabpanel>
@@ -127,6 +123,10 @@
               <label value="&awsome_auto_archive.perf.identities;"/>
               <hbox id='awsome_auto_archive-IDs'><!-- items will be added dynamically --></hbox>
             </vbox>
+          </groupbox>
+          <groupbox>
+            <caption label="&awsome_auto_archive.perf.debug;"/>
+            <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
           </groupbox>
         </vbox>
       </tabpanel>
