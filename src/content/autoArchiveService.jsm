@@ -59,10 +59,18 @@ let autoArchiveService = {
     this.timer = null;
     autoArchiveLog.info("autoArchiveService cleanup done");
   },
+  removeFolderListener: function(listener) {
+    MailServices.mailSession.RemoveFolderListener(listener);
+    let index = self.folderListeners.indexOf(listener);
+    if ( index >= 0 ) self.folderListeners.splice(index, 1);
+    else autoArchiveLog.info("Can't remvoe FolderListener", 1);
+  },
   clear: function() {
     this.cleanupIdleObserver();
     if ( this.timer ) this.timer.cancel();
-    if ( Object.keys(self.wait4Folders).length ) MailServices.mailSession.RemoveFolderListener(self.folderListener);
+    this.folderListeners.forEach( function(listener) {
+      self.removeFolderListener(listener);
+    } );
     this.hookedFunctions.forEach( function(hooked) {
       hooked.unweave();
     } );
@@ -73,6 +81,7 @@ let autoArchiveService = {
     this.status = [];
     this.wait4Folders = {};
     this._searchSession = null;
+    this.folderListeners = [];
   },
   rules: [],
   wait4Folders: {},
@@ -105,13 +114,14 @@ let autoArchiveService = {
     autoArchiveLog.logObject(this.rules, 'this.rules',1);
     this.doMoveOrArchiveOne();
   },
+  folderListeners: [], // may contain dynamic ones
   folderListener: {
     OnItemEvent: function(folder, event) {
       if ( event.toString() != "FolderLoaded" || !folder || !folder.URI ) return;
       autoArchiveLog.info("FolderLoaded " + folder.URI);
       if ( self.wait4Folders[folder.URI] ) delete self.wait4Folders[folder.URI];
       if ( Object.keys(self.wait4Folders).length == 0 ) {
-        MailServices.mailSession.RemoveFolderListener(self.folderListener);
+        self.removeFolderListener(self.folderListener);
         autoArchiveLog.info("All FolderLoaded");
         self.doMoveOrArchiveOne();
       }
@@ -172,6 +182,7 @@ let autoArchiveService = {
     } );
     if ( folders.length ) {
       MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
+      self.folderListeners.push(self.folderListener);
       let failCount = 0;
       folders.forEach( function(folder) {
         try {
@@ -185,7 +196,7 @@ let autoArchiveService = {
       } );
       if ( folders.length == failCount ) { // updateFolder fail
         autoArchiveLog.info("updateFolder fail all");
-        MailServices.mailSession.RemoveFolderListener(self.folderListener);
+        self.removeFolderListener(self.folderListener);
         self.doMoveOrArchiveOne();
       }
     } else {
@@ -198,13 +209,14 @@ let autoArchiveService = {
   searchListener: function(rule, srcFolder, destFolder) {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
-    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIUrlListener, Ci.nsIMsgSearchNotify]);
+    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIFolderListener, Ci.nsIMsgSearchNotify]);
     this.messages = [];
     this.missingFolders = {};
     this.sequenceCreateFolders = [];
     this.messagesDest = {};
     let allTags = {};
     let searchHit = 0;
+    let duplicateHit = 0;
     let listener = this;
     for ( let tag of MailServices.tags.getAllTags({}) ) {
       allTags[tag.key.toLowerCase()] = true;
@@ -250,6 +262,7 @@ let autoArchiveService = {
         // http://thunderbirddocs.blogspot.com/2005/12/mozilla-thunderbird-creating-folders.html
         // http://mxr.mozilla.org/comm-central/source/mailnews/imap/src/nsImapMailFolder.cpp
         // http://mxr.mozilla.org/comm-central/source/mailnews/local/src/nsLocalMailFolder.cpp
+        // If target folder already exists but not subscribed, sometimes createStorageIfMissing will not trigger OnStopRunningUrl
         if ( !realDestFolder.parent ) {
           //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[additonal] = true;
@@ -260,6 +273,7 @@ let autoArchiveService = {
             self.accessedFolders[realDest] = 1;
             if ( destHdr ) {
               //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
+              duplicateHit ++;
               return;
             }
           } catch(err) { autoArchiveLog.logException(err); }
@@ -274,6 +288,7 @@ let autoArchiveService = {
         self._searchSession = null;
         if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("Total " + searchHit + " messages hit");
+        autoArchiveLog.info(duplicateHit + " messages already exists in target folder");
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
         // create missing folders first
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
@@ -302,13 +317,16 @@ let autoArchiveService = {
           if ( !isAsync ) {
             autoArchiveLog.info("create folders sync");
             this.sequenceCreateFolders.forEach( function(path) {
-              let realDestFolder = MailUtils.getFolderForURI(path);
-              realDestFolder.createStorageIfMissing(this);
+              let [, parent, child] = path.match(/(.*)\/([^\/]+)$/);
+              let parentFolder = MailUtils.getFolderForURI(parent);
+              parentFolder.createSubfolder(child, null);
             } );
             this.sequenceCreateFolders = [];
           } else {
             autoArchiveLog.info("create folders async");
-            return this.OnStopRunningUrl(); // OnStopRunningUrl will chain to create next folder
+            MailServices.mailSession.AddFolderListener(this, Ci.nsIFolderListener.added);
+            self.folderListeners.push(this);
+            return this.OnItemAdded(); // OnItemAdded will chain to create next folder
           }
           this.missingFolders = {};
         }
@@ -319,26 +337,27 @@ let autoArchiveService = {
       }
     };
     this.onNewSearch = function() {};
-    this.OnStartRunningUrl = function(url) {
-      autoArchiveLog.info("OnStartRunningUrl:" + url.spec);
-    };
-    this.OnStopRunningUrl = function(url, result) {
-      //if (!Components.isSuccessCode(result)) => fail?
-      if ( url && url.spec ) {
-        autoArchiveLog.info("OnStopRunningUrl:" + url.spec +":"+result);
-        /*let index = this.sequenceCreateFolders.indexOf(url.spec);
-        if ( index >= 0 ) {
-          autoArchiveLog.info("OnStopRunningUrl:" + url.spec + " was found");
-          this.sequenceCreateFolders.splice(index, 1);
-        }*/
-        this.sequenceCreateFolders.splice(0, 1);
+    this.OnItemAdded = function(parentFolder, childFolder) {
+      if ( childFolder && childFolder.URI ) {
+        autoArchiveLog.info("Folder " + childFolder.URI + " created");
+        let index = this.sequenceCreateFolders.indexOf(childFolder.URI);
+        if ( index >= 0 ) this.sequenceCreateFolders.splice(index, 1);
       }
       if ( this.sequenceCreateFolders.length ) {
-        let realDestFolder = MailUtils.getFolderForURI(this.sequenceCreateFolders[0]);
-        realDestFolder.createStorageIfMissing(this);
+        autoArchiveLog.info("Creating folder " + this.sequenceCreateFolders[0]);
+        let destFolder = MailUtils.getFolderForURI(this.sequenceCreateFolders[0]);
+        if ( destFolder.parent ) {
+          autoArchiveLog.info("Folder " + destFolder.URI + " already exists");
+          this.sequenceCreateFolders.splice(0, 1);
+          return this.OnItemAdded();
+        }
+        let [, parent, child] = this.sequenceCreateFolders[0].match(/(.*)\/([^\/]+)$/);
+        let parentFolder = MailUtils.getFolderForURI(parent);
+        parentFolder.createSubfolder(child, null);
       } else {
         autoArchiveLog.info("All folders created");
-        this.processHeaders();
+        self.removeFolderListener(this);
+        return this.processHeaders();
       }
     };
     this.processHeaders = function() {
