@@ -459,8 +459,6 @@ let autoArchiveService = {
       let realDelete = deleteModel == 2 || isTrashFolder;
       if ( realDelete ) MailServices.mfn.addListener(new self.copyListener(group), MailServices.mfn.msgsDeleted );
       srcFolder.deleteMessages(xpcomHdrArray, null, /*deleteStorage*/realDelete, /*isMove*/false, realDelete ? null : new self.copyListener(group), /* allow undo */false);
-      if ( !MailServices.mailSession.IsFolderOpenInWindow(srcFolder) && !(srcFolder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) )
-        srcFolder.msgDatabase = null; /* don't leak */
       return;
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
