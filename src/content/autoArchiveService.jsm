@@ -400,10 +400,6 @@ let autoArchiveService = {
           }
           self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, myFunc )[0] );
           self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, myFunc )[0] );
-          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'folderAdded'}, function(result){
-            autoArchiveLog.info("BatchMessageMover folderAdded");
-            return result;
-          } )[0] );
           self.hookedFunctions.push( autoArchiveaop.around( {target: batchMover, method: 'processNextBatch'}, function(invocation) {
             autoArchiveLog.info("BatchMessageMover processNextBatch");
             for ( let key in batchMover._batches ) {
