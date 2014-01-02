@@ -87,12 +87,12 @@ let autoArchiveService = {
   wait4Folders: {},
   accessedFolders: {}, // in onSearchHit, we check if the message exists in dest folder and open it's DB, need to null them later, also we need to null other folders
   closeAllFoldersDB: function() {
-    // null all msgDatabase to prevent memory leak, TB might close it later too, but just in case user set a very long timeout value
+    // null all msgDatabase to prevent memory leak, TB might close it later too (https://bugzilla.mozilla.org/show_bug.cgi?id=723248), but just in case user set a very long timeout value
     if ( Object.keys(this.accessedFolders).length ) autoArchiveLog.info("autoArchiveService closeAllFoldersDB");
     Object.keys(this.accessedFolders).forEach( function(uri) {
       try {
         let folder = MailUtils.getFolderForURI(uri);
-        if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) ) {
+        if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox | Ci.nsMsgFolderFlags.SentMail )) ) {
           autoArchiveLog.info("close msgDatabase for " + uri);
           folder.msgDatabase = null;
         } else {
