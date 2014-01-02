@@ -88,7 +88,7 @@ let autoArchiveService = {
   accessedFolders: {}, // in onSearchHit, we check if the message exists in dest folder and open it's DB, need to null them later, also we need to null other folders
   closeAllFoldersDB: function() {
     // null all msgDatabase to prevent memory leak, TB might close it later too, but just in case user set a very long timeout value
-    autoArchiveLog.info("autoArchiveService closeAllFoldersDB");
+    if ( Object.keys(this.accessedFolders).length ) autoArchiveLog.info("autoArchiveService closeAllFoldersDB");
     Object.keys(this.accessedFolders).forEach( function(uri) {
       let folder = MailUtils.getFolderForURI(uri);
       if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) ) {
@@ -286,9 +286,9 @@ let autoArchiveService = {
     this.onSearchDone = function(status) {
       try {
         self._searchSession = null;
-        if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("Total " + searchHit + " messages hit");
-        autoArchiveLog.info(duplicateHit + " messages already exists in target folder");
+        if ( duplicateHit ) autoArchiveLog.info(duplicateHit + " messages already exists in target folder");
+        if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
         // create missing folders first
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
