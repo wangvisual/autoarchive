@@ -90,13 +90,15 @@ let autoArchiveService = {
     // null all msgDatabase to prevent memory leak, TB might close it later too, but just in case user set a very long timeout value
     if ( Object.keys(this.accessedFolders).length ) autoArchiveLog.info("autoArchiveService closeAllFoldersDB");
     Object.keys(this.accessedFolders).forEach( function(uri) {
-      let folder = MailUtils.getFolderForURI(uri);
-      if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) ) {
-        autoArchiveLog.info("close msgDatabase for " + uri);
-        folder.msgDatabase = null;
-      } else {
-        autoArchiveLog.info("not close msgDatabase for " + uri);
-      }
+      try {
+        let folder = MailUtils.getFolderForURI(uri);
+        if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox)) ) {
+          autoArchiveLog.info("close msgDatabase for " + uri);
+          folder.msgDatabase = null;
+        } else {
+          autoArchiveLog.info("not close msgDatabase for " + uri);
+        }
+      } catch(err) { autoArchiveLog.logException(err); }
     } );
     this.accessedFolders = {};
   },
@@ -368,7 +370,7 @@ let autoArchiveService = {
           let groups = {}; // { src => dest : 0, src2 => dest2: 1 }
           this.messages.forEach( function(msgHdr) {
             let dest = listener.messagesDest[msgHdr.messageId] || rule.dest || '';
-            self.accessedFolders[dest] = true;
+            if ( dest.length ) self.accessedFolders[dest] = true;
             let key = msgHdr.folder.URI + ( ["copy", "move"].indexOf(rule.action) >= 0 ? " => " + dest : '' );
             if ( typeof(groups[key]) == 'undefined'  ) {
               groups[key] = self.copyGroups.length;
@@ -493,15 +495,14 @@ let autoArchiveService = {
     let rule = this.rules.shift();
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
-      " with filter { " + "age: " + rule.age + " subject: " + rule.subject + " }");
+      " with filter { " + "age: " + ( typeof(rule.age) != 'undefined' ? rule.age : '' ) + " subject: " + ( typeof(rule.subject) ? rule.subject : '' ) + " }");
     let srcFolder = null, destFolder = null;
     try {
       srcFolder = MailUtils.getFolderForURI(rule.src);
       if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
         destFolder = MailUtils.getFolderForURI(rule.dest);
         self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
-        
-      }
+      } else rule.dest = '';
     } catch (err) {
       autoArchiveLog.logException(err);
     }
