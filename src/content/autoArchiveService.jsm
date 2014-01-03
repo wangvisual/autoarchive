@@ -178,7 +178,10 @@ let autoArchiveService = {
   updateFolders: function() {
     let folders = [];
     Object.keys(self.wait4Folders).forEach( function(uri) {
-      let folder = MailUtils.getFolderForURI(uri);
+      let folder;
+      try {
+        folder = MailUtils.getFolderForURI(uri);
+      } catch(err) { autoArchiveLog.logException(err); }
       if ( folder ) folders.push(folder);
       else delete self.wait4Folders[uri];
     } );
@@ -383,7 +386,7 @@ let autoArchiveService = {
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {
           // from mailWindowOverlay.js
-          self.wait4Folders[rule.src] = self.wait4Folders[rule.dest] = true;
+          self.wait4Folders[rule.src] = true;
           let batchMover = new mail3PaneWindow.BatchMessageMover();
           let myFunc = function(result) {
             autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl");
@@ -554,7 +557,6 @@ let autoArchiveService = {
       }
     }
     
-    autoArchiveLog.logObject(self.wait4Folders, 'self.wait4Folders', 0);
     if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
     let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'] };
