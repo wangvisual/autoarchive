@@ -9,4 +9,5 @@ pref("extensions.awsome_auto_archive.age_unread", 7);
 pref("extensions.awsome_auto_archive.startup_delay", 10);
 pref("extensions.awsome_auto_archive.idle_delay", 60);
 pref("extensions.awsome_auto_archive.start_next_delay", 3600);
+pref("extensions.awsome_auto_archive.rule_timeout", 4000);
 pref("extensions.awsome_auto_archive.default_days", 180);

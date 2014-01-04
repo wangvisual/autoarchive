@@ -487,10 +487,14 @@ let autoArchiveService = {
   },
   _searchSession: null,
   doMoveOrArchiveOne: function() {
-    if ( this._searchSession ) return this._searchSession.search(null); // updateFolder done, continue to search now
+    if ( this._searchSession ) { // updateFolder done, continue to search now
+      this._searchSession.search(null);
+      return this._searchSession = null;
+    }
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
     if ( this.rules.length == 0 ) {
       this.closeAllFoldersDB();
+      //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
       autoArchiveLog.info("auto archive done for all rules, set next");
       this.updateStatus(this.STATUS_FINISH, '');
       return this.start(autoArchivePref.options.start_next_delay);
@@ -499,6 +503,11 @@ let autoArchiveService = {
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
       " with filter { " + "age: " + ( typeof(rule.age) != 'undefined' ? rule.age : '' ) + " subject: " + ( typeof(rule.subject) ? rule.subject : '' ) + " }");
+    this.timer.initWithCallback( function() { // watch dog, will be reset by next doMoveOrArchiveOne watch dog or start
+      autoArchiveLog.log("Timeout when " + self._status[1], 1);
+      return self.doMoveOrArchiveOne(); // call doMoveOrArchiveOne might make me crazy, but it can make sure all rules have chance to run
+      //return self.stop(); // this will be much safe, however, all rules below will not run.
+    }, autoArchivePref.options.rule_timeout * 1000, Ci.nsITimer.TYPE_ONE_SHOT );
     let srcFolder = null, destFolder = null;
     try {
       srcFolder = MailUtils.getFolderForURI(rule.src);

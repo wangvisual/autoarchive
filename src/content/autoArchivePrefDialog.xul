@@ -29,6 +29,7 @@
     <preference id="pref_startup_delay" name="extensions.awsome_auto_archive.startup_delay" type="int"/>
     <preference id="pref_idle_delay" name="extensions.awsome_auto_archive.idle_delay" type="int"/>
     <preference id="pref_start_next_delay" name="extensions.awsome_auto_archive.start_next_delay" type="int"/>
+    <preference id="pref_rule_timeout" name="extensions.awsome_auto_archive.rule_timeout" type="int"/>
     <preference id="pref_default_days" name="extensions.awsome_auto_archive.default_days" type="int"/>
     <!--preference id="pref_default_applyIncomingFilters" name="mail.server.default.applyIncomingFilters" type="string"/-->
   </preferences>
@@ -100,15 +101,19 @@
               <rows>
                 <row>
                   <label value="&awsome_auto_archive.perf.startup_delay;"/>
-                  <hbox><textbox preference="pref_startup_delay"/></hbox>
+                  <hbox><textbox preference="pref_startup_delay"/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                 </row>
                 <row>
                   <label value="&awsome_auto_archive.perf.idle_delay;"/>
-                  <hbox><textbox preference="pref_idle_delay"/></hbox>
+                  <hbox><textbox preference="pref_idle_delay"/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                 </row>
                 <row>
                   <label value="&awsome_auto_archive.perf.start_next_delay;"/>
-                  <hbox><textbox preference="pref_start_next_delay"/></hbox>
+                  <hbox><textbox preference="pref_start_next_delay"/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                </row>
+                <row>
+                  <label value="&awsome_auto_archive.perf.rule_timeout;"/>
+                  <hbox><textbox preference="pref_rule_timeout"/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                 </row>
               </rows>
             </grid>
