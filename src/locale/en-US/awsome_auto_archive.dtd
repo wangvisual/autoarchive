@@ -17,6 +17,7 @@
 <!ENTITY awsome_auto_archive.perf.donate "Donate">
 <!ENTITY awsome_auto_archive.perf.debug "Debug">
 <!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
+<!ENTITY awsome_auto_archive.perf.update_statusbartext "Show information in status bar">
 
 <!ENTITY awsome_auto_archive.perf.enable_special "When doing Archive/Delete/Move, Including">
 <!ENTITY awsome_auto_archive.perf.enable_tag "Tagged mails">

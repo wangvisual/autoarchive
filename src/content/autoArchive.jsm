@@ -56,6 +56,8 @@ let autoArchive = {
               statusbarIcon.setAttribute('src', statusbarIconSrcRun);
             }
             statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + detail);
+            if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
+              aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + detail);
           };
           autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
         }

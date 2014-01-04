@@ -19,6 +19,7 @@
 <prefpane id="awsome_auto_archive-perfpane">
   <preferences>
     <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
+    <preference id="pref_update_statusbartext" name="extensions.awsome_auto_archive.update_statusbartext" type="bool"/>
     <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
     <preference id="pref_enable_tag" name="extensions.awsome_auto_archive.enable_tag" type="bool"/>
     <preference id="pref_enable_flag" name="extensions.awsome_auto_archive.enable_flag" type="bool"/>
@@ -131,6 +132,7 @@
           </groupbox>
           <groupbox>
             <caption label="&awsome_auto_archive.perf.debug;"/>
+            <checkbox preference="pref_update_statusbartext" label="&awsome_auto_archive.perf.update_statusbartext;"/>
             <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
           </groupbox>
         </vbox>
