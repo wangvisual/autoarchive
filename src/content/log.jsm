@@ -39,8 +39,8 @@ let autoArchiveLog = {
     this.verbose = verbose;
   },
 
-  info: function(msg,popup) {
-    if (!this.verbose) return;
+  info: function(msg,popup,force) {
+    if (!force && !this.verbose) return;
     this.log(this.now() + msg,popup,true);
   },
 

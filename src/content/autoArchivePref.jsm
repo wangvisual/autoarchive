@@ -63,7 +63,7 @@ let autoArchivePref = {
   },
 
   prefPath: "extensions.awsome_auto_archive.",
-  allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'update_statusbartext', 'default_days'],
+  allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'update_statusbartext', 'default_days', 'dry_run'],
   rules: [],
   observe: function(subject, topic, data) {
     try {
@@ -74,6 +74,7 @@ let autoArchivePref = {
         case "enable_tag":
         case 'enable_unread':
         case 'update_statusbartext':
+        case 'dry_run':
           this.options[data] = this.prefs.getBoolPref(data);
           break;
         case "rules":

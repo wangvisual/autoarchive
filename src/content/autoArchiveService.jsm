@@ -319,7 +319,12 @@ let autoArchiveService = {
           
           this.sequenceCreateFolders = Object.keys(needCreateFolders).sort();
           autoArchiveLog.logObject(this.sequenceCreateFolders, 'this.sequenceCreateFolders', 1);
-          if ( !isAsync ) {
+          if ( autoArchivePref.options.dry_run ) {
+            this.sequenceCreateFolders.forEach( function(path) {
+              self.dryRunLog("create folder " + path);
+            } );
+            this.sequenceCreateFolders = [];
+          } else if ( !isAsync ) {
             autoArchiveLog.info("create folders sync");
             this.sequenceCreateFolders.forEach( function(path) {
               let [, parent, child] = path.match(/(.*)\/([^\/]+)$/);
@@ -385,6 +390,12 @@ let autoArchiveService = {
           autoArchiveLog.logObject(groups, 'groups', 0);
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {
+          if ( autoArchivePref.options.dry_run ) {
+            this.messages.forEach( function(msgHdr) {
+              self.dryRunLog("archive '"  + msgHdr.mime2DecodedSubject + "' from folder " + msgHdr.folder.URI);
+            } );
+            return self.doMoveOrArchiveOne();
+          }
           // from mailWindowOverlay.js
           self.wait4Folders[rule.src] = true;
           let batchMover = new mail3PaneWindow.BatchMessageMover();
@@ -455,6 +466,14 @@ let autoArchiveService = {
     };
   },
   doCopyDeleteMoveOne: function(group) {
+    if ( autoArchivePref.options.dry_run ) {
+      group.messages.forEach( function(msg) {
+        self.dryRunLog(group.action + " '" + msg.mime2DecodedSubject + "' from folder " + group.src + ( group.action != 'delete' ? ' to folder ' + group.dest : '' ))
+      } );
+      if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
+      else this.doMoveOrArchiveOne();
+      return;
+    }
     let xpcomHdrArray = toXPCOMArray(group.messages, Ci.nsIMutableArray);
     let srcFolder = MailUtils.getFolderForURI(group.src);
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
@@ -660,6 +679,9 @@ let autoArchiveService = {
       if ( folder.getFlag(flag) ) return true;
     } while ( ( folder = folder.parent ) && folder && folder != folder.rootFolder );
     return false;
+  },
+  dryRunLog: function(log) {
+    autoArchiveLog.info("Dry run: " + log, false, true);
   },
 
 };
