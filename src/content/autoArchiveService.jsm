@@ -243,7 +243,7 @@ let autoArchiveService = {
         ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
-      if ( rule.action == 'archive' && ( msgHdr.folder.getFlag(Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
+      if ( rule.action == 'archive' && ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
       // check if dest folder has alreay has the message
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         let realDest = rule.dest, additonal = '';
@@ -465,7 +465,7 @@ let autoArchiveService = {
       // 0:mark as deleted, 1:move to trash, 2:remove it immediately
       let deleteModel = srcFolder.server.getIntValue('delete_model');
       autoArchiveLog.info('deleteModel ' + deleteModel);
-      let isTrashFolder = srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash);
+      let isTrashFolder = srcFolder.getFlag(Ci.nsMsgFolderFlags.Trash); // sub folder of Trash is not Trash...
       if ( !isTrashFolder ) {
         let trashFolder = srcFolder.rootFolder.getFolderWithFlags(Ci.nsMsgFolderFlags.Trash);
         if ( trashFolder && (trashFolder == srcFolder || trashFolder.folderURL == srcFolder.folderURL || trashFolder.folderURL == srcFolder.URI || trashFolder.URI == srcFolder.folderURL || trashFolder.URI == srcFolder.URI) ) {
@@ -535,7 +535,7 @@ let autoArchiveService = {
       let virtFolder = VirtualFolderHelper.wrapVirtualFolder(srcFolder);
       let scope = virtFolder.onlineSearch ? Ci.nsMsgSearchScope.onlineMail : Ci.nsMsgSearchScope.offlineMail;
       virtFolder.searchFolders.forEach( function(folder) {
-        if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) return;
+        if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) return;
         autoArchiveLog.info("Add src folder " + folder.URI);
         searchSession.addScopeTerm(scope, folder);
         self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
@@ -560,7 +560,7 @@ let autoArchiveService = {
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
-          if ( rule.action == 'archive' && folder.getFlag(Ci.nsMsgFolderFlags.Archive) ) continue;
+          if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
           self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
         }
@@ -654,6 +654,12 @@ let autoArchiveService = {
     this.statusListeners.forEach( function(listener) {
       listener.apply(null, self._status);
     } );
+  },
+  folderIsOf: function(folder, flag) {
+    do {
+      if ( folder.getFlag(flag) ) return true;
+    } while ( ( folder = folder.parent ) && folder && folder != folder.rootFolder );
+    return false;
   },
 
 };
