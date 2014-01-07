@@ -521,7 +521,7 @@ let autoArchiveService = {
     let rule = this.rules.shift();
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
-      " with filter { " + "age: " + ( typeof(rule.age) != 'undefined' ? rule.age : '' ) + " subject: " + ( typeof(rule.subject) ? rule.subject : '' ) + " }");
+      " with filter { " + "age: " + ( typeof(rule.age) != 'undefined' ? rule.age : '' ) + " subject: " + ( typeof(rule.subject) != 'undefined' ? rule.subject : '' ) + " }");
     this.timer.initWithCallback( function() { // watch dog, will be reset by next doMoveOrArchiveOne watch dog or start
       autoArchiveLog.log("Timeout when " + self._status[1], 1);
       return self.doMoveOrArchiveOne(); // call doMoveOrArchiveOne might make me crazy, but it can make sure all rules have chance to run
