@@ -126,7 +126,7 @@ let autoArchive = {
       ["Addon @ GitHub", "chrome://awsomeAutoArchive/content/github.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/"); }],
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/warning-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
-      //["Donate", "chrome://awsomeAutoArchive/skin/donate.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awsomewutoarchive/developers"); }],
+      ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
     ].forEach( function(menu) {
       let item = doc.createElementNS(XULNS, "menuitem");
       item.setAttribute('label', menu[0]);

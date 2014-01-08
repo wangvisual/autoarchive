@@ -62,12 +62,30 @@ let autoArchivePrefDialog = {
     folderPopup.classList.add("searchPopup");
     self.updateFolderStyle(folderPicker, folderPopup, true);
   },
-  
+  createRuleHeader: function() {
+    try {
+      let doc = this._doc;
+      let container = doc.getElementById('awsome_auto_archive-rules');
+      if ( !container ) return;
+      let row = doc.createElementNS(XUL, "row");
+      ["", "action", "source", "scope", "dest", "from", "subject", "age", "", "", ""].forEach( function(label) {
+        let item = doc.createElementNS(XUL, "label");
+        item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
+        row.insertBefore(item, null);
+      } );
+      row.id = "awsome_auto_archive-rules-header";
+      container.insertBefore(row, null);
+    } catch (err) {
+      autoArchiveLog.logException(err);
+    }
+  },
   creatOneRule: function(rule, ref) {
     try {
       let doc = this._doc;
-      let group = doc.getElementById('awsome_auto_archive-rules');
-      if ( !group ) return;
+      let container = doc.getElementById('awsome_auto_archive-rules');
+      if ( !container ) return;
+      let row = doc.createElementNS(XUL, "row");
+
       let enable = doc.createElementNS(XUL, "checkbox");
       enable.setAttribute("checked", rule.enable);
       enable.setAttribute("rule", 'enable');
@@ -103,111 +121,100 @@ let autoArchivePrefDialog = {
       menulistSub.setAttribute("value", rule.sub || 0);
       menulistSub.setAttribute("rule", 'sub');
       
-      let to = doc.createElementNS(XUL, "label");
-      to.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.to"));
       let menulistDest = doc.createElementNS(XUL, "menulist");
       let menupopupDest = doc.createElementNS(XUL, "menupopup");
       menulistDest.insertBefore(menupopupDest, null);
       menulistDest.value = rule.dest || '';
       menulistDest.setAttribute("rule", 'dest');
 
-      let from = doc.createElementNS(XUL, "label");
-      from.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.from"));
       let sender = doc.createElementNS(XUL, "textbox");
       sender.setAttribute("value", rule.from || '');
       sender.setAttribute("rule", 'from');
       sender.setAttribute("size", "10");
       
-      let matches = doc.createElementNS(XUL, "label");
-      matches.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.matches"));
       let subject = doc.createElementNS(XUL, "textbox");
       subject.setAttribute("value", rule.subject || '');
       subject.setAttribute("rule", 'subject');
       
-      let after = doc.createElementNS(XUL, "label");
-      after.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.after"));
       let age = doc.createElementNS(XUL, "textbox");
       age.setAttribute("type", "number");
       age.setAttribute("min", "0");
       age.setAttribute("value", typeof(rule.age)!='undefined' ? rule.age : autoArchivePref.options.default_days);
       age.setAttribute("rule", 'age');
       age.setAttribute("size", "4");
-      let days = doc.createElementNS(XUL, "label");
-      days.setAttribute("value", self.strBundle.GetStringFromName("perfdialog.days"));
       
       let up = doc.createElementNS(XUL, "toolbarbutton");
       up.setAttribute("label", '\u2191');
-      up.addEventListener("command", function(aEvent) { self.upDownRule(hbox, true); }, false );
+      up.addEventListener("command", function(aEvent) { self.upDownRule(row, true); }, false );
       
       let down = doc.createElementNS(XUL, "toolbarbutton");
       down.setAttribute("label", '\u2193');
-      down.addEventListener("command", function(aEvent) { self.upDownRule(hbox, false); }, false );
+      down.addEventListener("command", function(aEvent) { self.upDownRule(row, false); }, false );
       
       let remove = doc.createElementNS(XUL, "toolbarbutton");
       remove.setAttribute("label", "x");
       remove.classList.add("awsome_auto_archive-delete-rule");
-      remove.addEventListener("command", function(aEvent) { self.removeRule(hbox); }, false );
+      remove.addEventListener("command", function(aEvent) { self.removeRule(row); }, false );
       
-      let hbox = doc.createElementNS(XUL, "hbox");
-      hbox.classList.add(ruleClass);
-      [enable, menulistAction, menulistSrc, menulistSub, to, menulistDest, from, sender, matches, subject, after, age, days, up, down, remove].forEach( function(item) {
-        hbox.insertBefore(item, null);
+      row.classList.add(ruleClass);
+      [enable, menulistAction, menulistSrc, menulistSub, menulistDest, sender, subject, age, up, down, remove].forEach( function(item) {
+        row.insertBefore(item, null);
       } );
-      group.insertBefore(hbox, ref);
+      container.insertBefore(row, ref);
       self.initFolderPick(menulistSrc, menupopupSrc, true);
       self.initFolderPick(menulistDest, menupopupDest, false);
-      self.checkAction(menulistAction, to, menulistDest, menulistSub);
-      self.checkEnable(enable, hbox);
-      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, to, menulistDest, menulistSub); }, false );
-      enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, hbox); }, false );
-      hbox.addEventListener('focus', function(aEvent) { self.checkFocus(hbox); }, true );
-      hbox.addEventListener('click', function(aEvent) { self.checkFocus(hbox); }, true );
-      return hbox;
+      self.checkAction(menulistAction, menulistDest, menulistSub);
+      self.checkEnable(enable, row);
+      menulistAction.addEventListener('command', function(aEvent) { self.checkAction(menulistAction, menulistDest, menulistSub); }, false );
+      enable.addEventListener('command', function(aEvent) { self.checkEnable(enable, row); }, false );
+      row.addEventListener('focus', function(aEvent) { self.checkFocus(row); }, true );
+      row.addEventListener('click', function(aEvent) { self.checkFocus(row); }, true );
+      return row;
     } catch(err) {
       autoArchiveLog.logException(err);
     }
   },
   
   focusRow: null,
-  checkFocus: function(hbox) {
-    if ( this.focusRow && this.focusRow != hbox )  this.focusRow.removeAttribute('awsome_auto_archive-focused');
-    hbox.setAttribute('awsome_auto_archive-focused', true);
-    this.focusRow = hbox;
+  checkFocus: function(row) {
+    if ( this.focusRow && this.focusRow != row )  this.focusRow.removeAttribute('awsome_auto_archive-focused');
+    row.setAttribute('awsome_auto_archive-focused', true);
+    this.focusRow = row;
   },
   
-  upDownRule: function(hbox, isUp) {
+  upDownRule: function(row, isUp) {
     try {
-      let ref = isUp ? hbox.previousSibling : hbox;
-      let remove = isUp ? hbox : hbox.nextSibling;
+      let ref = isUp ? row.previousSibling : row;
+      let remove = isUp ? row : row.nextSibling;
       if ( ref && remove && ref.classList.contains(ruleClass) && remove.classList.contains(ruleClass) ) {
         let rule = this.getOneRule(remove);
         autoArchiveLog.logObject(rule, 'temp rule', 1);
         remove.parentNode.removeChild(remove);
         // remove.parentNode.insertBefore(remove, ref); // lost all unsaved values
         let newBox = this.creatOneRule(rule, ref)
-        this.checkFocus( isUp ? newBox : hbox );
+        this.checkFocus( isUp ? newBox : row );
       }
     } catch(err) {
       autoArchiveLog.logException(err);
     }
   },
   
-  removeRule: function(hbox) {
-    hbox.parentNode.removeChild(hbox);
+  removeRule: function(row) {
+    row.parentNode.removeChild(row);
   },
 
-  checkEnable: function(enable, hbox) {
+  checkEnable: function(enable, row) {
     if ( enable.checked ) {
-      hbox.classList.remove("awsome_auto_archive-disable");
+      row.classList.remove("awsome_auto_archive-disable");
     } else {
-      hbox.classList.add("awsome_auto_archive-disable");
+      row.classList.add("awsome_auto_archive-disable");
     }
   },
   
-  checkAction: function(menulistAction, to, menulistDest, menulistSub) {
+  checkAction: function(menulistAction, menulistDest, menulistSub) {
     let limit = ["archive", "delete"].indexOf(menulistAction.value) >= 0;
     if ( limit && menulistSub.value == 2 ) menulistSub.value = 1;
-    to.style.visibility = menulistDest.style.visibility = limit ? 'hidden': 'visible';
+    menulistDest.style.visibility = limit ? 'hidden': 'visible';
     menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
   },
   
@@ -254,6 +261,7 @@ let autoArchivePrefDialog = {
       this._win = win;
       this._doc = win.document;
       autoArchiveService.addStatusListener(this.statusCallback);
+      this.createRuleHeader();
       if ( autoArchivePref.rules.length ) {
         autoArchivePref.rules.forEach( function(rule) {
           self.creatOneRule(rule, null);
@@ -266,9 +274,9 @@ let autoArchivePrefDialog = {
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
-  getOneRule: function(hbox) {
+  getOneRule: function(row) {
     let rule = {};
-    for ( let item of hbox.childNodes ) {
+    for ( let item of row.childNodes ) {
       let key = item.getAttribute('rule');
       if ( key ) {
         let value = item.value || item.checked;
@@ -281,12 +289,12 @@ let autoArchivePrefDialog = {
   
   saveRules: function() {
     try {
-      let group = this._doc.getElementById('awsome_auto_archive-rules');
-      if ( !group ) return;
+      let container = this._doc.getElementById('awsome_auto_archive-rules');
+      if ( !container ) return;
       let rules = [];
-      for ( let hbox of group.childNodes ) {
-        if ( hbox.classList.contains(ruleClass) ) {
-          let rule = this.getOneRule(hbox);
+      for ( let row of container.childNodes ) {
+        if ( row.classList.contains(ruleClass) ) {
+          let rule = this.getOneRule(row);
           if ( Object.keys(rule).length > 0 ) rules.push(rule);
         }
       }

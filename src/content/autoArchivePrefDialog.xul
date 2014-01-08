@@ -14,6 +14,7 @@
 <script>
   <![CDATA[
     Components.utils.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
   ]]>
 </script>
 <prefpane id="awsome_auto_archive-perfpane">
@@ -44,7 +45,7 @@
     <tabpanels>
       <tabpanel>
         <vbox flex="1">
-          <groupbox id='awsome_auto_archive-rules'>
+          <groupbox id='awsome_auto_archive-rules-groupbox'>
             <caption label="&awsome_auto_archive.perf.rules;"/>
             <hbox>
               <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule();"/>
@@ -54,8 +55,15 @@
               <label value="" flex="1"/>
               <button id="awsome_auto_archive-action" label="&awsome_auto_archive.perf.action;" oncommand="autoArchivePrefDialog.starStopNow();"/>
             </hbox>
+            <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked'>
+              <columns>
+                <column/><column/><column flex="1"/><column/><column flex="1"/><column flex="1"/><column flex="1"/><column/><column/><column/><column/>
+              </columns> 
+              <rows id='awsome_auto_archive-rules'>
+              </rows>
+            </grid>
           </groupbox>
-          <!--groupbox>
+          <groupbox>
             <caption label="&awsome_auto_archive.perf.donate;"/>
             <vbox align="center">
               <hbox>
@@ -65,7 +73,7 @@
               </hbox>
               <label/>
             </vbox>
-          </groupbox-->
+          </groupbox>
         </vbox>
       </tabpanel>
       <tabpanel>

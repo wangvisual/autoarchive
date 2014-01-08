@@ -9,8 +9,17 @@
     min-height: 200px;
   }
   
-  #awsome_auto_archive-rules >.awsome_auto_archive-rule {
-    box-align: center;
+  #awsome_auto_archive-rules-header {
+    background-image: linear-gradient(to bottom right, grey, rgba(0,255,0,0));
+    margin: 4px 2px 2px 2px;
+  }
+  
+  #awsome_auto_archive-rules-header,
+  #awsome_auto_archive-rules-header > label,
+  #awsome_auto_archive-rules >.awsome_auto_archive-rule,
+  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row,
+  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  hbox {
+    /*box-align: center;*/
     -moz-box-align: center;
   }
   
@@ -31,11 +40,6 @@
   #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox,
   #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox textbox {
     color: grey !important;
-  }
-
-  #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  row, #awsome_auto_archive-perfpane .awsome_auto_archive-center-rows  hbox{
-    box-align: center;
-    -moz-box-align: center;
   }
   
   #awsome_auto_archive-perfpane  .awsome_auto_archive-delete-rule {
