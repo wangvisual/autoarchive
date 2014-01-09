@@ -218,30 +218,32 @@ let autoArchivePrefDialog = {
     menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
   },
   
-  starStopNow: function() {
-    let button = self._doc.getElementById('awsome_auto_archive-action');
+  starStopNow: function(button) {
     if ( !button ) return;
     let action = button.getAttribute("action") || 'stop';
-    if ( action == 'run' ) {
-      this.saveRules();
-      autoArchiveService.doArchive();
-    }
-    else autoArchiveService.stop();
+    if ( action == 'stop' ) autoArchiveService.stop();
+    else autoArchiveService.doArchive(this.getRules(), (action == 'dryrun'));
   },
   
   statusCallback: function(status, detail) {
-    let button = self._doc.getElementById('awsome_auto_archive-action');
-    if ( !button ) return;
+    let run_button = self._doc.getElementById('awsome_auto_archive-action');
+    let dry_button = self._doc.getElementById('awsome_auto_archive-dry-run');
+    if ( !run_button || !dry_button ) return;
     if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
-      // change button to "Run"
-      button.setAttribute("label", "Save & Run");
-      button.setAttribute("action", "run");
+      // change run_button to "Run"
+      run_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.run"));
+      run_button.setAttribute("action", "run");
+      dry_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.dryrun"));
+      dry_button.setAttribute("action", "dryrun");
     } else if ( status == autoArchiveService.STATUS_RUN ) {
-      // change button to "Stop"
-      button.setAttribute("label", "Stop");
-      button.setAttribute("action", "stop");
+      // change run_button to "Stop"
+      run_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.stop"));
+      run_button.setAttribute("action", "stop");
+      dry_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.stop"));
+      dry_button.setAttribute("action", "stop");
     }
-    button.setAttribute("tooltiptext", detail);
+    run_button.setAttribute("tooltiptext", detail);
+    dry_button.setAttribute("tooltiptext", detail);
   },
   
   creatNewRule: function() {
@@ -281,30 +283,31 @@ let autoArchivePrefDialog = {
       if ( key ) {
         let value = item.value || item.checked;
         if ( item.getAttribute("type") == 'number' ) value = item.valueNumber;
+        if ( key == 'sub' ) value = Number(value); // menulist.value is always 'string'
         rule[key] = value;
       }
     }
     return rule;
   },
   
-  saveRules: function() {
+  getRules: function() {
+    let rules = [];
     try {
       let container = this._doc.getElementById('awsome_auto_archive-rules');
-      if ( !container ) return;
-      let rules = [];
+      if ( !container ) return rules;
       for ( let row of container.childNodes ) {
         if ( row.classList.contains(ruleClass) ) {
           let rule = this.getOneRule(row);
           if ( Object.keys(rule).length > 0 ) rules.push(rule);
         }
       }
-      autoArchiveLog.logObject(rules,'new rules',1);
-      autoArchivePref.setPerf('rules',JSON.stringify(rules));
+      autoArchiveLog.logObject(rules,'got rules',1);
     } catch (err) { autoArchiveLog.logException(err); }
+    return rules;
   },
   acceptPerfWindow: function() {
-    this.saveRules();
     autoArchiveLog.info("acceptPerfWindow");
+    autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
   },
   unLoadPerfWindow: function() {
     autoArchiveService.removeStatusListener(this.statusCallback);

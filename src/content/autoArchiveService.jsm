@@ -29,6 +29,7 @@ let autoArchiveService = {
   isExceed: false,
   numOfMessages: 0,
   totalSize: 0,
+  dry_run: false, // set by 'Dry Run' button, there's another one autoArchivePref.options.dry_run is set by perf
   start: function(time) {
     let date = new Date(Date.now() + time*1000);
     this.updateStatus(this.STATUS_SLEEP, "Will wakeup @ " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
@@ -86,7 +87,7 @@ let autoArchiveService = {
     this.wait4Folders = {};
     this._searchSession = null;
     this.folderListeners = [];
-    this.isExceed = false;
+    this.isExceed = this.dry_run = false;
     this.numOfMessages = this.totalSize = 0;
   },
   rules: [],
@@ -112,12 +113,14 @@ let autoArchiveService = {
     this.clear();
     this.start(autoArchivePref.options.start_next_delay);
   },
-  doArchive: function() {
+  doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.clear();
-    this.rules = autoArchivePref.rules.filter( function(rule) {
+    if ( !rules ) rules = autoArchivePref.rules;
+    this.rules = rules.filter( function(rule) {
       return rule.enable;
     } );
+    if ( dry_run ) this.dry_run = true;
     this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)");
     autoArchiveLog.logObject(this.rules, 'this.rules',1);
     this.doMoveOrArchiveOne();
@@ -334,7 +337,7 @@ let autoArchiveService = {
           
           this.sequenceCreateFolders = Object.keys(needCreateFolders).sort();
           autoArchiveLog.logObject(this.sequenceCreateFolders, 'this.sequenceCreateFolders', 1);
-          if ( autoArchivePref.options.dry_run ) {
+          if ( autoArchivePref.options.dry_run || self.dry_run ) {
             this.sequenceCreateFolders.forEach( function(path) {
               self.dryRunLog("create folder " + path);
             } );
@@ -405,7 +408,7 @@ let autoArchiveService = {
           autoArchiveLog.logObject(groups, 'groups', 0);
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {
-          if ( autoArchivePref.options.dry_run ) {
+          if ( autoArchivePref.options.dry_run || self.dry_run ) {
             this.messages.forEach( function(msgHdr) {
               self.dryRunLog("archive '"  + msgHdr.mime2DecodedSubject + "' from folder " + msgHdr.folder.URI);
             } );
@@ -481,7 +484,7 @@ let autoArchiveService = {
     };
   },
   doCopyDeleteMoveOne: function(group) {
-    if ( autoArchivePref.options.dry_run ) {
+    if ( autoArchivePref.options.dry_run || this.dry_run ) {
       group.messages.forEach( function(msg) {
         self.dryRunLog(group.action + " '" + msg.mime2DecodedSubject + "' from folder " + group.src + ( group.action != 'delete' ? ' to folder ' + group.dest : '' ))
       } );

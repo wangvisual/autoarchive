@@ -88,7 +88,6 @@ let autoArchivePref = {
         autoArchiveLog.setVerbose(this.options.enable_verbose_info);
       } else if ( data == 'rules' ) {
         this.rules = JSON.parse(this.options.rules);
-        autoArchiveLog.logObject(this.rules,'rules',1);
         this.rules.forEach( function(rule) {
           let error = false;
           ["src", "action", "age", "sub", "enable"].forEach( function(att) {
@@ -111,7 +110,10 @@ let autoArchivePref = {
             }
           }
           if ( error ) rule.enable = false;
+          // fix old config that save rule.sub as string, can be delete later
+          if ( typeof(rule.sub) == 'string' ) rule.sub = Number(rule.sub);
         } );
+        autoArchiveLog.logObject(this.rules,'rules',1);
       }
     } catch (err) {
       autoArchiveLog.logException(err);
