@@ -32,6 +32,13 @@
 <!ENTITY awsome_auto_archive.perf.start_next_delay "Start next run after">
 <!ENTITY awsome_auto_archive.perf.rule_timeout "Timeout for one rule in">
 <!ENTITY awsome_auto_archive.perf.seconds "seconds">
+<!ENTITY awsome_auto_archive.perf.batch_run_limitation "Batch limitations for one run">
+<!ENTITY awsome_auto_archive.perf.messages_number_limit "Total number of messages">
+<!ENTITY awsome_auto_archive.perf.messages_number_limit_hint "(0 means no limit)">
+<!ENTITY awsome_auto_archive.perf.messages_size_limit "Total size of messages">
+<!ENTITY awsome_auto_archive.perf.messages_size_limit_hint "Mega Bytes (0 means no limit)">
+<!ENTITY awsome_auto_archive.perf.start_exceed_delay "Start next run after">
+<!ENTITY awsome_auto_archive.perf.start_exceed_delay_hint "seconds if exceed the limitations">
 <!ENTITY awsome_auto_archive.perf.system_config "System Configration">
 <!ENTITY awsome_auto_archive.perf.accountSettings "Account Settings">
 <!ENTITY awsome_auto_archive.perf.identities "Identities">

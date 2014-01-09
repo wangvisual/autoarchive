@@ -14,6 +14,7 @@ Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 //Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 
 let autoArchiveService = {
@@ -25,6 +26,9 @@ let autoArchiveService = {
   STATUS_RUN: 3,
   STATUS_FINISH: 4,
   _status: [],
+  isExceed: false,
+  numOfMessages: 0,
+  totalSize: 0,
   start: function(time) {
     let date = new Date(Date.now() + time*1000);
     this.updateStatus(this.STATUS_SLEEP, "Will wakeup @ " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
@@ -82,6 +86,8 @@ let autoArchiveService = {
     this.wait4Folders = {};
     this._searchSession = null;
     this.folderListeners = [];
+    this.isExceed = false;
+    this.numOfMessages = this.totalSize = 0;
   },
   rules: [],
   wait4Folders: {},
@@ -222,6 +228,7 @@ let autoArchiveService = {
     let allTags = {};
     let searchHit = 0;
     let duplicateHit = 0;
+    let actionSize = 0;
     let listener = this;
     for ( let tag of MailServices.tags.getAllTags({}) ) {
       allTags[tag.key.toLowerCase()] = true;
@@ -235,6 +242,12 @@ let autoArchiveService = {
       //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
       searchHit ++;
+      if ( self.isExceed ) return;
+      if ( ( autoArchivePref.options.messages_number_limit > 0 && self.numOfMessages >= autoArchivePref.options.messages_number_limit )
+        || ( autoArchivePref.options.messages_size_limit > 0 && self.totalSize + msgHdr.messageSize > autoArchivePref.options.messages_size_limit * 1024 * 1024 ) ){
+        self.isExceed = true;
+        return;
+      }
       if ( !msgHdr.messageId || !msgHdr.folder || !msgHdr.folder.URI || msgHdr.folder.URI == rule.dest ) return;
       if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
       if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
@@ -286,6 +299,8 @@ let autoArchiveService = {
         this.messagesDest[msgHdr.messageId] = realDest;
       }
       //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
+      self.totalSize += msgHdr.messageSize; actionSize += msgHdr.messageSize;
+      self.numOfMessages ++;
       this.messages.push(msgHdr);
     };
     this.onSearchDone = function(status) {
@@ -294,7 +309,7 @@ let autoArchiveService = {
         autoArchiveLog.info("Total " + searchHit + " messages hit");
         if ( duplicateHit ) autoArchiveLog.info(duplicateHit + " messages already exists in target folder");
         if ( !this.messages.length ) return self.doMoveOrArchiveOne();
-        autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages");
+        autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages, total " + autoArchiveUtil.readablizeBytes(actionSize) + " bytes");
         // create missing folders first
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
           // rule.dest: imap://a@b.com/1/2
@@ -511,12 +526,13 @@ let autoArchiveService = {
       return this._searchSession = null;
     }
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
-    if ( this.rules.length == 0 ) {
+    if ( this.rules.length == 0 || self.isExceed ) {
       this.closeAllFoldersDB();
       //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
-      autoArchiveLog.info("auto archive done for all rules, set next");
+      autoArchiveLog.info("Total changed " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
+      autoArchiveLog.info( self.isExceed? "Limitation exceeded, set next" : "auto archive done for all rules, set next");
       this.updateStatus(this.STATUS_FINISH, '');
-      return this.start(autoArchivePref.options.start_next_delay);
+      return this.start( self.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay );
     }
     let rule = this.rules.shift();
     //autoArchiveLog.logObject(rule, 'running rule', 1);

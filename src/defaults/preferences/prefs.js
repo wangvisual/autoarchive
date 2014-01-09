@@ -9,7 +9,10 @@ pref("extensions.awsome_auto_archive.age_unread", 7);
 pref("extensions.awsome_auto_archive.startup_delay", 10);
 pref("extensions.awsome_auto_archive.idle_delay", 60);
 pref("extensions.awsome_auto_archive.start_next_delay", 3600);
+pref("extensions.awsome_auto_archive.start_exceed_delay", 120);
 pref("extensions.awsome_auto_archive.rule_timeout", 4000);
+pref("extensions.awsome_auto_archive.messages_number_limit", 0); // 0 to disable check
+pref("extensions.awsome_auto_archive.messages_size_limit", 0); // 0 to disable check, in M Bytes
 pref("extensions.awsome_auto_archive.update_statusbartext", true);
 pref("extensions.awsome_auto_archive.dry_run", false);
 pref("extensions.awsome_auto_archive.default_days", 180);
