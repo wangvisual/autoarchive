@@ -43,5 +43,7 @@
 <!ENTITY awsome_auto_archive.perf.accountSettings "Account Settings">
 <!ENTITY awsome_auto_archive.perf.identities "Identities">
 
+<!ENTITY awsome_auto_archive.info.title "Dry Run Summary">
+<!ENTITY awsome_auto_archive.info.info "These changes would be applied in real run:">
 
 

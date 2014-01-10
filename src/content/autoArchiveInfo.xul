@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://awsomeAutoArchive/locale/awsome_auto_archive.dtd">
+<dialog title="&awsome_auto_archive.info.title;"
+     buttons="accept"
+     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<script>
+  <![CDATA[
+    function loadList() {
+      window.removeEventListener('load', loadList, false);
+      theList = document.getElementById('awsome_auto_archive-infolist');
+      if ( theList && window.arguments && window.arguments[0]) {
+        window.arguments[0].forEach( function(items) {
+          let row = document.createElement('listitem');
+          items.forEach( function(item) {
+            let cell = document.createElement('listcell');
+            cell.setAttribute('label', item);
+            row.appendChild(cell);
+          } );
+          theList.appendChild(row);
+        } );
+      }
+    }
+    window.addEventListener('load', loadList, false);
+  ]]>
+</script>
+<vbox flex="1">
+<label value="&awsome_auto_archive.info.info;"/>
+<listbox id="awsome_auto_archive-infolist" flex="1">
+  <listhead>
+    <listheader label="Action"/>
+    <listheader label="Item"/>
+    <listheader label="Source Folder"/>
+    <listheader label="Destination Folder"/>
+  </listhead>
+  <listcols>
+    <listcol/><listcol flex="1"/><listcol flex="1"/><listcol flex="1"/>
+  </listcols>
+</listbox>
+</vbox>
+</dialog>

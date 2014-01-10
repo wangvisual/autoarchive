@@ -45,4 +45,9 @@
   #awsome_auto_archive-perfpane  .awsome_auto_archive-delete-rule {
     color: red !important;
   }
+  
+  #awsome_auto_archive-infolist {
+    min-width: 800px;
+    min-height: 600px;
+  }
 }

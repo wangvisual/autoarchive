@@ -89,6 +89,7 @@ let autoArchiveService = {
     this.folderListeners = [];
     this.isExceed = this.dry_run = false;
     this.numOfMessages = this.totalSize = 0;
+    this.dryRunLogItems = [];
   },
   rules: [],
   wait4Folders: {},
@@ -339,7 +340,7 @@ let autoArchiveService = {
           autoArchiveLog.logObject(this.sequenceCreateFolders, 'this.sequenceCreateFolders', 1);
           if ( autoArchivePref.options.dry_run || self.dry_run ) {
             this.sequenceCreateFolders.forEach( function(path) {
-              self.dryRunLog("create folder " + path);
+              self.dryRunLog(["create", path]);
             } );
             this.sequenceCreateFolders = [];
           } else if ( !isAsync ) {
@@ -410,7 +411,7 @@ let autoArchiveService = {
         } else {
           if ( autoArchivePref.options.dry_run || self.dry_run ) {
             this.messages.forEach( function(msgHdr) {
-              self.dryRunLog("archive '"  + msgHdr.mime2DecodedSubject + "' from folder " + msgHdr.folder.URI);
+              self.dryRunLog(["archive", msgHdr.mime2DecodedSubject, msgHdr.folder.URI]);
             } );
             return self.doMoveOrArchiveOne();
           }
@@ -486,7 +487,7 @@ let autoArchiveService = {
   doCopyDeleteMoveOne: function(group) {
     if ( autoArchivePref.options.dry_run || this.dry_run ) {
       group.messages.forEach( function(msg) {
-        self.dryRunLog(group.action + " '" + msg.mime2DecodedSubject + "' from folder " + group.src + ( group.action != 'delete' ? ' to folder ' + group.dest : '' ))
+        self.dryRunLog([group.action, msg.mime2DecodedSubject, group.src , ( group.action != 'delete' ? ' to folder ' + group.dest : '' )])
       } );
       if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
       else this.doMoveOrArchiveOne();
@@ -528,19 +529,30 @@ let autoArchiveService = {
       this._searchSession.search(null);
       return this._searchSession = null;
     }
-    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "enable": true}]
+    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "to": whom, "enable": true}]
     if ( this.rules.length == 0 || self.isExceed ) {
       this.closeAllFoldersDB();
       //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
       autoArchiveLog.info("Total changed " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
       autoArchiveLog.info( self.isExceed? "Limitation exceeded, set next" : "auto archive done for all rules, set next");
+      if ( autoArchivePref.options.dry_run || self.dry_run ) {
+        let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,dialog,modal,resizable,centerscreen", this.dryRunLogItems);
+        else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
+      }
       this.updateStatus(this.STATUS_FINISH, '');
       return this.start( self.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay );
     }
+
     let rule = this.rules.shift();
     //autoArchiveLog.logObject(rule, 'running rule', 1);
-    this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) +
-      " with filter { " + "age: " + ( typeof(rule.age) != 'undefined' ? rule.age : '' ) + " subject: " + ( typeof(rule.subject) != 'undefined' ? rule.subject : '' ) + " }");
+    this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) + " with filter { "
+      + ["age", "subject", "from", "to"].filter( function(item) {
+        return typeof(rule[item]) != 'undefined';
+      } ).map( function(item) {
+        return item + " => " + rule[item];
+      } ).join(", ")
+      + " }");
     this.timer.initWithCallback( function() { // watch dog, will be reset by next doMoveOrArchiveOne watch dog or start
       autoArchiveLog.log("Timeout when " + self._status[1], 1);
       return self.doMoveOrArchiveOne(); // call doMoveOrArchiveOne might make me crazy, but it can make sure all rules have chance to run
@@ -699,8 +711,10 @@ let autoArchiveService = {
     } while ( ( folder = folder.parent ) && folder && folder != folder.rootFolder );
     return false;
   },
+  dryRunLogItems: [],
   dryRunLog: function(log) {
-    autoArchiveLog.info("Dry run: " + log, false, true);
+    this.dryRunLogItems.push(log);
+    autoArchiveLog.info("Dry run: " + log.join(', '), false, true);
   },
 
 };
