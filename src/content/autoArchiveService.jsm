@@ -487,7 +487,7 @@ let autoArchiveService = {
   doCopyDeleteMoveOne: function(group) {
     if ( autoArchivePref.options.dry_run || this.dry_run ) {
       group.messages.forEach( function(msg) {
-        self.dryRunLog([group.action, msg.mime2DecodedSubject, group.src , ( group.action != 'delete' ? ' to folder ' + group.dest : '' )])
+        self.dryRunLog([group.action, msg.mime2DecodedSubject, group.src , ( group.action != 'delete' ? group.dest : '' )])
       } );
       if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
       else this.doMoveOrArchiveOne();
