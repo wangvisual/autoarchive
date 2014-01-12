@@ -50,4 +50,9 @@
     min-width: 800px;
     min-height: 600px;
   }
+  
+  #awsome_auto_archive-infolist listcol{
+    max-width: 1000px;
+  }
+  
 }

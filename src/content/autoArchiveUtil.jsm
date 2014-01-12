@@ -59,8 +59,9 @@ let autoArchiveUtil = {
   },
   // http://stackoverflow.com/questions/4498866/actual-numbers-to-the-human-readable-values
   readablizeBytes: function(bytes) {
-    var s = ' KMGTPE';
-    var e = Math.floor(Math.log(bytes) / Math.log(1024));
+    if ( bytes <= 0 ) return 0;
+    let s = ' KMGTPE';
+    let e = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, e)).toFixed(2) + s[e];
   },
   cleanup: function() {

@@ -9,7 +9,7 @@
   <![CDATA[
     function loadList() {
       window.removeEventListener('load', loadList, false);
-      theList = document.getElementById('awsome_auto_archive-infolist');
+      let theList = document.getElementById('awsome_auto_archive-infolist');
       if ( theList && window.arguments && window.arguments[0]) {
         window.arguments[0].forEach( function(items) {
           let row = document.createElement('listitem');
@@ -19,6 +19,7 @@
             cell.setAttribute('tooltiptext', item);
             row.appendChild(cell);
           } );
+          row.allowEvents = true; // or no tooltiptext, see https://developer.mozilla.org/en-US/docs/XUL/Attribute/allowevents
           theList.appendChild(row);
         } );
       }
