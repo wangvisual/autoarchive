@@ -47,8 +47,9 @@ let autoArchiveService = {
     }
   },
   waitTillIdle: function() {
-    let needDelay = autoArchivePref.options.idle_delay - this.idleService.idleTime / 1000;
-    autoArchiveLog.info("Computer already idle for " + ( this.idleService.idleTime / 1000 ) + " seconds");
+    let idleTime = Math.round(this.idleService.idleTime/1000);
+    let needDelay = autoArchivePref.options.idle_delay - idleTime;
+    autoArchiveLog.info("Computer already idle for " + idleTime + " seconds");
     if ( needDelay <= 0 ) return self.doArchive();
     this.updateStatus(this.STATUS_WAITIDLE, "Wait for more " + needDelay + " seconds idle");
     this.idleObserver.delay = needDelay;
@@ -537,7 +538,7 @@ let autoArchiveService = {
       this.closeAllFoldersDB();
       //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
       autoArchiveLog.info("Total changed " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
-      autoArchiveLog.info( self.isExceed? "Limitation exceeded, set next" : "auto archive done for all rules, set next");
+      autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
       if ( autoArchivePref.options.dry_run || self.dry_run ) {
         let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
         if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,dialog,modal,resizable,centerscreen", this.dryRunLogItems);
