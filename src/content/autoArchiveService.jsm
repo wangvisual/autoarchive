@@ -265,7 +265,7 @@ let autoArchiveService = {
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
       if ( rule.action == 'archive' && ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
-      if ( Services.io.offline && msgHdr.folder.server instanceof Ci.nsIImapIncomingServer ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
+      if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
       // check if dest folder has alreay has the message
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         let realDest = rule.dest, additonal = '';
@@ -282,7 +282,7 @@ let autoArchiveService = {
         }
         //autoArchiveLog.info(msgHdr.mime2DecodedSubject + ":" + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
-        if ( Services.io.offline && realDestFolder.server instanceof Ci.nsIImapIncomingServer ) return;
+        if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
         // CopyFolders using createSubfolder
         // https://github.com/gark87/SmartFilters/blob/master/src/chrome/content/backend/imapfolders.jsm using createSubfolder
