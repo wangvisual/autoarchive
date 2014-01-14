@@ -265,6 +265,7 @@ let autoArchiveService = {
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
       if ( rule.action == 'archive' && ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
+      if ( Services.io.offline && msgHdr.folder.server instanceof Ci.nsIImapIncomingServer ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
       // check if dest folder has alreay has the message
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         let realDest = rule.dest, additonal = '';
@@ -281,6 +282,7 @@ let autoArchiveService = {
         }
         //autoArchiveLog.info(msgHdr.mime2DecodedSubject + ":" + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
+        if ( Services.io.offline && realDestFolder.server instanceof Ci.nsIImapIncomingServer ) return;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
         // CopyFolders using createSubfolder
         // https://github.com/gark87/SmartFilters/blob/master/src/chrome/content/backend/imapfolders.jsm using createSubfolder
@@ -541,7 +543,8 @@ let autoArchiveService = {
       autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
       if ( autoArchivePref.options.dry_run || self.dry_run ) {
         let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,dialog,modal,resizable,centerscreen", this.dryRunLogItems);
+        // openDialog with dialog=no, as open can't have additional parameter, and dialog has no maximize button
+        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
         else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
       }
       this.updateStatus(this.STATUS_FINISH, '');
