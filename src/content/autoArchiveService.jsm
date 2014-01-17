@@ -94,6 +94,7 @@ let autoArchiveService = {
     this.isExceed = this.dry_run = false;
     this.numOfMessages = this.totalSize = 0;
     this.dryRunLogItems = [];
+    this._status = [];
   },
   rules: [],
   wait4Folders: {},
@@ -113,6 +114,10 @@ let autoArchiveService = {
       } catch(err) { autoArchiveLog.logException(err); }
     } );
     this.accessedFolders = {};
+  },
+  starStopNow: function(rules, dry_run) {
+    if (this._status && this._status[0] == this.STATUS_RUN) autoArchiveService.stop();
+    else autoArchiveService.doArchive(rules, dry_run);
   },
   stop: function() {
     this.clear();

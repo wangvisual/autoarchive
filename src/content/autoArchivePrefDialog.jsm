@@ -218,11 +218,8 @@ let autoArchivePrefDialog = {
     menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
   },
   
-  starStopNow: function(button) {
-    if ( !button ) return;
-    let action = button.getAttribute("action") || 'stop';
-    if ( action == 'stop' ) autoArchiveService.stop();
-    else autoArchiveService.doArchive(this.getRules(), (action == 'dryrun'));
+  starStopNow: function(dry_run) {
+    autoArchiveService.starStopNow(this.getRules(), dry_run);
   },
   
   statusCallback: function(status, detail) {
@@ -232,15 +229,11 @@ let autoArchivePrefDialog = {
     if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
       // change run_button to "Run"
       run_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.run"));
-      run_button.setAttribute("action", "run");
       dry_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.dryrun"));
-      dry_button.setAttribute("action", "dryrun");
     } else if ( status == autoArchiveService.STATUS_RUN ) {
       // change run_button to "Stop"
       run_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.stop"));
-      run_button.setAttribute("action", "stop");
       dry_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.stop"));
-      dry_button.setAttribute("action", "stop");
     }
     run_button.setAttribute("tooltiptext", detail);
     dry_button.setAttribute("tooltiptext", detail);
@@ -301,7 +294,7 @@ let autoArchivePrefDialog = {
           if ( Object.keys(rule).length > 0 ) rules.push(rule);
         }
       }
-      autoArchiveLog.logObject(rules,'got rules',1);
+      // autoArchiveLog.logObject(rules,'got rules',1);
     } catch (err) { autoArchiveLog.logException(err); }
     return rules;
   },
