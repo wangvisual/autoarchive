@@ -105,56 +105,58 @@
               </rows>
             </grid>
           </groupbox>
-          <groupbox>
-            <caption label="&awsome_auto_archive.perf.active_time;"/>
-            <grid class='awsome_auto_archive-center-rows'>
-              <columns>
-                <column flex="1"/>
-                <column flex="1000"/>
-              </columns> 
-              <rows>
-                <row>
-                  <label value="&awsome_auto_archive.perf.startup_delay;"/>
-                  <hbox><textbox preference="pref_startup_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
-                </row>
-                <row>
-                  <label value="&awsome_auto_archive.perf.idle_delay;"/>
-                  <hbox><textbox preference="pref_idle_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
-                </row>
-                <row>
-                  <label value="&awsome_auto_archive.perf.start_next_delay;"/>
-                  <hbox><textbox preference="pref_start_next_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
-                </row>
-                <row>
-                  <label value="&awsome_auto_archive.perf.rule_timeout;"/>
-                  <hbox><textbox preference="pref_rule_timeout" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
-                </row>
-              </rows>
-            </grid>
-          </groupbox>
-          <groupbox>
-            <caption label="&awsome_auto_archive.perf.batch_run_limitation;"/>
-            <grid class='awsome_auto_archive-center-rows'>
-              <columns>
-                <column flex="1"/>
-                <column flex="1000"/>
-              </columns> 
-              <rows>
-                <row>
-                  <label value="&awsome_auto_archive.perf.messages_number_limit;"/>
-                  <hbox><textbox preference="pref_messages_number_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_number_limit_hint;"/></hbox>
-                </row>
-                <row>
-                  <label value="&awsome_auto_archive.perf.messages_size_limit;"/>
-                  <hbox><textbox preference="pref_messages_size_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_size_limit_hint;"/></hbox>
-                </row>
-                <row>
-                  <label value="&awsome_auto_archive.perf.start_exceed_delay;"/>
-                  <hbox><textbox preference="pref_start_exceed_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.start_exceed_delay_hint;"/></hbox>
-                </row>
-              </rows>
-            </grid>
-          </groupbox>
+          <hbox flex="1">
+            <groupbox flex="1">
+              <caption label="&awsome_auto_archive.perf.active_time;"/>
+              <grid class='awsome_auto_archive-center-rows'>
+                <columns>
+                  <column flex="1"/>
+                  <column flex="1000"/>
+                </columns> 
+                <rows>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.startup_delay;"/>
+                    <hbox><textbox preference="pref_startup_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                  </row>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.idle_delay;"/>
+                    <hbox><textbox preference="pref_idle_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                  </row>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.start_next_delay;"/>
+                    <hbox><textbox preference="pref_start_next_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                  </row>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.rule_timeout;"/>
+                    <hbox><textbox preference="pref_rule_timeout" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                  </row>
+                </rows>
+              </grid>
+            </groupbox>
+            <groupbox flex="1">
+              <caption label="&awsome_auto_archive.perf.batch_run_limitation;"/>
+              <grid class='awsome_auto_archive-center-rows'>
+                <columns>
+                  <column flex="1"/>
+                  <column flex="1000"/>
+                </columns> 
+                <rows>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.messages_number_limit;"/>
+                    <hbox><textbox preference="pref_messages_number_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_number_limit_hint;"/></hbox>
+                  </row>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.messages_size_limit;"/>
+                    <hbox><textbox preference="pref_messages_size_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_size_limit_hint;"/></hbox>
+                  </row>
+                  <row>
+                    <label value="&awsome_auto_archive.perf.start_exceed_delay;"/>
+                    <hbox><textbox preference="pref_start_exceed_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.start_exceed_delay_hint;"/></hbox>
+                  </row>
+                </rows>
+              </grid>
+            </groupbox>
+          </hbox>
           <groupbox>
             <caption label="&awsome_auto_archive.perf.system_config;"/>
             <vbox>
@@ -163,7 +165,7 @@
                 <button label="&awsome_auto_archive.perf.accountSettings;" oncommand="window.openDialog('chrome://messenger/content/AccountManager.xul');"/>
               </hbox>
               <label value="&awsome_auto_archive.perf.identities;"/>
-              <hbox id='awsome_auto_archive-IDs'><!-- items will be added dynamically --></hbox>
+              <description id='awsome_auto_archive-IDs'><!-- items will be added dynamically --></description>
             </vbox>
           </groupbox>
           <groupbox>

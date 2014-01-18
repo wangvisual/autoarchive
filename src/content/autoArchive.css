@@ -4,6 +4,9 @@
     overflow: auto;
     min-width: 600px;
   }
+  #awsome_auto_archive-perfpane .content-box  {
+    overflow: visible;
+  }
   
   #awsome_auto_archive-rules {
     min-height: 200px;
@@ -44,6 +47,10 @@
   
   #awsome_auto_archive-perfpane  .awsome_auto_archive-delete-rule {
     color: red !important;
+  }
+  
+  #awsome_auto_archive-IDs {
+    max-width: 1000px; /* prevent perf win too large */
   }
   
   #awsome_auto_archive-infolist {

@@ -256,6 +256,7 @@ let autoArchivePrefDialog = {
       this._win = win;
       this._doc = win.document;
       autoArchiveService.addStatusListener(this.statusCallback);
+      this.fillIdentities(false);
       this.createRuleHeader();
       if ( autoArchivePref.rules.length ) {
         autoArchivePref.rules.forEach( function(rule) {
@@ -264,8 +265,6 @@ let autoArchivePrefDialog = {
       } else {
         this.creatNewRule();
       }
-      //win.setTimeout( self.fillIdentities, 0 );
-      this.fillIdentities(false);
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
@@ -314,7 +313,8 @@ let autoArchivePrefDialog = {
   fillIdentities: function(aSkipNntp) {
     let doc = self._doc;
     let group = doc.getElementById('awsome_auto_archive-IDs');
-    if ( !group ) return;
+    let pane = doc.getElementById('awsome_auto_archive-perfpane');
+    if ( !group || !pane ) return;
     let firstNonNull = null, gIdentities = {}, gAccounts = {};
     for (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {
       let server = account.incomingServer;
@@ -338,6 +338,7 @@ let autoArchivePrefDialog = {
       button.addEventListener("command", function(aEvent) { self._win.openDialog("chrome://messenger/content/am-identity-edit.xul", "dlg", "", {identity: gIdentities[id], account: gAccounts[id], result:false }); }, false );
       group.insertBefore(button, null);
     } );
+    pane.style.minHeight = pane.contentHeight + 10 + "px"; // reset the pane height after fill Identities, to prevent vertical scrollbar
   },
 
 }
