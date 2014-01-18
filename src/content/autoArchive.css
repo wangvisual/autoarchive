@@ -55,7 +55,7 @@
   
   #awsome_auto_archive-perfpane  menulist.awsome_auto_archive-folderError  {
     color: red !important;
-    list-style-image: url("chrome://messenger/skin/addressbook/icons/remote-addrbook-error.png");
+    list-style-image: url("chrome://messenger/skin/icons/cancel.png");
   }
   
   #awsome_auto_archive-infolist {

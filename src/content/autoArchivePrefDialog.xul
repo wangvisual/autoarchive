@@ -43,7 +43,7 @@
   <tabbox>
     <tabs>
       <tab image="chrome://awsomeAutoArchive/content/icon_run.png" label=" &awsome_auto_archive.perf.general;"/>
-      <tab image="chrome://messenger/skin/accountcentral/account-settings.png" label=" &awsome_auto_archive.perf.advanced;"/>
+      <tab image="chrome://mozapps/skin/extensions/extensionGeneric-16.png" label=" &awsome_auto_archive.perf.advanced;"/>
     </tabs>
     <tabpanels>
       <tabpanel>

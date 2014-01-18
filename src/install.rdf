@@ -15,6 +15,7 @@
     <!--em:optionsURL>chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul</em:optionsURL-->
     <em:optionsURL>javascript:opener.openDialog('chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul','Opt','chrome,dialog,modal,resizable');window.close();</em:optionsURL>
     <em:homepageURL>https://github.com/wangvisual/autoArchive</em:homepageURL>
+    <!--em:icon64URL>chrome://awsomeAutoArchive/skin/icon64.png</em:icon64URL-->
     
     <!-- Target -->
     <em:targetApplication>
