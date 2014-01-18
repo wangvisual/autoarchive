@@ -580,7 +580,7 @@ let autoArchiveService = {
     } catch (err) {
       autoArchiveLog.logException(err);
     }
-    if ( !srcFolder || ( ["move", "copy"].indexOf(rule.action) >= 0 && !destFolder ) ) {
+    if ( !srcFolder || !srcFolder.parent || ( ["move", "copy"].indexOf(rule.action) >= 0 && ( !destFolder || !destFolder.parent ) ) ) {
       autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 1);
       return this.doMoveOrArchiveOne();
     }
