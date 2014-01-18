@@ -30,8 +30,21 @@ let autoArchivePrefDialog = {
   updateFolderStyle: function(folderPicker, folderPopup, init) {
     let msgFolder = {value: '', prettyName: 'N/A'};
     let updateStyle = function() {
-      folderPopup.selectFolder(msgFolder); // false alarm by addon validator
-      folderPopup._setCssSelectors(msgFolder, folderPicker);
+      let hasError = false;
+      try {
+        folderPopup.selectFolder(msgFolder); // false alarm by addon validator
+        folderPopup._setCssSelectors(msgFolder, folderPicker);
+      } catch(err) {
+        hasError = true;
+      }
+      if ( hasError ) {
+        autoArchiveLog.info("Error: folder '" + msgFolder.prettyName + "' can't be selected");
+        folderPicker.classList.add("awsome_auto_archive-folderError");
+        folderPicker.classList.remove("folderMenuItem");
+      } else {
+        folderPicker.classList.remove("awsome_auto_archive-folderError");
+        folderPicker.classList.add("folderMenuItem");
+      }
     };
     try {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
