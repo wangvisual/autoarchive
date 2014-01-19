@@ -81,7 +81,7 @@ let autoArchivePrefDialog = {
       let container = doc.getElementById('awsome_auto_archive-rules');
       if ( !container ) return;
       let row = doc.createElementNS(XUL, "row");
-      ["", "action", "source", "scope", "dest", "from", "subject", "age", "", "", ""].forEach( function(label) {
+      ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "age", "", "", ""].forEach( function(label) {
         let item = doc.createElementNS(XUL, "label");
         item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
         row.insertBefore(item, null);
@@ -145,6 +145,11 @@ let autoArchivePrefDialog = {
       sender.setAttribute("rule", 'from');
       sender.setAttribute("size", "10");
       
+      let recipient = doc.createElementNS(XUL, "textbox");
+      recipient.setAttribute("value", rule.recipient || '');
+      recipient.setAttribute("rule", 'recipient');
+      recipient.setAttribute("size", "10");
+      
       let subject = doc.createElementNS(XUL, "textbox");
       subject.setAttribute("value", rule.subject || '');
       subject.setAttribute("rule", 'subject');
@@ -170,7 +175,7 @@ let autoArchivePrefDialog = {
       remove.addEventListener("command", function(aEvent) { self.removeRule(row); }, false );
       
       row.classList.add(ruleClass);
-      [enable, menulistAction, menulistSrc, menulistSub, menulistDest, sender, subject, age, up, down, remove].forEach( function(item) {
+      [enable, menulistAction, menulistSrc, menulistSub, menulistDest, sender, recipient, subject, age, up, down, remove].forEach( function(item) {
         row.insertBefore(item, null);
       } );
       container.insertBefore(row, ref);

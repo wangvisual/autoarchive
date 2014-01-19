@@ -559,7 +559,7 @@ let autoArchiveService = {
     let rule = this.rules.shift();
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) + " with filter { "
-      + ["age", "subject", "from", "to"].filter( function(item) {
+      + ["age", "subject", "from", "recipient"].filter( function(item) {
         return typeof(rule[item]) != 'undefined';
       } ).map( function(item) {
         return item + " => " + rule[item];
@@ -631,9 +631,10 @@ let autoArchiveService = {
     
     if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
-    let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'] };
-    let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender };
-    ["subject", "from"].forEach( function(filter) {
+    // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
+    let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient:['expressionsearch#toRegex'] };
+    let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender, recipient: Ci.nsMsgSearchAttrib.ToOrCC };
+    ["subject", "from", "recipient"].forEach( function(filter) {
       if ( typeof(rule[filter]) != 'undefined' && rule[filter] != '' ) {
         // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
         let customId, positive = true, attribute = rule[filter];
@@ -642,14 +643,13 @@ let autoArchiveService = {
           attribute = attribute.substr(1);
         }
         if ( attribute.match(/^\/.*\/[ismxpgc]*$/) ) {
-          // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
           advanced[filter].some( function(term) { // .find need TB >=25
             if ( MailServices.filters.getCustomTerm(term) ) {
               customId = term;
               return true;
             } else return false;
           } );
-          if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "' unless you installed addons like 'Expression Search / GMailUI' or 'FiltaQuilla'", 1);
+          if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "', 'FiltaQuilla' support RE search for subject, and 'Expression Search / GMailUI' support all.", 1);
         }
         if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
         else self.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
