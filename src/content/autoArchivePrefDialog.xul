@@ -11,12 +11,6 @@
      onunload="autoArchivePrefDialog.unLoadPerfWindow()"
      ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow()"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-<script>
-  <![CDATA[
-    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
-    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
-  ]]>
-</script>
 <prefpane id="awsome_auto_archive-perfpane">
   <preferences>
     <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
@@ -180,4 +174,10 @@
   </tabbox>
   
 </prefpane>
+<script>
+  <![CDATA[
+    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+    Components.utils.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
+  ]]>
+</script>
 </prefwindow>
