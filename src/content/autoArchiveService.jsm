@@ -256,8 +256,9 @@ let autoArchiveService = {
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
       searchHit ++;
       if ( self.isExceed ) return;
-      if ( ( autoArchivePref.options.messages_number_limit > 0 && self.numOfMessages >= autoArchivePref.options.messages_number_limit )
-        || ( autoArchivePref.options.messages_size_limit > 0 && self.totalSize + msgHdr.messageSize > autoArchivePref.options.messages_size_limit * 1024 * 1024 ) ){
+      if ( self.numOfMessages > 0 // if only one big message exceed the size limit, we still accept it
+        && ( ( autoArchivePref.options.messages_number_limit > 0 && self.numOfMessages >= autoArchivePref.options.messages_number_limit )
+          || ( autoArchivePref.options.messages_size_limit > 0 && self.totalSize + msgHdr.messageSize > autoArchivePref.options.messages_size_limit * 1024 * 1024 ) ) ) {
         self.isExceed = true;
         return;
       }
