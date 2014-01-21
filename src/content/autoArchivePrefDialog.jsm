@@ -32,10 +32,12 @@ let autoArchivePrefDialog = {
     let updateStyle = function() {
       let hasError = false;
       try {
-        folderPopup.selectFolder(msgFolder); // false alarm by addon validator
+        if ( typeof(folderPopup.selectFolder) != 'undefined' ) folderPopup.selectFolder(msgFolder); // false alarm by addon validator
+        else return;
         folderPopup._setCssSelectors(msgFolder, folderPicker);
       } catch(err) {
         hasError = true;
+        //autoArchiveLog.logException(err);
       }
       if ( hasError ) {
         autoArchiveLog.info("Error: folder '" + msgFolder.prettyName + "' can't be selected");
@@ -80,6 +82,7 @@ let autoArchivePrefDialog = {
       let doc = this._doc;
       let container = doc.getElementById('awsome_auto_archive-rules');
       if ( !container ) return;
+      while (container.firstChild) container.removeChild(container.firstChild);
       let row = doc.createElementNS(XUL, "row");
       ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "age", "", "", ""].forEach( function(label) {
         let item = doc.createElementNS(XUL, "label");
@@ -268,21 +271,43 @@ let autoArchivePrefDialog = {
     else if ( how == 'down' ) this.upDownRule(this.focusRow, false);
     else if ( how == 'remove' ) this.removeRule(this.focusRow);
   },
+  
+  syncFromPerf: function(win) {
+    autoArchiveLog.info('syncFromPerf');
+    this._win = win;
+    this._doc = win.document;
+    let preference = this._doc.getElementById("pref_rules");
+    let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
+    autoArchiveLog.info('act:' + actualValue);
+    if ( actualValue === this.oldvalue ) return;
+    this.createRuleHeader();
+    let rules = JSON.parse(actualValue);
+    if ( rules.length ) {
+      rules.forEach( function(rule) {
+        self.creatOneRule(rule, null);
+      } );
+      this.oldvalue = actualValue;
+    } else {
+      this.creatNewRule();
+    }
+  },
+  
+  syncToPerf: function() {
+    autoArchiveLog.info('syncToPerf');
+    //autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
+    let value = JSON.stringify(this.getRules());
+    autoArchiveLog.info('value:' + value);
+    this.oldvalue = value;
+    return value;
+  },
 
   loadPerfWindow: function(win) {
     try {
-      this._win = win;
-      this._doc = win.document;
+      autoArchiveLog.info('loadPerfWindow');
+      //this._win = win;
+      //this._doc = win.document;
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
-      this.createRuleHeader();
-      if ( autoArchivePref.rules.length ) {
-        autoArchivePref.rules.forEach( function(rule) {
-          self.creatOneRule(rule, null);
-        } );
-      } else {
-        this.creatNewRule();
-      }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
@@ -317,12 +342,13 @@ let autoArchivePrefDialog = {
   },
   acceptPerfWindow: function() {
     autoArchiveLog.info("acceptPerfWindow");
-    autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
+    //autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
   },
   unLoadPerfWindow: function() {
     autoArchiveService.removeStatusListener(this.statusCallback);
     delete this._doc;
     delete this._win;
+    delete this.oldvalue;
     autoArchiveLog.info("prefwindow unload");
     return true;
   },
