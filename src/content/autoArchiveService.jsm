@@ -126,8 +126,7 @@ let autoArchiveService = {
   doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.clear();
-    if ( !rules ) rules = autoArchivePref.rules;
-    this.rules = rules.filter( function(rule) {
+    this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
       return rule.enable;
     } );
     if ( dry_run ) this.dry_run = true;

@@ -12,7 +12,7 @@
      ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow()"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <prefpane id="awsome_auto_archive-perfpane">
-  <preferences>
+  <preferences id="awsome_auto_archive-preferences">
     <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
     <preference id="pref_update_statusbartext" name="extensions.awsome_auto_archive.update_statusbartext" type="bool"/>
     <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>

@@ -13,7 +13,7 @@
     <em:creator>Opera Wang</em:creator>
     <!--em:aboutURL>chrome://awsomeAutoArchive/content/about.xul</em:aboutURL-->
     <!--em:optionsURL>chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul</em:optionsURL-->
-    <em:optionsURL>javascript:opener.openDialog('chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul','Opt','chrome,dialog,modal,resizable,close=yes');window.close();</em:optionsURL>
+    <em:optionsURL>javascript:opener.openDialog('chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul','Opt',( Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch).getBoolPref("browser.preferences.instantApply") ? '' : 'modal,' ) + 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes');window.close();</em:optionsURL>
     <em:homepageURL>https://github.com/wangvisual/autoArchive</em:homepageURL>
     <!--em:icon64URL>chrome://awsomeAutoArchive/skin/icon64.png</em:icon64URL-->
     

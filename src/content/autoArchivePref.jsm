@@ -9,6 +9,13 @@ const mozIJSSubScriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getSer
 
 let autoArchivePref = {
   path: null,
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=469673
+  // https://groups.google.com/forum/#!topic/mozilla.dev.extensions/SBGIogdIiwE
+  InstantApply: false,
+  setInstantApply: function(instant) {
+    this.InstantApply = instant;
+    autoArchiveLog.info("autoArchivePref: set InstantApply to " + instant);
+  },
   // TODO: When bug 564675 is implemented this will no longer be needed
   // Always set the default prefs, because they disappear on restart
   setDefaultPrefs: function () {
@@ -87,36 +94,40 @@ let autoArchivePref = {
       if ( data == 'enable_verbose_info' ) {
         autoArchiveLog.setVerbose(this.options.enable_verbose_info);
       } else if ( data == 'rules' ) {
-        this.rules = JSON.parse(this.options.rules);
-        this.rules.forEach( function(rule) {
-          let error = false;
-          ["src", "action", "age", "sub", "enable"].forEach( function(att) {
-            if ( typeof(rule[att]) == 'undefined' ) {
-              autoArchiveLog.log("Error: rule lacks of property " + att, 1);
-              error = true;
-            }
-          } );
-          if ( ["move", "archive", "copy", "delete"].indexOf(rule.action) < 0 ) {
-            autoArchiveLog.log("Error: rule action must be one of move or archive", 1);
-            error = true;
-          }
-          if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
-            if ( typeof(rule.dest) == 'undefined' ) {
-              autoArchiveLog.log("Error: dest folder must be defined for copy/move action", 1);
-              error = true;
-            } else if ( rule.src == rule.dest ) {
-              autoArchiveLog.log("Error: dest folder must be different from src folder", 1);
-              error = true;
-            }
-          }
-          if ( error ) rule.enable = false;
-          // fix old config that save rule.sub as string, can be delete later
-          if ( typeof(rule.sub) == 'string' ) rule.sub = Number(rule.sub);
-        } );
-        autoArchiveLog.logObject(this.rules,'rules',1);
+        if ( !this.InstantApply ) this.validateRules();
       }
     } catch (err) {
       autoArchiveLog.logException(err);
     };
+  },
+  validateRules: function(rules) {
+    if ( !rules ) rules = JSON.parse(this.options.rules);
+    rules.forEach( function(rule) {
+      let error = false;
+      ["src", "action", "age", "sub", "enable"].forEach( function(att) {
+        if ( typeof(rule[att]) == 'undefined' ) {
+          autoArchiveLog.log("Error: rule lacks of property " + att, 1);
+          error = true;
+        }
+      } );
+      if ( ["move", "archive", "copy", "delete"].indexOf(rule.action) < 0 ) {
+        autoArchiveLog.log("Error: rule action must be one of move or archive", 1);
+        error = true;
+      }
+      if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
+        if ( typeof(rule.dest) == 'undefined' ) {
+          autoArchiveLog.log("Error: dest folder must be defined for copy/move action", 1);
+          error = true;
+        } else if ( rule.src == rule.dest ) {
+          autoArchiveLog.log("Error: dest folder must be different from src folder", 1);
+          error = true;
+        }
+      }
+      if ( error ) rule.enable = false;
+      // fix old config that save rule.sub as string, can be delete later
+      if ( typeof(rule.sub) == 'string' ) rule.sub = Number(rule.sub);
+    } );
+    autoArchiveLog.logObject(rules,'rules',1);
+    return rules;
   },
 };

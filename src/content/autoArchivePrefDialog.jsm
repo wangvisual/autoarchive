@@ -214,6 +214,7 @@ let autoArchivePrefDialog = {
         // remove.parentNode.insertBefore(remove, ref); // lost all unsaved values
         let newBox = this.creatOneRule(rule, ref)
         this.checkFocus( isUp ? newBox : row );
+        this.syncToPerf();
       }
     } catch(err) {
       autoArchiveLog.logException(err);
@@ -222,6 +223,7 @@ let autoArchivePrefDialog = {
   
   removeRule: function(row) {
     row.parentNode.removeChild(row);
+    this.syncToPerf();
   },
 
   checkEnable: function(enable, row) {
@@ -272,13 +274,16 @@ let autoArchivePrefDialog = {
     else if ( how == 'remove' ) this.removeRule(this.focusRow);
   },
   
-  syncFromPerf: function(win) {
+  syncFromPerf: function(win) { // this need 0.5s for 8 rules
     autoArchiveLog.info('syncFromPerf');
+     // if not modal, user can open 2nd pref window, we will close the old one, and close/unLoadPerfWindow seems a sync call, so we are fine
+    if ( this._win && this._win != win && !this._win.closed ) this._win.close();
+    autoArchiveLog.info('syncFromPerf set win');
     this._win = win;
     this._doc = win.document;
     let preference = this._doc.getElementById("pref_rules");
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
-    autoArchiveLog.info('act:' + actualValue);
+    //autoArchiveLog.info('act:' + actualValue);
     if ( actualValue === this.oldvalue ) return;
     this.createRuleHeader();
     let rules = JSON.parse(actualValue);
@@ -290,14 +295,15 @@ let autoArchivePrefDialog = {
     } else {
       this.creatNewRule();
     }
+    autoArchiveLog.info('syncFromPerf done');
   },
   
-  syncToPerf: function() {
+  syncToPerf: function() { // this need 0.005s for 8 rules
     autoArchiveLog.info('syncToPerf');
-    //autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
     let value = JSON.stringify(this.getRules());
-    autoArchiveLog.info('value:' + value);
+    //autoArchiveLog.info('value:' + value);
     this.oldvalue = value;
+    autoArchiveLog.info('syncToPerf done');
     return value;
   },
 
@@ -306,6 +312,8 @@ let autoArchivePrefDialog = {
       autoArchiveLog.info('loadPerfWindow');
       //this._win = win;
       //this._doc = win.document;
+      this.instantApply = this._doc.getElementById('awsome_auto_archive-preferences').instantApply || false;
+      autoArchivePref.setInstantApply(this.instantApply);
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
     } catch (err) { autoArchiveLog.logException(err); }
@@ -346,9 +354,11 @@ let autoArchivePrefDialog = {
   },
   unLoadPerfWindow: function() {
     autoArchiveService.removeStatusListener(this.statusCallback);
+    if ( this.instantApply ) autoArchivePref.validateRules();
     delete this._doc;
     delete this._win;
     delete this.oldvalue;
+    delete this.instantApply;
     autoArchiveLog.info("prefwindow unload");
     return true;
   },
