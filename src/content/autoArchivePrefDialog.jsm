@@ -22,6 +22,9 @@ let autoArchivePrefDialog = {
   _doc: null,
   _win: null,
   cleanup: function() {
+    autoArchiveLog.info("autoArchivePrefDialog cleanup");
+    if ( this._win && !this._win.closed ) this._win.close();
+    autoArchiveLog.info("autoArchivePrefDialog cleanup done");
   },
   
   showPrettyTooltip: function(URI,pretty) {
@@ -353,6 +356,7 @@ let autoArchivePrefDialog = {
     //autoArchivePref.setPerf('rules',JSON.stringify(this.getRules()));
   },
   unLoadPerfWindow: function() {
+    if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog ) return true;
     autoArchiveService.removeStatusListener(this.statusCallback);
     if ( this.instantApply ) autoArchivePref.validateRules();
     delete this._doc;

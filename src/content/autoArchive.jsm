@@ -12,6 +12,7 @@ Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
@@ -109,6 +110,7 @@ let autoArchive = {
       autoArchiveLog.info('autoArchive cleanup');
       if ( this.timer ) this.timer.cancel();
       this.timer = null;
+      autoArchivePrefDialog.cleanup();
       autoArchiveService.cleanup();
       autoArchivePref.cleanup();
     } catch (err) {
