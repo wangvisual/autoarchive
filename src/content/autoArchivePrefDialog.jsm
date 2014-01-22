@@ -30,12 +30,12 @@ let autoArchivePrefDialog = {
   showPrettyTooltip: function(URI,pretty) {
     return decodeURIComponent(URI).replace(/(.*\/)[^/]*/, '$1') + pretty;
   },
-  getFolderAndSetLabel: function(folderPicker) {
+  getFolderAndSetLabel: function(folderPicker, setLabel) {
     let msgFolder = {value: '', prettyName: 'N/A', server: {}};
     try {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
     } catch(err) {}
-    if ( !this._doc ) return msgFolder;
+    if ( !this._doc || !setLabel ) return msgFolder;
     let showFolderAs = this._doc.getElementById('pref_show_folder_as');
     let label = "";
     switch ( showFolderAs.value ) {
@@ -64,13 +64,13 @@ let autoArchivePrefDialog = {
         for ( let item of row.childNodes ) {
           let key = item.getAttribute('rule');
           if ( ["src", "dest"].indexOf(key) >= 0 /*&& item.style.visibility != 'hidden'*/ )
-            this.getFolderAndSetLabel(item);
+            this.getFolderAndSetLabel(item, true);
         }
       }
     }
   },
   updateFolderStyle: function(folderPicker, folderPopup, init) {
-    let msgFolder = this.getFolderAndSetLabel(folderPicker);
+    let msgFolder = this.getFolderAndSetLabel(folderPicker, false);
     let updateStyle = function() {
       let hasError = false;
       try {
@@ -89,7 +89,7 @@ let autoArchivePrefDialog = {
         folderPicker.classList.remove("awsome_auto_archive-folderError");
         folderPicker.classList.add("folderMenuItem");
       }
-      if ( init ) self.getFolderAndSetLabel(folderPicker);
+      self.getFolderAndSetLabel(folderPicker, true);
     };
     if ( msgFolder.rootFolder ) {
       if ( init ) this._win.setTimeout( updateStyle, 0 ); // use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
