@@ -244,6 +244,40 @@ let autoArchivePrefDialog = {
     menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
   },
   
+  changeShowFolderAs: function(event) {
+    let menu = event.target;
+    if ( !this._doc || !menu || typeof(menu.value) == 'undefined' ) return;
+    let container = this._doc.getElementById('awsome_auto_archive-rules');
+    if ( !container ) return;
+    for ( let row of container.childNodes ) {
+      if ( row.classList.contains(ruleClass) ) {
+        for ( let item of row.childNodes ) {
+          let key = item.getAttribute('rule');
+          if ( ["src", "dest"].indexOf(key) >= 0 && item.style.visibility != 'hidden' ) {
+            let msgFolder = {value: '', prettyName: 'N/A', server: {}};
+            try {
+              msgFolder = MailUtils.getFolderForURI(item.value);
+            } catch(err) {}
+            let label = "";
+            switch ( Number(menu.value) ) {
+              case 0:
+                label = msgFolder.prettyName;
+                break;
+              case 1:
+                label = "[" + msgFolder.server.prettyName + "] " + msgFolder.prettyName;
+                break;
+              case 2:
+              default:
+                label = self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName);
+                break;
+            }
+            item.setAttribute("label",  label);
+          }
+        }
+      }
+    }
+  },
+  
   starStopNow: function(dry_run) {
     autoArchiveService.starStopNow(this.getRules(), dry_run);
   },

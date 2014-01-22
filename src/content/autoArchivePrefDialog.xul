@@ -14,6 +14,7 @@
 <prefpane id="awsome_auto_archive-perfpane">
   <preferences id="awsome_auto_archive-preferences">
     <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
+    <preference id="pref_show_folder_as" name="extensions.awsome_auto_archive.show_folder_as" type="int"/>
     <preference id="pref_update_statusbartext" name="extensions.awsome_auto_archive.update_statusbartext" type="bool"/>
     <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
     <preference id="pref_dry_run" name="extensions.awsome_auto_archive.dry_run" type="bool"/>
@@ -44,11 +45,20 @@
         <vbox flex="1">
           <groupbox id='awsome_auto_archive-rules-groupbox'>
             <caption label="&awsome_auto_archive.perf.rules;"/>
-            <hbox>
+            <hbox align="center">
               <button label="&awsome_auto_archive.perf.new;" oncommand="autoArchivePrefDialog.creatNewRule();"/>
               <button label="&awsome_auto_archive.perf.up;" oncommand="autoArchivePrefDialog.changeRule('up');"/>
               <button label="&awsome_auto_archive.perf.down;" oncommand="autoArchivePrefDialog.changeRule('down');"/>
               <!--button label="&awsome_auto_archive.perf.remove;" class='awsome_auto_archive-delete-rule' oncommand="autoArchivePrefDialog.changeRule('remove');"/-->
+              <label value="" flex="1"/>
+              <label value="&awsome_auto_archive.perf.folder.show_folder_as;"/>
+              <menulist preference='pref_show_folder_as' oncommand="autoArchivePrefDialog.changeShowFolderAs(event);">
+                <menupopup>
+                  <menuitem label="&awsome_auto_archive.perf.folder.name;" value="0"/>
+                  <menuitem label="&awsome_auto_archive.perf.folder.account_with_name;" value="1"/>
+                  <menuitem label="&awsome_auto_archive.perf.folder.full_name;" value="2"/>
+                </menupopup>
+              </menulist>
               <label value="" flex="1"/>
               <button id="awsome_auto_archive-action" label="&awsome_auto_archive.perf.action;" oncommand="autoArchivePrefDialog.starStopNow(false);"/>
               <button id="awsome_auto_archive-dry-run" label="&awsome_auto_archive.perf.dry_run;" oncommand="autoArchivePrefDialog.starStopNow(true);"/>

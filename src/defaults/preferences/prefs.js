@@ -16,3 +16,4 @@ pref("extensions.awsome_auto_archive.messages_size_limit", 0); // 0 to disable c
 pref("extensions.awsome_auto_archive.update_statusbartext", true);
 pref("extensions.awsome_auto_archive.dry_run", false);
 pref("extensions.awsome_auto_archive.default_days", 180);
+pref("extensions.awsome_auto_archive.show_folder_as", 0);

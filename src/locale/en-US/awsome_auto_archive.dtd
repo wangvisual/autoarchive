@@ -14,6 +14,11 @@
 <!ENTITY awsome_auto_archive.perf.down "Down">
 <!ENTITY awsome_auto_archive.perf.action "">
 
+<!ENTITY awsome_auto_archive.perf.folder.show_folder_as "Show folder as:">
+<!ENTITY awsome_auto_archive.perf.folder.name "Folder Name">
+<!ENTITY awsome_auto_archive.perf.folder.account_with_name "[Account] Folder Name">
+<!ENTITY awsome_auto_archive.perf.folder.full_name "Full Folder Name">
+
 <!ENTITY awsome_auto_archive.perf.donate "Donate">
 <!ENTITY awsome_auto_archive.perf.debug "Debug">
 <!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
