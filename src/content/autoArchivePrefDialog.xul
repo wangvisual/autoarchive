@@ -68,7 +68,7 @@
               <columns>
                 <column/><column/><column flex="1"/><column/><column flex="1"/><column flex="1"/><column flex="1"/><column/><column/><column/><column/>
               </columns> 
-              <rows id='awsome_auto_archive-rules' preference='pref_rules' preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf(window);' onsynctopreference='return autoArchivePrefDialog.syncToPerf();'>
+              <rows id='awsome_auto_archive-rules' preference='pref_rules' preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf(window);'>
               </rows>
             </grid>
           </groupbox>
