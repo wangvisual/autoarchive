@@ -10,6 +10,7 @@
 <!ENTITY awsome_auto_archive.perf.rules "Rules">
 <!ENTITY awsome_auto_archive.perf.new "New">
 <!ENTITY awsome_auto_archive.perf.remove "Remove">
+<!ENTITY awsome_auto_archive.perf.revert "Revert All">
 <!ENTITY awsome_auto_archive.perf.up "Up">
 <!ENTITY awsome_auto_archive.perf.down "Down">
 <!ENTITY awsome_auto_archive.perf.action "">

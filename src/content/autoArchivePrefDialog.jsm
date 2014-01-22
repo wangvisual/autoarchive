@@ -51,7 +51,6 @@ let autoArchivePrefDialog = {
         break;
     }
     folderPicker.setAttribute("label", label);
-    folderPicker.label = label;
     folderPicker.setAttribute("folderStyle", showFolderAs.value); // for css to set correct length
     return msgFolder;
   },
@@ -263,8 +262,15 @@ let autoArchivePrefDialog = {
   },
   
   removeRule: function(row) {
-    row.parentNode.removeChild(row);
+    row.parentNode.removeChild(row); // will cause 'Error: TypeError: temp is null Source file: chrome://global/content/bindings/preferences.xml Line: 1172'
     this.syncToPerf(true);
+  },
+  
+  revertRules: function() {
+    if ( !this._doc ) return;
+    let preference = this._doc.getElementById("pref_rules");
+    autoArchiveLog.info("Revert rules from " + preference.value + " to " + this._savedRules);
+    preference.value = this._savedRules; // perfpane.userChangedValue is the same
   },
 
   checkEnable: function(enable, row) {
@@ -307,6 +313,7 @@ let autoArchivePrefDialog = {
     this.checkFocus(
       this.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null)
     );
+    this.syncToPerf(true);
   },
   changeRule: function(how) {
     if ( !this.focusRow ) return;
@@ -360,6 +367,7 @@ let autoArchivePrefDialog = {
       }
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
+      this._savedRules = autoArchivePref.options.rules;
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
