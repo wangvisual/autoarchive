@@ -30,8 +30,47 @@ let autoArchivePrefDialog = {
   showPrettyTooltip: function(URI,pretty) {
     return decodeURIComponent(URI).replace(/(.*\/)[^/]*/, '$1') + pretty;
   },
+  getFolderAndSetLabel: function(folderPicker) {
+    let msgFolder = {value: '', prettyName: 'N/A', server: {}};
+    try {
+      msgFolder = MailUtils.getFolderForURI(folderPicker.value);
+    } catch(err) {}
+    if ( !this._doc ) return msgFolder;
+    let showFolderAs = this._doc.getElementById('pref_show_folder_as');
+    let label = "";
+    switch ( showFolderAs.value ) {
+      case 0:
+        label = msgFolder.prettyName;
+        break;
+      case 1:
+        label = "[" + msgFolder.server.prettyName + "] " + msgFolder.prettyName;
+        break;
+      case 2:
+      default:
+        label = self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName);
+        break;
+    }
+    folderPicker.setAttribute("label", label);
+    folderPicker.label = label;
+    folderPicker.setAttribute("folderStyle", showFolderAs.value); // for css to set correct length
+    return msgFolder;
+  },
+  changeShowFolderAs: function() {
+    if ( !this._doc ) return;
+    let container = this._doc.getElementById('awsome_auto_archive-rules');
+    if ( !container ) return;
+    for ( let row of container.childNodes ) {
+      if ( row.classList.contains(ruleClass) ) {
+        for ( let item of row.childNodes ) {
+          let key = item.getAttribute('rule');
+          if ( ["src", "dest"].indexOf(key) >= 0 /*&& item.style.visibility != 'hidden'*/ )
+            this.getFolderAndSetLabel(item);
+        }
+      }
+    }
+  },
   updateFolderStyle: function(folderPicker, folderPopup, init) {
-    let msgFolder = {value: '', prettyName: 'N/A'};
+    let msgFolder = this.getFolderAndSetLabel(folderPicker);
     let updateStyle = function() {
       let hasError = false;
       try {
@@ -50,13 +89,12 @@ let autoArchivePrefDialog = {
         folderPicker.classList.remove("awsome_auto_archive-folderError");
         folderPicker.classList.add("folderMenuItem");
       }
+      if ( init ) self.getFolderAndSetLabel(folderPicker);
     };
-    try {
-      msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      if ( init ) this._win.setTimeout( updateStyle, 0 );// use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
+    if ( msgFolder.rootFolder ) {
+      if ( init ) this._win.setTimeout( updateStyle, 0 ); // use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
       else updateStyle();
-    } catch(err) {}
-    folderPicker.setAttribute("label", msgFolder.prettyName);
+    }
     folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName));
   },
   onFolderPick: function(folderPicker, aEvent, folderPopup) {
@@ -70,6 +108,7 @@ let autoArchivePrefDialog = {
     folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
     folderPicker.classList.add("folderMenuItem");
     folderPicker.setAttribute("sizetopopup", "none");
+    folderPicker.setAttribute("crop", "center");
 
     folderPopup.setAttribute("type", "folder");
     if ( !isSrc ) {
@@ -242,40 +281,6 @@ let autoArchivePrefDialog = {
     if ( limit && menulistSub.value == 2 ) menulistSub.value = 1;
     menulistDest.style.visibility = limit ? 'hidden': 'visible';
     menulistSub.firstChild.lastChild.style.display = limit ? 'none': '-moz-box';
-  },
-  
-  changeShowFolderAs: function(event) {
-    let menu = event.target;
-    if ( !this._doc || !menu || typeof(menu.value) == 'undefined' ) return;
-    let container = this._doc.getElementById('awsome_auto_archive-rules');
-    if ( !container ) return;
-    for ( let row of container.childNodes ) {
-      if ( row.classList.contains(ruleClass) ) {
-        for ( let item of row.childNodes ) {
-          let key = item.getAttribute('rule');
-          if ( ["src", "dest"].indexOf(key) >= 0 && item.style.visibility != 'hidden' ) {
-            let msgFolder = {value: '', prettyName: 'N/A', server: {}};
-            try {
-              msgFolder = MailUtils.getFolderForURI(item.value);
-            } catch(err) {}
-            let label = "";
-            switch ( Number(menu.value) ) {
-              case 0:
-                label = msgFolder.prettyName;
-                break;
-              case 1:
-                label = "[" + msgFolder.server.prettyName + "] " + msgFolder.prettyName;
-                break;
-              case 2:
-              default:
-                label = self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName);
-                break;
-            }
-            item.setAttribute("label",  label);
-          }
-        }
-      }
-    }
   },
   
   starStopNow: function(dry_run) {

@@ -70,7 +70,7 @@ let autoArchivePref = {
   },
 
   prefPath: "extensions.awsome_auto_archive.",
-  allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay'],
+  allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as'],
   rules: [],
   observe: function(subject, topic, data) {
     try {

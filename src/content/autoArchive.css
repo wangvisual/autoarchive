@@ -36,6 +36,12 @@
   #awsome_auto_archive-rules >.awsome_auto_archive-rule menulist.folderMenuItem {
     width: 120px;
   }
+  #awsome_auto_archive-rules >.awsome_auto_archive-rule menulist.folderMenuItem[folderStyle="1"]{
+    width: 200px;
+  }
+  #awsome_auto_archive-rules >.awsome_auto_archive-rule menulist.folderMenuItem[folderStyle="2"] {
+    width: 240px;
+  }
   
   #awsome_auto_archive-perfpane textbox[readonly="true"],
   #awsome_auto_archive-perfpane .awsome_auto_archive-disable  *,
