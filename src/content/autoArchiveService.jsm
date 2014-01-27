@@ -121,6 +121,7 @@ let autoArchiveService = {
   },
   stop: function() {
     this.clear();
+    // for maunal stop, we always use start_next_delay, and ignore this.isExceed
     this.start(autoArchivePref.options.start_next_delay);
   },
   doArchive: function(rules, dry_run) {
@@ -554,7 +555,9 @@ let autoArchiveService = {
         else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
       }
       this.updateStatus(this.STATUS_FINISH, '');
-      return this.start( self.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay );
+      let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
+      this.clear();
+      return this.start(delay);
     }
 
     let rule = this.rules.shift();
