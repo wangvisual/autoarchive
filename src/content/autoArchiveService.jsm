@@ -540,7 +540,7 @@ let autoArchiveService = {
       this._searchSession.search(null);
       return this._searchSession = null;
     }
-    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "to": whom, "enable": true}]
+    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "recipient": whom, "enable": true}]
     if ( this.rules.length == 0 || self.isExceed ) {
       this.closeAllFoldersDB();
       //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.

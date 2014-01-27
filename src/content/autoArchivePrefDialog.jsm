@@ -309,10 +309,9 @@ let autoArchivePrefDialog = {
     dry_button.setAttribute("tooltiptext", detail);
   },
   
-  creatNewRule: function() {
-    this.checkFocus(
-      this.creatOneRule({action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days}, null)
-    );
+  creatNewRule: function(rule) {
+    if ( !rule ) rule = {action: 'archive', enable: true, sub: 0, age: autoArchivePref.options.default_days};
+    this.checkFocus( this.creatOneRule(rule, null) );
     this.syncToPerf(true);
   },
   changeRule: function(how) {
@@ -368,6 +367,10 @@ let autoArchivePrefDialog = {
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
       this._savedRules = autoArchivePref.options.rules;
+      if ( win.arguments && win.arguments[0] ) { // new rule based on message selected, not including in the revert all
+        let msgHdr = win.arguments[0];
+        this.creatNewRule( {action: 'archive', enable: true, src: msgHdr.folder.URI, sub: 0, from: msgHdr.mime2DecodedAuthor, recipient: msgHdr.mime2DecodedTo || msgHdr.mime2DecodedRecipients, subject: msgHdr.mime2DecodedSubject, age: autoArchivePref.options.default_days} );
+      }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
