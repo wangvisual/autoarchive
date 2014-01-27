@@ -111,7 +111,7 @@
               </rows>
             </grid>
           </groupbox>
-          <hbox flex="1">
+          <hbox>
             <groupbox flex="1">
               <caption label="&awsome_auto_archive.perf.active_time;"/>
               <grid class='awsome_auto_archive-center-rows'>

@@ -157,7 +157,7 @@ let autoArchiveService = {
       } catch(err) { autoArchiveLog.logException(err); }
     };
     this.OnProgress = function(aProgress, aProgressMax) {
-      autoArchiveLog.info("OnProgress " + aProgress + "/"+ aProgressMax);
+      //autoArchiveLog.info("OnProgress " + aProgress + "/"+ aProgressMax);
     };
     this.OnStopCopy = function(aStatus) {
       autoArchiveLog.info("OnStop " + group.action);
@@ -322,7 +322,8 @@ let autoArchiveService = {
       try {
         self._searchSession = null;
         autoArchiveLog.info("Total " + searchHit + " messages hit");
-        if ( duplicateHit ) autoArchiveLog.info(duplicateHit + " messages already exists in target folder");
+        let isMove = (rule.action == 'move');
+        if ( duplicateHit ) autoArchiveLog.info(duplicateHit + " messages already exists in target folder", isMove, isMove);
         if ( !this.messages.length ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages, total " + autoArchiveUtil.readablizeBytes(actionSize) + " bytes");
         // create missing folders first

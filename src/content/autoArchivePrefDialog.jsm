@@ -337,7 +337,7 @@ let autoArchivePrefDialog = {
         self.creatOneRule(rule, null);
       } );
       this.oldvalue = actualValue;
-    } else {
+    } else if ( !win.arguments || !win.arguments[0] ) { // don't create empty rule if loadPerfWindow will create new rule based on selected email
       this.creatNewRule();
     }
     //autoArchiveLog.info('syncFromPerf done');
@@ -449,6 +449,14 @@ let autoArchivePrefDialog = {
       group.insertBefore(button, null);
     } );
     pane.style.minHeight = pane.contentHeight + 10 + "px"; // reset the pane height after fill Identities, to prevent vertical scrollbar
+    
+    try {
+      let perfDialog = self._doc.getElementById('awsome_auto_archive-prefs');
+      let buttonBox = self._doc.getAnonymousElementByAttribute(perfDialog, "anonid", "dlg-buttons");
+      let targetWinHeight = buttonBox.scrollHeight + pane.contentHeight + 60;
+      let currentWinHeight = perfDialog.height;
+      if ( currentWinHeight < targetWinHeight ) perfDialog.setAttribute('height', targetWinHeight);
+    } catch (err) {autoArchiveLog.logException(err);}
   },
 
 }
