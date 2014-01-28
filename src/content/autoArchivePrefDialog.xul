@@ -10,6 +10,9 @@
      onload="autoArchivePrefDialog.loadPerfWindow(window)"
      onunload="autoArchivePrefDialog.unLoadPerfWindow()"
      ondialogaccept="return autoArchivePrefDialog.acceptPerfWindow()"
+     buttons='accept,extra1,cancel'
+     buttonlabelextra1='&awsome_auto_archive.perf.apply;'
+     ondialogextra1='autoArchivePrefDialog.applyChanges()'
      persist="screenX screenY width height"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <prefpane id="awsome_auto_archive-perfpane">

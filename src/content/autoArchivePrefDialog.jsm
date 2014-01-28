@@ -459,6 +459,12 @@ let autoArchivePrefDialog = {
       perfDialog.style.minHeight = targetWinHeight + "px";
     } catch (err) {autoArchiveLog.logException(err);}
   },
+  
+  applyChanges: function() {
+    Array.prototype.forEach.call( self._doc.getElementById("awsome_auto_archive-prefs").preferencePanes, function(pane) {
+      pane.writePreferences(true);
+    } );
+  },
 
 }
 

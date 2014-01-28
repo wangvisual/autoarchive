@@ -5,6 +5,7 @@
 <!ENTITY about.contributors.label "Contributors:">
 
 <!ENTITY awsome_auto_archive.perf.title "Awesome Auto Archive Options">
+<!ENTITY awsome_auto_archive.perf.apply "Apply">
 <!ENTITY awsome_auto_archive.perf.general "General Settings">
 <!ENTITY awsome_auto_archive.perf.advanced "Advanced Settings">
 <!ENTITY awsome_auto_archive.perf.rules "Rules">
