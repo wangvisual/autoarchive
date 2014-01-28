@@ -142,7 +142,7 @@ let autoArchive = {
     menupopup.id = contextMenuID;
     [ 
       ["?", autoArchivePref.path + "icon.png", function(){ autoArchiveService.starStopNow(); }], // run/stop must be the first menu item
-      ["Option", "chrome://mozapps/skin/extensions/themeGeneric.png", function(){this.openOption(aWindow);}],
+      ["Option", "chrome://mozapps/skin/extensions/themeGeneric.png", function(){autoArchive.openOption(aWindow);}],
       ["Addon @ Mozilla", "chrome://mozapps/skin/extensions/extensionGeneric.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awesome-auto-archive/"); }],
       ["Addon @ GitHub", "chrome://awsomeAutoArchive/content/github.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/"); }],
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
