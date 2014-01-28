@@ -453,9 +453,10 @@ let autoArchivePrefDialog = {
     try {
       let perfDialog = self._doc.getElementById('awsome_auto_archive-prefs');
       let buttonBox = self._doc.getAnonymousElementByAttribute(perfDialog, "anonid", "dlg-buttons");
-      let targetWinHeight = buttonBox.scrollHeight + pane.contentHeight + 60;
+      let targetWinHeight = buttonBox.scrollHeight + pane.contentHeight;
       let currentWinHeight = perfDialog.height;
-      if ( currentWinHeight < targetWinHeight ) perfDialog.setAttribute('height', targetWinHeight);
+      if ( currentWinHeight < targetWinHeight+62 ) perfDialog.setAttribute('height', targetWinHeight+62);
+      perfDialog.style.minHeight = targetWinHeight + "px";
     } catch (err) {autoArchiveLog.logException(err);}
   },
 

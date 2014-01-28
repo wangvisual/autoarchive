@@ -2,8 +2,12 @@
 @-moz-document regexp("chrome://awsomeautoarchive/content/.*") {
   #awsome_auto_archive-perfpane {
     overflow: auto;
-    min-width: 600px;
   }
+  #awsome_auto_archive-prefs {
+    min-width: 600px;
+    min-height: 500px; /* might be changed by fillIdentities */
+  }
+  
   #awsome_auto_archive-perfpane .content-box  {
     overflow: visible;
   }
