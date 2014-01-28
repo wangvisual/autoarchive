@@ -267,13 +267,14 @@ let autoArchiveService = {
       if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
       let age = ( Date().now / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
       if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
-        ( ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
+        ( msgHdr.folder.locked ||
+          ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
       if ( rule.action == 'archive' && ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
       if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
-      // check if dest folder has alreay has the message
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
+        // check if dest folder has already has the message
         let realDest = rule.dest, additonal = '';
         let supportHierarchy = ( rule.sub == 2 ) && !srcFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && !destFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && destFolder.canCreateSubfolders;
         if ( supportHierarchy && (destFolder.server instanceof Ci.nsIImapIncomingServer)) supportHierarchy = !destFolder.server.isGMailServer;
@@ -301,6 +302,7 @@ let autoArchiveService = {
           //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[additonal] = true;
         } else {
+          if ( realDestFolder.locked ) return;
           try {
             // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
             let destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
@@ -489,7 +491,7 @@ let autoArchiveService = {
             return result;
           } )[0] );
           autoArchiveLog.info("Start doing archive");
-          batchMover.archiveMessages(this.messages);
+          batchMover.archiveMessages(this.messages); // exceptions should be caught below
         }
       } catch(err) {
         autoArchiveLog.logException(err);
@@ -498,18 +500,29 @@ let autoArchiveService = {
     };
   },
   doCopyDeleteMoveOne: function(group) {
+    function runNext() {
+      if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
+      else this.doMoveOrArchiveOne();
+    }
     if ( autoArchivePref.options.dry_run || this.dry_run ) {
       group.messages.forEach( function(msg) {
         self.dryRunLog([group.action, msg.mime2DecodedSubject, group.src , ( group.action != 'delete' ? group.dest : '' )])
       } );
-      if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
-      else this.doMoveOrArchiveOne();
-      return;
+      return runNext();
+    }
+    let srcFolder = MailUtils.getFolderForURI(group.src), destFolder = null;
+    let busy = ( ['move', 'delete'].indexOf(group.action) >= 0 ) ? srcFolder.locked : false;
+    if ( group.action != 'delete' ) {
+      destFolder = MailUtils.getFolderForURI(group.dest);
+      busy = busy || destFolder.locked;
+    }
+    if ( busy ) {
+      autoArchiveLog.info("Folder busy, skip " + group.action + " " + group.src + " => " + group.dest);
+      return runNext();
     }
     let xpcomHdrArray = toXPCOMArray(group.messages, Ci.nsIMutableArray);
-    let srcFolder = MailUtils.getFolderForURI(group.src);
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-    let msgWindow;
+    let msgWindow = null;
     if ( mail3PaneWindow ) msgWindow = mail3PaneWindow.msgWindow;
     if ( group.action == 'delete' ) {
       // deleteMessages impacted by srcFolder.server.getIntValue('delete_model')
@@ -533,8 +546,9 @@ let autoArchiveService = {
       return;
     }
     let isMove = (group.action == 'move') && srcFolder.canDeleteMessages;
-    let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-    MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, MailUtils.getFolderForURI(group.dest), isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
+    try {
+      MailServices.copy.CopyMessages(srcFolder, xpcomHdrArray, destFolder, isMove, new self.copyListener(group), /*msgWindow*/msgWindow, /* allow undo */false);
+    } catch (err) {autoArchiveLog.logException(err);}
   },
   _searchSession: null,
   doMoveOrArchiveOne: function() {
