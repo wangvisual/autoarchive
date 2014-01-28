@@ -3,13 +3,38 @@
 // debug utils
 "use strict";
 Components.utils.import("resource://gre/modules/Services.jsm");
-const popupImage = "chrome://messenger/skin/addressbook/icons/contact-generic.png";
+const popupImage = "chrome://awsomeAutoArchive/content/icon_run.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
+  popupDelay: 4,
+  setPopupDelay: function(delay) {
+    this.popupDelay = delay;
+  },
+  popupListener: {
+    observe: function(subject, topic, cookie) {
+      if ( topic == 'alertclickcallback' ) {
+        try {
+          Services.ww.openWindow(null, 'chrome://console2/content/console2.xulx', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
+        } catch ( err ) {
+          Services.ww.openWindow(null, 'chrome://global/content/console.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
+        }
+      }
+    }
+  },
   popup: function(title, msg) {
+    if ( this.popupDelay <= 0 ) return;
     // alert-service won't work with bb4win, use xul instead
-    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_blank', 'chrome,titlebar=no,popup=yes', null);
-    win.arguments = [popupImage, title, msg, false, ''];
+    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null);
+    win.arguments = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener]; //nsIDOMWindow
+    let window = win.document.defaultView;
+    let popupLoad = function() {
+      window.removeEventListener('load', popupLoad, false);
+      if ( window.document ) {
+        let alertBox = window.document.getElementById('alertBox');
+        if ( alertBox ) alertBox.style.animationDuration = autoArchiveLog.popupDelay + "s";
+      }
+    };
+    if ( this.popupDelay != 4 ) window.addEventListener('load', popupLoad, false);
   },
   
   now: function() { //author: meizz

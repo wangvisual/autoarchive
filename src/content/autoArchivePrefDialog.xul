@@ -33,6 +33,9 @@
     <preference id="pref_messages_number_limit" name="extensions.awsome_auto_archive.messages_number_limit" type="int"/>
     <preference id="pref_messages_size_limit" name="extensions.awsome_auto_archive.messages_size_limit" type="int"/>
     <preference id="pref_start_exceed_delay" name="extensions.awsome_auto_archive.start_exceed_delay" type="int"/>
+    <preference id="pref_disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
+    <preference id="pref_alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
+    
     <!--preference id="pref_default_applyIncomingFilters" name="mail.server.default.applyIncomingFilters" type="string"/-->
   </preferences>
   
@@ -179,6 +182,14 @@
             <checkbox preference="pref_update_statusbartext" label="&awsome_auto_archive.perf.update_statusbartext;"/>
             <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
             <checkbox preference="pref_dry_run" label="&awsome_auto_archive.perf.dry_run;"/>
+            <hbox align="center" tooltiptext='&awsome_auto_archive.perf.popup_show_time_tooltip;'>
+              <checkbox preference="pref_disable_alert_animation" label="&awsome_auto_archive.perf.disable_alert_animation;" class='awsome_auto_archive-disable-checked'/>
+              <hbox align="center">
+                <label value="        "/>
+                <label value="&awsome_auto_archive.perf.popup_show_time;"/>
+                <textbox preference="pref_alert_show_time" type='number' size='5' min='0'/>
+              </hbox>
+            </hbox>
           </groupbox>
         </vbox>
       </tabpanel>

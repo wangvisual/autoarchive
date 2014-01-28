@@ -71,7 +71,7 @@ let autoArchivePref = {
 
   prefPath: "extensions.awsome_auto_archive.",
   allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout',
-             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule'],
+             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time'],
   rules: [],
   observe: function(subject, topic, data) {
     try {
@@ -95,6 +95,8 @@ let autoArchivePref = {
       }
       if ( data == 'enable_verbose_info' ) {
         autoArchiveLog.setVerbose(this.options.enable_verbose_info);
+      } else if ( data == 'alert_show_time' ) {
+        autoArchiveLog.setPopupDelay(this.options.alert_show_time);
       } else if ( data == 'rules' ) {
         if ( !this.InstantApply ) this.validateRules();
       }

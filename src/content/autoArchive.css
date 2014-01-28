@@ -51,7 +51,9 @@
   #awsome_auto_archive-perfpane .awsome_auto_archive-disable  *,
   #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]),
   #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox,
-  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox textbox {
+  #awsome_auto_archive-perfpane .awsome_auto_archive-enable-checked  checkbox:not([checked]) + hbox textbox,
+  #awsome_auto_archive-perfpane checkbox.awsome_auto_archive-disable-checked[checked] + hbox,
+  #awsome_auto_archive-perfpane checkbox.awsome_auto_archive-disable-checked[checked] + hbox textbox {
     color: grey !important;
   }
   

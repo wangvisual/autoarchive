@@ -18,3 +18,4 @@ pref("extensions.awsome_auto_archive.dry_run", false);
 pref("extensions.awsome_auto_archive.default_days", 180);
 pref("extensions.awsome_auto_archive.show_folder_as", 0);
 pref("extensions.awsome_auto_archive.add_context_munu_rule", true);
+pref("extensions.awsome_auto_archive.alert_show_time", 4);
