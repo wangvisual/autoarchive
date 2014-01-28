@@ -25,6 +25,9 @@
 <!ENTITY awsome_auto_archive.perf.debug "Debug">
 <!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
 <!ENTITY awsome_auto_archive.perf.update_statusbartext "Show information in status bar">
+<!ENTITY awsome_auto_archive.perf.disable_alert_animation "Disable TB's popup alert animation effect,">
+<!ENTITY awsome_auto_archive.perf.popup_show_time "Popup show time">
+<!ENTITY awsome_auto_archive.perf.popup_show_time_tooltip "When animation is disabled, the show time will be 4 seconds. User can change the time when enable alert animation. set to 0 to disable popup from this addon">
 <!ENTITY awsome_auto_archive.perf.dry_run "Dry run">
 
 <!ENTITY awsome_auto_archive.perf.enable_special "When doing Archive/Delete/Move, Including">
