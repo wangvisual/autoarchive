@@ -71,7 +71,7 @@ let autoArchivePrefDialog = {
   updateFolderStyle: function(folderPicker, folderPopup, init) {
     let msgFolder = this.getFolderAndSetLabel(folderPicker, false);
     let updateStyle = function() {
-      let hasError = false;
+      let hasError = !msgFolder.parent;
       try {
         if ( typeof(folderPopup.selectFolder) != 'undefined' ) folderPopup.selectFolder(msgFolder); // false alarm by addon validator
         else return;
