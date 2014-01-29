@@ -4,7 +4,6 @@
 "use strict";
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
@@ -13,9 +12,7 @@ let autoArchiveLog = {
     this.popupDelay = delay;
   },
   popupListener: {
-    //QueryInterface: XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIObserver]),
     observe: function(subject, topic, cookie) {
-      //autoArchiveLog.info(topic + ":" + cookie);
       if ( topic == 'alertclickcallback' ) { // or alertfinished / alertshow
         try {
           Services.ww.openWindow(null, 'chrome://console2/content/console2.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
@@ -31,16 +28,8 @@ let autoArchiveLog = {
     // http://mdn.beonex.com/en/Working_with_windows_in_chrome_code.html 
     let args = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener];
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null ); // nsIDOMJSWindow, nsIDOMWindow
-    /*  toXPCOMArray(args.map( function(arg) {
-        if ( typeof(arg) == 'object' ) return arg;
-        let variant = Cc["@mozilla.org/variant;1"].createInstance(Ci.nsIWritableVariant);
-        variant.setFromVariant(arg);
-        return variant;
-      } ), Ci.nsIMutableArray));
-    */ // can't use this as nsIMutableArray can't pass JavaScript Object
     win.arguments = args; // sometimes it's too slow to set here, but mostly should be OK and it's the way suggested in MDN
     let popupLoad = function() {
-      //autoArchiveLog.info("popup");
       win.removeEventListener('load', popupLoad, false);
       if ( win.document ) {
         let alertBox = win.document.getElementById('alertBox');
@@ -49,7 +38,6 @@ let autoArchiveLog = {
         if ( text && win.arguments[3] ) text.classList.add('awsome_auto_archive-popup-clickable');
       }
     };
-    //this.info("popupDelay:" + this.popupDelay);
     if ( win.document.readyState == "complete" ) popupLoad();
     else win.addEventListener('load', popupLoad, false);
   },
