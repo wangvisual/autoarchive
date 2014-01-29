@@ -599,7 +599,7 @@ let autoArchiveService = {
       autoArchiveLog.logException(err);
     }
     if ( !srcFolder || !srcFolder.parent || ( ["move", "copy"].indexOf(rule.action) >= 0 && ( !destFolder || !destFolder.parent ) ) ) {
-      autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 1);
+      autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 'Error!');
       return this.doMoveOrArchiveOne();
     }
     if ( rule.action == 'archive' ) { // mare sure we have at least one folder show, or hintMassMoveStarting will throw exception

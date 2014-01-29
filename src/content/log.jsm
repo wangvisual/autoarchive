@@ -2,8 +2,10 @@
 // GPL V3 / MPL
 // debug utils
 "use strict";
-Components.utils.import("resource://gre/modules/Services.jsm");
-const popupImage = "chrome://awsomeAutoArchive/content/icon_run.png";
+const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
+Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
+const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
   popupDelay: 4,
@@ -24,8 +26,10 @@ let autoArchiveLog = {
   popup: function(title, msg) {
     if ( this.popupDelay <= 0 ) return;
     // alert-service won't work with bb4win, use xul instead
-    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null);
-    win.arguments = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener]; //nsIDOMWindow
+    let args = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener];
+    //let argumentsArray = toXPCOMArray(args, Ci.nsIMutableArray);
+    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null); //nsIDOMWindow
+    win.arguments = args;
     let window = win.document.defaultView;
     let popupLoad = function() {
       window.removeEventListener('load', popupLoad, false);
@@ -70,11 +74,11 @@ let autoArchiveLog = {
   },
 
   log: function(msg,popup,info) {
-    if ( ( typeof(info) != 'undefined' && info ) || !Components || !Components.stack || !Components.stack.caller ) {
+    if ( ( typeof(info) != 'undefined' && info ) || !Components || !Cs || !Cs.caller ) {
       Services.console.logStringMessage(msg);
     } else {
-      let scriptError = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
-      scriptError.init(msg, Components.stack.caller.filename, Components.stack.caller.sourceLine, Components.stack.caller.lineNumber, 0, scriptError.warningFlag, "chrome javascript");
+      let scriptError = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
+      scriptError.init(msg, Cs.caller.filename, Cs.caller.sourceLine, Cs.caller.lineNumber, 0, scriptError.warningFlag, "chrome javascript");
       Services.console.logMessage(scriptError);
     }
     if (popup) {
@@ -170,10 +174,10 @@ let autoArchiveLog = {
       msg += " " + e + "\n";
     }
     msg = 'Caught Exception ' + msg;
-    let fileName= e.fileName || e.filename || Components.stack.caller.filename;
-    let lineNumber= e.lineNumber || Components.stack.caller.lineNumber;
-    let sourceLine= e.sourceLine || Components.stack.caller.sourceLine;
-    let scriptError = Components.classes["@mozilla.org/scripterror;1"].createInstance(Components.interfaces.nsIScriptError);
+    let fileName= e.fileName || e.filename || Cs.caller.filename;
+    let lineNumber= e.lineNumber || Cs.caller.lineNumber;
+    let sourceLine= e.sourceLine || Cs.caller.sourceLine;
+    let scriptError = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
     scriptError.init(msg, fileName, sourceLine, lineNumber, e.columnNumber, scriptError.errorFlag, "chrome javascript");
     Services.console.logMessage(scriptError);
     if ( typeof(popup) == 'undefined' || popup ) this.popup("Exception", msg);

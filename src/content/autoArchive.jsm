@@ -70,7 +70,7 @@ let autoArchive = {
         if ( autoArchivePref.options.add_context_munu_rule && contextMenuSplit && contextMenuSplit.parentNode ) {
           let newMenu = doc.createElementNS(XULNS, "menuitem");
           newMenu.setAttribute('label', this.strBundle.GetStringFromName("mainwindow.menu.createRule"));
-          newMenu.setAttribute('image', autoArchivePref.path + "icon.png");
+          newMenu.setAttribute('image', statusbarIconSrcWait);
           newMenu.addEventListener('command', this.createRuleBasedOn, false);
           newMenu.setAttribute('class', "menuitem-iconic");
           contextMenuSplit.parentNode.insertBefore(newMenu, contextMenuSplit);
