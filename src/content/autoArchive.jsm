@@ -132,6 +132,23 @@ let autoArchive = {
           ( Services.prefs.getBoolPref("browser.preferences.instantApply") ? '' : 'modal,' ) + 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', msgHdr);
   },
   
+  addMenuItem: function(menu, doc, parent) {
+    let item = doc.createElementNS(XULNS, menu[0] == '' ? "menuseparator" : typeof( menu[2] ) == 'object' ? 'menu' : "menuitem");
+    if ( menu[0] != '' ) {
+      item.setAttribute('label', menu[0]);
+      item.setAttribute('image', menu[1]);
+      if ( typeof( menu[2] ) == 'object' ) {
+        let menupopup = doc.createElementNS(XULNS, "menupopup");
+        menu[2].forEach( function(submenu) {
+          autoArchive.addMenuItem(submenu, doc, menupopup);
+        } );
+        item.insertBefore(menupopup, null);
+      } else if ( typeof(menu[2]) == 'function' ) item.addEventListener('command', menu[2], false);
+      item.setAttribute('class', "menuitem-iconic");
+    }
+    parent.insertBefore(item, null);
+  },
+  
   createPopup: function(aWindow) {
     let doc = aWindow.document;
     let popupset = doc.createElementNS(XULNS, "popupset");
@@ -145,14 +162,17 @@ let autoArchive = {
       ["Addon @ GitHub", "chrome://awsomeAutoArchive/content/github.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/"); }],
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/information-32.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
+      [ "Schedule Control", 'chrome://awsomeAutoArchive/content/schedule.png', [
+        ["Enable schedule", 'chrome://awsomeAutoArchive/content/schedule.png'],
+        [""],
+        ["Disable schedule for 1 hour"],
+        ["Disable schedule for 4 hours"],
+        ["Disable shecdle till Tunderbird restart"],
+        ["Disable schedule Forever"],
+      ] ],
       ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
     ].forEach( function(menu) {
-      let item = doc.createElementNS(XULNS, "menuitem");
-      item.setAttribute('label', menu[0]);
-      item.setAttribute('image', menu[1]);
-      item.addEventListener('command', menu[2], false);
-      item.setAttribute('class', "menuitem-iconic");
-      menupopup.insertBefore(item, null);
+      autoArchive.addMenuItem(menu, doc, menupopup);
     } );
     popupset.insertBefore(menupopup, null);
     doc.documentElement.insertBefore(popupset, null);
