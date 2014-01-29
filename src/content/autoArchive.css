@@ -1,5 +1,5 @@
 @namespace url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
-@-moz-document regexp("chrome://awsomeautoarchive/content/.*") {
+@-moz-document regexp("chrome://(awsomeautoarchive|global)/content/.*") {
   #awsome_auto_archive-perfpane {
     overflow: auto;
   }
@@ -75,8 +75,18 @@
     min-height: 600px;
   }
   
-  #awsome_auto_archive-infolist listcol{
+  #awsome_auto_archive-infolist listcol {
     max-width: 1000px;
   }
   
+  #alertTextLabel.alertText.awsome_auto_archive-popup-clickable[clickable="true"] {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  
+  #alertTextLabel.alertText.awsome_auto_archive-popup-clickable[clickable="true"]:hover {
+    color: -moz-nativehyperlinktext !important;
+    text-decoration: underline !important;
+  }
+
 }

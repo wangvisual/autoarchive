@@ -13,10 +13,12 @@ let autoArchiveLog = {
     this.popupDelay = delay;
   },
   popupListener: {
+    //QueryInterface: XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIObserver]),
     observe: function(subject, topic, cookie) {
-      if ( topic == 'alertclickcallback' ) {
+      //autoArchiveLog.info(topic + ":" + cookie);
+      if ( topic == 'alertclickcallback' ) { // or alertfinished / alertshow
         try {
-          Services.ww.openWindow(null, 'chrome://console2/content/console2.xulx', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
+          Services.ww.openWindow(null, 'chrome://console2/content/console2.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
         } catch ( err ) {
           Services.ww.openWindow(null, 'chrome://global/content/console.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
         }
@@ -26,19 +28,30 @@ let autoArchiveLog = {
   popup: function(title, msg) {
     if ( this.popupDelay <= 0 ) return;
     // alert-service won't work with bb4win, use xul instead
+    // http://mdn.beonex.com/en/Working_with_windows_in_chrome_code.html 
     let args = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener];
-    //let argumentsArray = toXPCOMArray(args, Ci.nsIMutableArray);
-    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null); //nsIDOMWindow
-    win.arguments = args;
-    let window = win.document.defaultView;
+    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null ); // nsIDOMJSWindow, nsIDOMWindow
+    /*  toXPCOMArray(args.map( function(arg) {
+        if ( typeof(arg) == 'object' ) return arg;
+        let variant = Cc["@mozilla.org/variant;1"].createInstance(Ci.nsIWritableVariant);
+        variant.setFromVariant(arg);
+        return variant;
+      } ), Ci.nsIMutableArray));
+    */ // can't use this as nsIMutableArray can't pass JavaScript Object
+    win.arguments = args; // sometimes it's too slow to set here, but mostly should be OK and it's the way suggested in MDN
     let popupLoad = function() {
-      window.removeEventListener('load', popupLoad, false);
-      if ( window.document ) {
-        let alertBox = window.document.getElementById('alertBox');
+      //autoArchiveLog.info("popup");
+      win.removeEventListener('load', popupLoad, false);
+      if ( win.document ) {
+        let alertBox = win.document.getElementById('alertBox');
         if ( alertBox ) alertBox.style.animationDuration = autoArchiveLog.popupDelay + "s";
+        let text = win.document.getElementById('alertTextLabel');
+        if ( text && win.arguments[3] ) text.classList.add('awsome_auto_archive-popup-clickable');
       }
     };
-    if ( this.popupDelay != 4 ) window.addEventListener('load', popupLoad, false);
+    //this.info("popupDelay:" + this.popupDelay);
+    if ( win.document.readyState == "complete" ) popupLoad();
+    else win.addEventListener('load', popupLoad, false);
   },
   
   now: function() { //author: meizz
