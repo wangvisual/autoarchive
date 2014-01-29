@@ -23,7 +23,8 @@ let autoArchiveLog = {
     }
   },
   popup: function(title, msg) {
-    if ( this.popupDelay <= 0 ) return;
+    let delay = this.popupDelay;
+    if ( delay <= 0 ) return;
     // alert-service won't work with bb4win, use xul instead
     // http://mdn.beonex.com/en/Working_with_windows_in_chrome_code.html 
     let args = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener];
@@ -33,7 +34,7 @@ let autoArchiveLog = {
       win.removeEventListener('load', popupLoad, false);
       if ( win.document ) {
         let alertBox = win.document.getElementById('alertBox');
-        if ( alertBox ) alertBox.style.animationDuration = autoArchiveLog.popupDelay + "s";
+        if ( alertBox ) alertBox.style.animationDuration = delay + "s";
         let text = win.document.getElementById('alertTextLabel');
         if ( text && win.arguments[3] ) text.classList.add('awsome_auto_archive-popup-clickable');
       }

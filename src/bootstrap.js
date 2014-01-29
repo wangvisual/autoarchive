@@ -8,7 +8,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 
 const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 const userCSS = Services.io.newURI("chrome://awsomeAutoArchive/content/autoArchive.css", null, null);
-const targetWindows = [ "mail:3pane" ];
+const targetWindows = [ "mail:3pane", "mail:messageWindow" ];
 
 function loadIntoWindow(window) {
   if ( !window ) return; // windows is the global host context

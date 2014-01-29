@@ -36,46 +36,44 @@ let autoArchive = {
       //let docref = Cu.getWeakReference(doc);
       if ( typeof(aWindow._autoarchive) != 'undefined' ) autoArchiveLog.info("Already loaded, return");
       aWindow._autoarchive = { createdElements:[], hookedFunctions:[] };
-      if ( typeof(aWindow.MessageDisplayWidget) != 'undefined' || 1 ) { // messeage display window
-        let status_bar = doc.getElementById('status-bar');
-        let contextMenuSplit = doc.getElementById('paneContext-afterMove');
-        if ( status_bar ) { // add status bar icon
-          this.createPopup(aWindow);
-          let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
-          statusbarIcon.id = statusbarIconID;
-          statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
-          statusbarIcon.setAttribute('src', statusbarIconSrc);
-          statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version);
-          statusbarIcon.setAttribute('popup', contextMenuID);
-          statusbarIcon.setAttribute('context', contextMenuID);
-          status_bar.insertBefore(statusbarIcon, null);
-          aWindow._autoarchive.createdElements.push(statusbarIconID);
-          aWindow._autoarchive.statusCallback = function(status, detail) {
-            if ( status == autoArchiveService.STATUS_SLEEP ) {
-              statusbarIcon.setAttribute('src', statusbarIconSrc);
-            } else if ( status == autoArchiveService.STATUS_WAITIDLE ) {
-              statusbarIcon.setAttribute('src', statusbarIconSrcWait);
-            } else if ( status == autoArchiveService.STATUS_RUN ) {
-              statusbarIcon.setAttribute('src', statusbarIconSrcRun);
-            }
-            statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + detail);
-            if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
-              aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + detail);
-            let menu = doc.getElementById(contextMenuID);
-            let label = autoArchive.strBundle.GetStringFromName("mainwindow.menu." + ( status == autoArchiveService.STATUS_RUN ? 'stop' : 'run' ));
-            if ( menu && menu.firstChild ) menu.firstChild.setAttribute('label', label);
-          };
-          autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
-        }
-        if ( autoArchivePref.options.add_context_munu_rule && contextMenuSplit && contextMenuSplit.parentNode ) {
-          let newMenu = doc.createElementNS(XULNS, "menuitem");
-          newMenu.setAttribute('label', this.strBundle.GetStringFromName("mainwindow.menu.createRule"));
-          newMenu.setAttribute('image', statusbarIconSrcWait);
-          newMenu.addEventListener('command', this.createRuleBasedOn, false);
-          newMenu.setAttribute('class', "menuitem-iconic");
-          contextMenuSplit.parentNode.insertBefore(newMenu, contextMenuSplit);
-          aWindow._autoarchive.createdElements.push(newMenu);
-        }
+      let status_bar = doc.getElementById('status-bar');
+      let contextMenuSplit = doc.getElementById('paneContext-afterMove');
+      if ( status_bar ) { // add status bar icon
+        this.createPopup(aWindow);
+        let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
+        statusbarIcon.id = statusbarIconID;
+        statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
+        statusbarIcon.setAttribute('src', statusbarIconSrc);
+        statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version);
+        statusbarIcon.setAttribute('popup', contextMenuID);
+        statusbarIcon.setAttribute('context', contextMenuID);
+        status_bar.insertBefore(statusbarIcon, null);
+        aWindow._autoarchive.createdElements.push(statusbarIconID);
+        aWindow._autoarchive.statusCallback = function(status, detail) {
+          if ( status == autoArchiveService.STATUS_SLEEP ) {
+            statusbarIcon.setAttribute('src', statusbarIconSrc);
+          } else if ( status == autoArchiveService.STATUS_WAITIDLE ) {
+            statusbarIcon.setAttribute('src', statusbarIconSrcWait);
+          } else if ( status == autoArchiveService.STATUS_RUN ) {
+            statusbarIcon.setAttribute('src', statusbarIconSrcRun);
+          }
+          statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + detail);
+          if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
+            aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + detail);
+          let menu = doc.getElementById(contextMenuID);
+          let label = autoArchive.strBundle.GetStringFromName("mainwindow.menu." + ( status == autoArchiveService.STATUS_RUN ? 'stop' : 'run' ));
+          if ( menu && menu.firstChild ) menu.firstChild.setAttribute('label', label);
+        };
+        autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
+      }
+      if ( autoArchivePref.options.add_context_munu_rule && contextMenuSplit && contextMenuSplit.parentNode ) {
+        let newMenu = doc.createElementNS(XULNS, "menuitem");
+        newMenu.setAttribute('label', this.strBundle.GetStringFromName("mainwindow.menu.createRule"));
+        newMenu.setAttribute('image', statusbarIconSrcWait);
+        newMenu.addEventListener('command', this.createRuleBasedOn, false);
+        newMenu.setAttribute('class', "menuitem-iconic");
+        contextMenuSplit.parentNode.insertBefore(newMenu, contextMenuSplit);
+        aWindow._autoarchive.createdElements.push(newMenu);
       }
       aWindow.addEventListener("unload", autoArchive.onUnLoad, false);
     }catch(err) {

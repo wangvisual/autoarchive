@@ -51,7 +51,7 @@ let autoArchiveService = {
     let needDelay = autoArchivePref.options.idle_delay - idleTime;
     autoArchiveLog.info("Computer already idle for " + idleTime + " seconds");
     if ( needDelay <= 0 ) return self.doArchive();
-    this.updateStatus(this.STATUS_WAITIDLE, "Wait for more " + needDelay + " seconds idle");
+    this.updateStatus(this.STATUS_WAITIDLE, "Wait for " + needDelay + " more seconds idle time");
     this.idleObserver.delay = needDelay;
     this.idleService.addIdleObserver(this.idleObserver, this.idleObserver.delay); // the notification may delay, as Gecko pool OS every 5 seconds
   },
