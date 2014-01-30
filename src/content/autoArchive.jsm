@@ -133,18 +133,24 @@ let autoArchive = {
   },
   
   addMenuItem: function(menu, doc, parent) {
-    let item = doc.createElementNS(XULNS, menu[0] == '' ? "menuseparator" : typeof( menu[2] ) == 'object' ? 'menu' : "menuitem");
+    let isSubMenu = typeof(menu[2]) == 'object' && menu[2] instanceof Array;
+    let item = doc.createElementNS(XULNS, menu[0] == '' ? "menuseparator" : isSubMenu ? 'menu' : "menuitem");
     if ( menu[0] != '' ) {
       item.setAttribute('label', menu[0]);
-      item.setAttribute('image', menu[1]);
-      if ( typeof( menu[2] ) == 'object' ) {
+      if (menu[1]) item.setAttribute('image', menu[1]);
+      if ( isSubMenu ) {
         let menupopup = doc.createElementNS(XULNS, "menupopup");
         menu[2].forEach( function(submenu) {
           autoArchive.addMenuItem(submenu, doc, menupopup);
         } );
         item.insertBefore(menupopup, null);
       } else if ( typeof(menu[2]) == 'function' ) item.addEventListener('command', menu[2], false);
-      item.setAttribute('class', "menuitem-iconic");
+      if ( menu[3] ) {
+        for ( let attr in menu[3] ) {
+          item.setAttribute(attr, menu[3][attr]);
+        }
+      }
+      item.setAttribute('class', isSubMenu ? "menu-iconic" : "menuitem-iconic");
     }
     parent.insertBefore(item, null);
   },
@@ -163,12 +169,12 @@ let autoArchive = {
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/information-32.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
       [ "Schedule Control", 'chrome://awsomeAutoArchive/content/schedule.png', [
-        ["Enable schedule", 'chrome://awsomeAutoArchive/content/schedule.png'],
+        ["Enable schedule", '', undefined, {name: "abc", type: "radio", checked: true}],
         [""],
-        ["Disable schedule for 1 hour"],
-        ["Disable schedule for 4 hours"],
-        ["Disable shecdle till Tunderbird restart"],
-        ["Disable schedule Forever"],
+        ["Disable schedule for 1 hour", '',  undefined, {name: "abc", type: "radio"}],
+        ["Disable schedule for 4 hours", '', undefined, {name: "abc", type: "radio"}],
+        ["Disable schedule till Thunderbird restart", '',  undefined, {name: "abc", type: "radio"}],
+        ["Disable schedule Forever", '', undefined, {name: "abc", type: "radio"}],
       ] ],
       ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
     ].forEach( function(menu) {
