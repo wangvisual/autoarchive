@@ -73,12 +73,13 @@ let autoArchive = {
             if ( newValue == 0 ) statusbarIcon.classList.remove(className);
             else statusbarIcon.classList.add(className);
             let scheduleMenu = doc.getElementById(contextMenuScheduleID);
-            if ( scheduleMenu ) for ( let menuitem of scheduleMenu.childNodes ) {
-              let value = menuitem.getAttribute('hibernate') || 0;
+            if ( scheduleMenu && scheduleMenu.firstChild && scheduleMenu.firstChild.childNodes  ) for ( let menuitem of scheduleMenu.firstChild.childNodes ) {
+              if ( menuitem.tagName != 'menuitem' ) continue;
+              let value = Number(menuitem.getAttribute('hibernate'));
               if ( value > 0 ) value += Date.now() / 1000;
-              let hibernate = Math.round(value);
-              let checked = ( ( value <= 0 && newValue == value ) || ( value > 0 && Math.abs(newValue, value) < 60 * 10 / 60 ) ); // Still checked within 10 minutes, this is for TB restart
-              menuitem.setAttribute('checked', checked);
+              value = Math.round(value);
+              let checked = ( ( value <= 0 && newValue == value ) || ( value > 0 && Math.abs(newValue - value) < 60 * 10 ) ); // Still checked within 10 minutes, this is for TB restart
+              menuitem.setAttribute('checked', checked ? "true" : "false");
             };
           }
         };
@@ -203,13 +204,13 @@ let autoArchive = {
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/information-32.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
       [ "Schedule Control", 'chrome://awsomeAutoArchive/content/schedule.png', [
-        ["Enable schedule", '', autoArchive.setHibernate, {hibernate: 0, name: menuGroupName, type: "radio"}],
+        ["Enable Archie", '', autoArchive.setHibernate, {hibernate: 0, name: menuGroupName, type: "radio"}],
         [""],
-        ["Disable schedule for 1 hour", '',  autoArchive.setHibernate, {hibernate: 3600, name: menuGroupName, type: "radio"}],
-        ["Disable schedule for 4 hours", '', autoArchive.setHibernate, {hibernate: 3600*4, name: menuGroupName, type: "radio"}],
-        ["Disable schedule for 24 hours", '', autoArchive.setHibernate, {hibernate: 3600*24, name: menuGroupName, type: "radio"}],
-        ["Disable schedule till Thunderbird restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
-        ["Disable schedule forever", '', autoArchive.setHibernate, {hibernate: -1, name: menuGroupName, type: "radio"}],
+        ["Disable Archie for 1 hour", '',  autoArchive.setHibernate, {hibernate: 3600, name: menuGroupName, type: "radio"}],
+        ["Disable Archie for 4 hours", '', autoArchive.setHibernate, {hibernate: 3600*4, name: menuGroupName, type: "radio"}],
+        ["Disable Archie for 24 hours", '', autoArchive.setHibernate, {hibernate: 3600*24, name: menuGroupName, type: "radio"}],
+        ["Disable Archie till Thunderbird restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
+        ["Disable Archie forever", '', autoArchive.setHibernate, {hibernate: -1, name: menuGroupName, type: "radio"}],
       ], {id: contextMenuScheduleID} ],
       ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
     ].forEach( function(menu) {
