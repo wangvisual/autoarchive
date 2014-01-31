@@ -296,7 +296,7 @@ let autoArchivePrefDialog = {
     let run_button = self._doc.getElementById('awsome_auto_archive-action');
     let dry_button = self._doc.getElementById('awsome_auto_archive-dry-run');
     if ( !run_button || !dry_button ) return;
-    if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE].indexOf(status) >= 0 ) {
+    if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_WAITIDLE, autoArchiveService.STATUS_FINISH, autoArchiveService.STATUS_HIBERNATE].indexOf(status) >= 0 ) {
       // change run_button to "Run"
       run_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.run"));
       dry_button.setAttribute("label", self.strBundle.GetStringFromName("perfdialog.action.button.dryrun"));

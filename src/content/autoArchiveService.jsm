@@ -21,19 +21,48 @@ let autoArchiveService = {
   timer: null,
   statusListeners: [],
   STATUS_INIT: 0, // not used actually
-  STATUS_SLEEP: 1,
-  STATUS_WAITIDLE: 2,
-  STATUS_RUN: 3,
-  STATUS_FINISH: 4,
+  STATUS_HIBERNATE: 1,
+  STATUS_SLEEP: 2,
+  STATUS_WAITIDLE: 3,
+  STATUS_RUN: 4,
+  STATUS_FINISH: 5,
   _status: [],
   isExceed: false,
   numOfMessages: 0,
   totalSize: 0,
   dry_run: false, // set by 'Dry Run' button, there's another one autoArchivePref.options.dry_run is set by perf
+  showStatusText: 0, // only show once for STATUS_HIBERNATE on status bar after change, as we use timer
+  preStart: function(time) {
+    if ( !this.timer ) this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+    this.timer.cancel();
+    this.cleanupIdleObserver();
+    let hibernate = autoArchivePref.options.hibernate;
+    autoArchiveLog.info("preStart:" + time + ":" + hibernate);
+    if ( hibernate == -1 ) return this.updateStatus(this.STATUS_HIBERNATE, "Schedule Disabled"); // never start schdule
+    else if ( hibernate == 0 ) return this.start(time);
+    else if ( hibernate < -1 ) {
+      if ( hibernate + Math.round(Services.startup.getStartupInfo().main/1000) == 0   ) return this.updateStatus(this.STATUS_HIBERNATE, "Schedule Disabled till Thunderbird restart"); // stop schedule for this session
+      else {
+        autoArchivePref.setPerf('hibernate', 0);
+        return this.start(time);
+      }
+    } else { // disable for some time
+      if ( Date.now() > hibernate*1000 ) {
+        autoArchivePref.setPerf('hibernate', 0);
+        return this.start(time);
+      }
+      let date = new Date(hibernate*1000);
+      if ( this.showStatusText != hibernate ) this.updateStatus(this.STATUS_HIBERNATE, "Schedule Disabled till " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
+      this.showStatusText = hibernate;
+      this.timer.initWithCallback( function() {
+        if ( autoArchiveLog && self ) self.preStart(time);
+      }, 60*1000, Ci.nsITimer.TYPE_ONE_SHOT ); // check every mintues
+    }
+  },
   start: function(time) {
+    this.showStatusText = 0;
     let date = new Date(Date.now() + time*1000);
     this.updateStatus(this.STATUS_SLEEP, "Will wakeup @ " + date.toLocaleDateString() + " " + date.toLocaleTimeString());
-    if ( !this.timer ) this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this.timer.initWithCallback( function() {
       if ( autoArchiveLog && self ) self.waitTillIdle();
     }, time*1000, Ci.nsITimer.TYPE_ONE_SHOT );
@@ -43,7 +72,7 @@ let autoArchiveService = {
     delay: null,
     observe: function(_idleService, topic, data) {
       // topic: idle, active
-      if ( topic == 'idle' ) self.doArchive();
+      if ( topic == 'idle' && self ) self.doArchive();
     }
   },
   waitTillIdle: function() {
@@ -92,7 +121,8 @@ let autoArchiveService = {
     this._searchSession = null;
     this.folderListeners = [];
     this.isExceed = this.dry_run = false;
-    this.numOfMessages = this.totalSize = 0;
+    this.showStatusText = true;
+    this.numOfMessages = this.totalSize = this.showStatusText = 0;
     this.dryRunLogItems = [];
     this._status = [];
   },
@@ -122,7 +152,7 @@ let autoArchiveService = {
   stop: function() {
     this.clear();
     // for maunal stop, we always use start_next_delay, and ignore this.isExceed
-    this.start(autoArchivePref.options.start_next_delay);
+    this.preStart(autoArchivePref.options.start_next_delay);
   },
   doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
@@ -571,7 +601,7 @@ let autoArchiveService = {
       this.updateStatus(this.STATUS_FINISH, '');
       let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
       this.clear();
-      return this.start(delay);
+      return this.preStart(delay);
     }
 
     let rule = this.rules.shift();
@@ -749,4 +779,4 @@ let autoArchiveService = {
 
 };
 let self = autoArchiveService;
-self.start(autoArchivePref.options.startup_delay);
+self.preStart(autoArchivePref.options.startup_delay);

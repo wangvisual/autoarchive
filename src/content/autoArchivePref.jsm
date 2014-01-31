@@ -43,8 +43,11 @@ let autoArchivePref = {
     }
   },
   options: {},
+  prefListeners: [],
   cleanup: function() {
     this.prefs.removeObserver("", this, false);
+    delete this.prefListeners;
+    delete this.options;
   },
   initPerf: function(spec) {
     this.path = spec.replace(/bootstrap\.js$/, '');
@@ -57,6 +60,7 @@ let autoArchivePref = {
     } );
   },
   setPerf: function(key, value) {
+    this.options.key = value; // don't wait for observe callback
     switch (typeof(value)) {
       case 'boolean':
         this.prefs.setBoolPref(key, value);
@@ -68,10 +72,17 @@ let autoArchivePref = {
         this.prefs.setCharPref(key, value);
     }
   },
+  addPrefListener: function(listener) {
+    this.prefListeners.push(listener);
+  },
+  removePrefListener: function(listener) {
+    let index = this.prefListeners.indexOf(listener);
+    if ( index >= 0 ) this.prefListeners.splice(index, 1);
+  },
 
   prefPath: "extensions.awsome_auto_archive.",
   allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout',
-             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time'],
+             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
   rules: [],
   observe: function(subject, topic, data) {
     try {
@@ -100,6 +111,9 @@ let autoArchivePref = {
       } else if ( data == 'rules' ) {
         if ( !this.InstantApply ) this.validateRules();
       }
+      this.prefListeners.forEach( function(listener) {
+        listener.call(null, data);
+      } );
     } catch (err) {
       autoArchiveLog.logException(err);
     };

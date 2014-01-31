@@ -8,6 +8,7 @@ const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
   popupDelay: 4,
+  popupWins: [],
   setPopupDelay: function(delay) {
     this.popupDelay = delay;
   },
@@ -19,6 +20,9 @@ let autoArchiveLog = {
         } catch ( err ) {
           Services.ww.openWindow(null, 'chrome://global/content/console.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
         }
+      } else if ( topic == 'alertfinished' ) {
+        let index = cookie.log.popupWins.indexOf(cookie.winRef);
+        if ( index >= 0 ) cookie.log.popupWins.splice(index, 1);
       }
     }
   },
@@ -27,9 +31,10 @@ let autoArchiveLog = {
     if ( delay <= 0 ) return;
     // alert-service won't work with bb4win, use xul instead
     // http://mdn.beonex.com/en/Working_with_windows_in_chrome_code.html 
-    let args = [popupImage, title, msg, true, msg/*cookie*/, 0, '', '', null, this.popupListener];
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null ); // nsIDOMJSWindow, nsIDOMWindow
-    win.arguments = args; // sometimes it's too slow to set here, but mostly should be OK and it's the way suggested in MDN
+    let winRef = Cu.getWeakReference(win);
+    // sometimes it's too slow to set here, but mostly should be OK and it's the way suggested in MDN
+    win.arguments = [popupImage, title, msg, true, {winRef: winRef, log: this}/*cookie*/, 0, '', '', null, this.popupListener];
     let popupLoad = function() {
       win.removeEventListener('load', popupLoad, false);
       if ( win.document ) {
@@ -41,6 +46,18 @@ let autoArchiveLog = {
     };
     if ( win.document.readyState == "complete" ) popupLoad();
     else win.addEventListener('load', popupLoad, false);
+    this.popupWins.push(winRef);
+  },
+  cleanup: function() {
+    try {
+      this.info("Log cleanup");
+      this.popupWins.forEach( function(winRef) {
+        let newwin = winRef.get();
+        if ( newwin && newwin.document && !newwin.closed ) newwin.close();
+      } );
+      delete this.popupWins;
+      this.info("Log cleanup done");
+    } catch(err){}
   },
   
   now: function() { //author: meizz

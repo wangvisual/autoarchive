@@ -6,6 +6,7 @@ pref("extensions.awsome_auto_archive.enable_unread", true);
 pref("extensions.awsome_auto_archive.age_flag", 360);
 pref("extensions.awsome_auto_archive.age_tag", 360);
 pref("extensions.awsome_auto_archive.age_unread", 7);
+pref("extensions.awsome_auto_archive.hibernate", 0); // 0 for normal, -1 never start schedule, postive is time to schedule, -sessions_start_time is for the session only
 pref("extensions.awsome_auto_archive.startup_delay", 10);
 pref("extensions.awsome_auto_archive.idle_delay", 60);
 pref("extensions.awsome_auto_archive.start_next_delay", 3600);

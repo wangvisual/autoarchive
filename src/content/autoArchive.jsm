@@ -18,6 +18,7 @@ const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
 const popupsetID = "autoArchive-statusbar-popup";
 const contextMenuID = "autoArchive-statusbar-contextmenu";
+const contextMenuScheduleID = "autoArchive-statusbar-contextmenu-schedule";
 const statusbarIconSrc = 'chrome://awsomeAutoArchive/content/icon.png';
 const statusbarIconSrcWait = 'chrome://awsomeAutoArchive/content/icon_wait.png';
 const statusbarIconSrcRun = 'chrome://awsomeAutoArchive/content/icon_run.png';
@@ -34,12 +35,12 @@ let autoArchive = {
       let doc = aWindow.document;
       //let winref = Cu.getWeakReference(aWindow);
       //let docref = Cu.getWeakReference(doc);
-      if ( typeof(aWindow._autoarchive) != 'undefined' ) autoArchiveLog.info("Already loaded, return");
+      if ( typeof(aWindow._autoarchive) != 'undefined' ) return autoArchiveLog.info("Already loaded, return");
       aWindow._autoarchive = { createdElements:[], hookedFunctions:[] };
       let status_bar = doc.getElementById('status-bar');
       let contextMenuSplit = doc.getElementById('paneContext-afterMove');
       if ( status_bar ) { // add status bar icon
-        this.createPopup(aWindow);
+        this.createPopup(aWindow); // simple menu popup may can be in statusbarpanel by set that to 'statusbarpanel-menu-iconic', but better not
         let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
         statusbarIcon.id = statusbarIconID;
         statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
@@ -50,7 +51,7 @@ let autoArchive = {
         status_bar.insertBefore(statusbarIcon, null);
         aWindow._autoarchive.createdElements.push(statusbarIconID);
         aWindow._autoarchive.statusCallback = function(status, detail) {
-          if ( status == autoArchiveService.STATUS_SLEEP ) {
+          if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_FINISH].indexOf(status) >= 0 ) {
             statusbarIcon.setAttribute('src', statusbarIconSrc);
           } else if ( status == autoArchiveService.STATUS_WAITIDLE ) {
             statusbarIcon.setAttribute('src', statusbarIconSrcWait);
@@ -63,8 +64,27 @@ let autoArchive = {
           let menu = doc.getElementById(contextMenuID);
           let label = autoArchive.strBundle.GetStringFromName("mainwindow.menu." + ( status == autoArchiveService.STATUS_RUN ? 'stop' : 'run' ));
           if ( menu && menu.firstChild ) menu.firstChild.setAttribute('label', label);
+          if ( aWindow._autoarchive.prefCallback ) aWindow._autoarchive.prefCallback('hibernate'); // update menu for 1/4 hours etc
+        };
+        aWindow._autoarchive.prefCallback = function(key) {
+          if ( key == 'hibernate' ) {
+            let className = 'awsome_auto_archive-hibernate';
+            let newValue = autoArchivePref.options[key];
+            if ( newValue == 0 ) statusbarIcon.classList.remove(className);
+            else statusbarIcon.classList.add(className);
+            let scheduleMenu = doc.getElementById(contextMenuScheduleID);
+            if ( scheduleMenu ) for ( let menuitem of scheduleMenu.childNodes ) {
+              let value = menuitem.getAttribute('hibernate') || 0;
+              if ( value > 0 ) value += Date.now() / 1000;
+              let hibernate = Math.round(value);
+              let checked = ( ( value <= 0 && newValue == value ) || ( value > 0 && Math.abs(newValue, value) < 60 * 10 / 60 ) ); // Still checked within 10 minutes, this is for TB restart
+              menuitem.setAttribute('checked', checked);
+            };
+          }
         };
         autoArchiveService.addStatusListener(aWindow._autoarchive.statusCallback);
+        autoArchivePref.addPrefListener(aWindow._autoarchive.prefCallback);
+        aWindow._autoarchive.prefCallback('hibernate');
       }
       if ( autoArchivePref.options.add_context_munu_rule && contextMenuSplit && contextMenuSplit.parentNode ) {
         let newMenu = doc.createElementNS(XULNS, "menuitem");
@@ -97,6 +117,7 @@ let autoArchive = {
           hooked.unweave();
         } );
         if ( aWindow._autoarchive.statusCallback ) autoArchiveService.removeStatusListener(aWindow._autoarchive.statusCallback);
+        if ( aWindow._autoarchive.prefCallback ) autoArchivePref.removePrefListener(aWindow._autoarchive.prefCallback);
         let doc = aWindow.document;
         for ( let node of aWindow._autoarchive.createdElements ) {
           if ( typeof(node) == 'string' ) node = doc.getElementById(node);
@@ -121,6 +142,7 @@ let autoArchive = {
       autoArchivePrefDialog.cleanup();
       autoArchiveService.cleanup();
       autoArchivePref.cleanup();
+      autoArchiveLog.cleanup();
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
@@ -155,11 +177,23 @@ let autoArchive = {
     parent.insertBefore(item, null);
   },
   
+  setHibernate: function(event) {
+    let menuitem = event.currentTarget;
+    let value = Number(menuitem.getAttribute('hibernate') || 0);
+    if ( value > 0 ) value += Date.now() / 1000;
+    let hibernate = Math.round(value);
+    autoArchiveLog.info("setHibernate:" + hibernate + ":" + autoArchiveService._status[0]);
+    autoArchivePref.setPerf('hibernate', hibernate);
+    if ( autoArchiveService._status[0] != autoArchiveService.STATUS_RUN )
+      autoArchiveService.preStart(autoArchivePref.options.startup_delay);
+  },
+  
   createPopup: function(aWindow) {
     let doc = aWindow.document;
     let popupset = doc.createElementNS(XULNS, "popupset");
     popupset.id = popupsetID;
     let menupopup = doc.createElementNS(XULNS, "menupopup");
+    let menuGroupName = 'awsome_auto_archive-schedule';
     menupopup.id = contextMenuID;
     [ 
       ["?", autoArchivePref.path + "icon.png", function(){ autoArchiveService.starStopNow(); }], // run/stop must be the first menu item
@@ -169,13 +203,14 @@ let autoArchive = {
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/information-32.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
       [ "Schedule Control", 'chrome://awsomeAutoArchive/content/schedule.png', [
-        ["Enable schedule", '', undefined, {name: "abc", type: "radio", checked: true}],
+        ["Enable schedule", '', autoArchive.setHibernate, {hibernate: 0, name: menuGroupName, type: "radio"}],
         [""],
-        ["Disable schedule for 1 hour", '',  undefined, {name: "abc", type: "radio"}],
-        ["Disable schedule for 4 hours", '', undefined, {name: "abc", type: "radio"}],
-        ["Disable schedule till Thunderbird restart", '',  undefined, {name: "abc", type: "radio"}],
-        ["Disable schedule Forever", '', undefined, {name: "abc", type: "radio"}],
-      ] ],
+        ["Disable schedule for 1 hour", '',  autoArchive.setHibernate, {hibernate: 3600, name: menuGroupName, type: "radio"}],
+        ["Disable schedule for 4 hours", '', autoArchive.setHibernate, {hibernate: 3600*4, name: menuGroupName, type: "radio"}],
+        ["Disable schedule for 24 hours", '', autoArchive.setHibernate, {hibernate: 3600*24, name: menuGroupName, type: "radio"}],
+        ["Disable schedule till Thunderbird restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
+        ["Disable schedule forever", '', autoArchive.setHibernate, {hibernate: -1, name: menuGroupName, type: "radio"}],
+      ], {id: contextMenuScheduleID} ],
       ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
     ].forEach( function(menu) {
       autoArchive.addMenuItem(menu, doc, menupopup);
