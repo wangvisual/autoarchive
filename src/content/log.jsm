@@ -4,6 +4,7 @@
 "use strict";
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
@@ -28,14 +29,33 @@ let autoArchiveLog = {
   popup: function(title, msg) {
     let delay = this.popupDelay;
     if ( delay <= 0 ) return;
+    let self = this;
     // alert-service won't work with bb4win, use xul instead
     // http://mdn.beonex.com/en/Working_with_windows_in_chrome_code.html 
-    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', '_alert', 'chrome,titlebar=no,popup=yes', null ); // nsIDOMJSWindow, nsIDOMWindow
+    // https://developer.mozilla.org/en-US/Add-ons/Code_snippets/Alerts_and_Notifications
+    let args = [popupImage, title, msg, true];
+    // win is nsIDOMJSWindow, nsIDOMWindow
+    let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', "_blank", 'chrome,titlebar=no,popup=yes', 
+      toXPCOMArray(args.map( function(arg) {
+        if ( typeof(arg) == 'object' ) return arg;
+        let variant = Cc["@mozilla.org/variant;1"].createInstance(Ci.nsIWritableVariant);
+        variant.setFromVariant(arg);
+        return variant;
+      } ), Ci.nsIMutableArray)); // nsIMutableArray can't pass JavaScript Object
     let winRef = Cu.getWeakReference(win);
     // sometimes it's too slow to set here, but mostly should be OK and it's the way suggested in MDN
-    win.arguments = [popupImage, title, msg, true, {winRef: winRef, log: this}/*cookie*/, 0, '', '', null, this.popupListener];
+    args = args.concat([{winRef: winRef, log: this}/*cookie*/, 0, '', '', null, this.popupListener]);
+    win.arguments = args;
     let popupLoad = function() {
       win.removeEventListener('load', popupLoad, false);
+      if ( win.arguments.length != args.length ) {
+        win.arguments = args;
+        win.gAlertCookie = args[4];
+        win.gOrigin = args[5];
+        win.gReplacedWindow = args[8];
+        win.gAlertListener = args[9];
+        win.moveWindowToEnd();
+      }
       if ( win.document ) {
         let alertBox = win.document.getElementById('alertBox');
         if ( alertBox ) alertBox.style.animationDuration = delay + "s";
@@ -202,3 +222,17 @@ let autoArchiveLog = {
   },
   
 };
+
+/*autoArchiveLog.popup("1", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("2", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("3", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("4", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("5", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("6", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("7", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("8", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("9", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("10", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("11", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+autoArchiveLog.popup("12", "aaaaaaaaaaaaadfffffffffffffasdfasdfasdf");
+*/
