@@ -15,11 +15,10 @@ let autoArchiveLog = {
   popupListener: {
     observe: function(subject, topic, cookie) {
       if ( topic == 'alertclickcallback' ) { // or alertfinished / alertshow
-        try {
-          Services.ww.openWindow(null, 'chrome://console2/content/console2.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
-        } catch ( err ) {
-          Services.ww.openWindow(null, 'chrome://global/content/console.xul', 'global:console', 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
-        }
+        let type = 'global:console';
+        let logWindow = Services.wm.getMostRecentWindow(type);
+        if ( logWindow ) return logWindow.focus();
+        Services.ww.openWindow(null, 'chrome://global/content/console.xul', type, 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
       } else if ( topic == 'alertfinished' ) {
         let index = cookie.log.popupWins.indexOf(cookie.winRef);
         if ( index >= 0 ) cookie.log.popupWins.splice(index, 1);

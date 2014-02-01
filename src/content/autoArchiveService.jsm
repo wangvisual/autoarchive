@@ -37,7 +37,6 @@ let autoArchiveService = {
     this.timer.cancel();
     this.cleanupIdleObserver();
     let hibernate = autoArchivePref.options.hibernate;
-    autoArchiveLog.info("preStart:" + time + ":" + hibernate);
     if ( hibernate == -1 ) return this.updateStatus(this.STATUS_HIBERNATE, "Schedule Disabled"); // never start schdule
     else if ( hibernate == 0 ) return this.start(time);
     else if ( hibernate < -1 ) {
