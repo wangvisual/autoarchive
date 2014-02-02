@@ -103,16 +103,15 @@ let autoArchive = {
   },
  
   onUnLoad: function(event) {
-    autoArchiveLog.info('onUnLoad');
     let aWindow = event.currentTarget;
+    autoArchiveLog.info('onUnLoad for ' + aWindow.location.href);
     if ( aWindow ) autoArchive.unLoad(aWindow);
   },
 
   unLoad: function(aWindow) {
     try {
-      autoArchiveLog.info('unload');
       if ( typeof(aWindow._autoarchive) != 'undefined' ) {
-        autoArchiveLog.info('unhook');
+        autoArchiveLog.info('unLoad for ' + aWindow.location.href);
         aWindow.removeEventListener("unload", autoArchive.onUnLoad, false);
         aWindow._autoarchive.hookedFunctions.forEach( function(hooked) {
           hooked.unweave();
@@ -128,11 +127,11 @@ let autoArchive = {
           }
         }
         delete aWindow._autoarchive;
+        autoArchiveLog.info('unLoad done for ' + aWindow.location.href);
       }
     } catch (err) {
       autoArchiveLog.logException(err);  
     }
-    autoArchiveLog.info('unload done');
   },
 
   cleanup: function() {

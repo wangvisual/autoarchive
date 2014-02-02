@@ -50,9 +50,9 @@ let autoArchiveLog = {
         if ( arg && typeof(arg) == 'object' ) variant.setAsInterface(Ci.nsIObserver, arg); // to pass the listener interface
         else variant.setFromVariant(arg);
         return variant;
-      } ), Ci.nsIMutableArray)); // nsIMutableArray can't pass JavaScript Object
+      } ), Ci.nsIMutableArray));
     popupWins[cookie] = Cu.getWeakReference(win);
-    // sometimes it's too slow to set win.arguments here when the xul window is reused.
+    // sometimes it's too late to set win.arguments here when the xul window is reused.
     // win.arguments = args;
     let popupLoad = function() {
       win.removeEventListener('load', popupLoad, false);
@@ -82,7 +82,7 @@ let autoArchiveLog = {
       this.info("Log cleanup");
       for ( let cookie in popupWins ) {
         let newwin = popupWins[cookie].get();
-        this.info("close window:" + cookie);
+        this.info("close alert window:" + cookie);
         if ( newwin && newwin.document && !newwin.closed ) newwin.close();
       };
       popupWins = {};
