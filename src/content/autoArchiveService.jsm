@@ -65,7 +65,6 @@ let autoArchiveService = {
     this.timer.initWithCallback( function() {
       if ( autoArchiveLog && self ) self.waitTillIdle();
     }, time*1000, Ci.nsITimer.TYPE_ONE_SHOT );
-    autoArchiveLog.info("test", 1);
   },
   idleService: Cc["@mozilla.org/widget/idleservice;1"].getService(Ci.nsIIdleService),
   idleObserver: {
