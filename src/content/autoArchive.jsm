@@ -50,6 +50,7 @@ let autoArchive = {
         statusbarIcon.setAttribute('context', contextMenuID);
         status_bar.insertBefore(statusbarIcon, null);
         aWindow._autoarchive.createdElements.push(statusbarIconID);
+        let [preStatus, preDetail] = [autoArchiveService.STATUS_INIT, ""];
         aWindow._autoarchive.statusCallback = function(status, detail) {
           if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_FINISH].indexOf(status) >= 0 ) {
             statusbarIcon.setAttribute('src', statusbarIconSrc);
@@ -58,9 +59,10 @@ let autoArchive = {
           } else if ( status == autoArchiveService.STATUS_RUN ) {
             statusbarIcon.setAttribute('src', statusbarIconSrcRun);
           }
-          statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + detail);
+          statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + "\n": "" ) + detail);
           if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
-            aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + detail);
+            aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + ", ": "" ) + detail);
+          [preStatus, preDetail] = [status, detail];
           let menu = doc.getElementById(contextMenuID);
           let label = autoArchive.strBundle.GetStringFromName("mainwindow.menu." + ( status == autoArchiveService.STATUS_RUN ? 'stop' : 'run' ));
           if ( menu && menu.firstChild ) menu.firstChild.setAttribute('label', label);

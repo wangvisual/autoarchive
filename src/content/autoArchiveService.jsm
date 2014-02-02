@@ -20,7 +20,7 @@ Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 let autoArchiveService = {
   timer: null,
   statusListeners: [],
-  STATUS_INIT: 0, // not used actually
+  STATUS_INIT: 0,
   STATUS_HIBERNATE: 1,
   STATUS_SLEEP: 2,
   STATUS_WAITIDLE: 3,
