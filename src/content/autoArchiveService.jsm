@@ -30,6 +30,7 @@ let autoArchiveService = {
   isExceed: false,
   numOfMessages: 0,
   totalSize: 0,
+  summary: {}, // { archive: 10, delete: 10, copy: 1, move 20}
   dry_run: false, // set by 'Dry Run' button, there's another one autoArchivePref.options.dry_run is set by perf
   showStatusText: 0, // only show once for STATUS_HIBERNATE on status bar after change, as we use timer
   preStart: function(time) {
@@ -124,6 +125,7 @@ let autoArchiveService = {
     this.numOfMessages = this.totalSize = this.showStatusText = 0;
     this.dryRunLogItems = [];
     this._status = [];
+    this.summary = {};
   },
   rules: [],
   wait4Folders: {},
@@ -459,8 +461,9 @@ let autoArchiveService = {
             } );
             return self.doMoveOrArchiveOne();
           }
-          // from mailWindowOverlay.js
           self.wait4Folders[rule.src] = true;
+          self.summary[rule.action] = ( self.summary[rule.action] || 0 ) + this.messages.length;
+          // from mailWindowOverlay.js
           let batchMover = new mail3PaneWindow.BatchMessageMover();
           let myFunc = function(result) {
             autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl");
@@ -530,8 +533,8 @@ let autoArchiveService = {
   },
   doCopyDeleteMoveOne: function(group) {
     function runNext() {
-      if ( this.copyGroups.length ) this.doCopyDeleteMoveOne(this.copyGroups.shift());
-      else this.doMoveOrArchiveOne();
+      if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
+      else self.doMoveOrArchiveOne();
     }
     if ( autoArchivePref.options.dry_run || this.dry_run ) {
       group.messages.forEach( function(msg) {
@@ -553,6 +556,7 @@ let autoArchiveService = {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     let msgWindow = null;
     if ( mail3PaneWindow ) msgWindow = mail3PaneWindow.msgWindow;
+    this.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
     if ( group.action == 'delete' ) {
       // deleteMessages impacted by srcFolder.server.getIntValue('delete_model')
       // 0:mark as deleted, 1:move to trash, 2:remove it immediately
@@ -589,7 +593,13 @@ let autoArchiveService = {
     if ( this.rules.length == 0 || self.isExceed ) {
       this.closeAllFoldersDB();
       //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
-      autoArchiveLog.info("Total changed " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
+      autoArchiveLog.info("Proposed to change " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
+      let total = 0, report = [];
+      for ( let action in this.summary ) {
+        total += this.summary[action];
+        report.push(this.summary[action] + " " + ( action == 'copy' ? 'copied' : action + "d"));
+      }
+      if ( total != this.numOfMessages ) autoArchiveLog.info("Real change " + total + " messages, some folders might be busy.");
       autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
       if ( autoArchivePref.options.dry_run || self.dry_run ) {
         let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
@@ -597,7 +607,7 @@ let autoArchiveService = {
         if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
         else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
       }
-      this.updateStatus(this.STATUS_FINISH, '');
+      this.updateStatus(this.STATUS_FINISH, total == 0 ? "Archie: Nothing done" : "Archie: Processed " + total + " msgs (" + report.join(", ") + ")");
       let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
       this.clear();
       return this.preStart(delay);

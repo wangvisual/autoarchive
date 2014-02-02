@@ -208,7 +208,7 @@ let autoArchive = {
         ["Disable Archie for 1 hour", '',  autoArchive.setHibernate, {hibernate: 3600, name: menuGroupName, type: "radio"}],
         ["Disable Archie for 4 hours", '', autoArchive.setHibernate, {hibernate: 3600*4, name: menuGroupName, type: "radio"}],
         ["Disable Archie for 24 hours", '', autoArchive.setHibernate, {hibernate: 3600*24, name: menuGroupName, type: "radio"}],
-        ["Disable Archie till Thunderbird restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
+        ["Disable Archie till " + Services.appinfo.name + " restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
         ["Disable Archie forever", '', autoArchive.setHibernate, {hibernate: -1, name: menuGroupName, type: "radio"}],
       ], {id: contextMenuScheduleID} ],
       ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
