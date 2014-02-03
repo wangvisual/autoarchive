@@ -152,7 +152,7 @@ let autoArchive = {
   },
   
   openOption: function(win, msgHdr) {
-    win.openDialog("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul", "Opt",
+    win.openDialog("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul", "_blank",
           ( Services.prefs.getBoolPref("browser.preferences.instantApply") ? '' : 'modal,' ) + 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', msgHdr);
   },
   

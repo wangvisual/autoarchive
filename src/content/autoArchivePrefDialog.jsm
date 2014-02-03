@@ -13,7 +13,7 @@ Cu.import("resource:///modules/MailUtils.js");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
-const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
+const perfDialogTooltipID = "awsome_auto_archive-perfDialogTooltip";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const ruleClass = 'awsome_auto_archive-rule';
 
@@ -188,15 +188,18 @@ let autoArchivePrefDialog = {
       sender.setAttribute("value", rule.from || '');
       sender.setAttribute("rule", 'from');
       sender.setAttribute("size", "10");
+      sender.tooltip = perfDialogTooltipID;
       
       let recipient = doc.createElementNS(XUL, "textbox");
       recipient.setAttribute("value", rule.recipient || '');
       recipient.setAttribute("rule", 'recipient');
       recipient.setAttribute("size", "10");
+      recipient.tooltip = perfDialogTooltipID;
       
       let subject = doc.createElementNS(XUL, "textbox");
       subject.setAttribute("value", rule.subject || '');
       subject.setAttribute("rule", 'subject');
+      subject.tooltip = perfDialogTooltipID;
       
       let age = doc.createElementNS(XUL, "textbox");
       age.setAttribute("type", "number");
@@ -354,6 +357,30 @@ let autoArchivePrefDialog = {
     //autoArchiveLog.info('syncToPerf done');
     return value;
   },
+  
+  PopupShowing: function(event) {
+    try {
+      let doc = event.view.document;
+      let tooltip = doc.getElementById(perfDialogTooltipID);
+      let line1 = tooltip.firstChild.firstChild;
+      let line2 = line1.nextSibling;
+      let line3 = line2.nextSibling;
+      let line4 = line3.nextSibling;
+      let triggerNode = event.target.triggerNode;
+      let rule = triggerNode.getAttribute('rule');
+      let supportRE = autoArchiveService.advancedTerms[rule].some( function(term) {
+        return MailServices.filters.getCustomTerm(term);
+      } );
+      let str = function(label) { return self.strBundle.GetStringFromName("perfdialog.tooltip." + label); };
+      line1.value = (triggerNode.value == "") ? str("emptyFilter") : triggerNode.value;
+      line2.value = supportRE ? str("hasRE") : str("noRE");
+      line3.value = rule != 'subject' ? str("multipleSearch") : str("subjectInfo");
+      line4.value = str("negtaiveSearch") + ( rule != 'subject' ? str("negtaiveEmailExample") : str("negtaiveSubjectExample") );
+    } catch (err) {
+      autoArchiveLog.logException(err);
+    }
+    return true;
+  },
 
   loadPerfWindow: function(win) {
     try {
@@ -366,6 +393,8 @@ let autoArchivePrefDialog = {
       }
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
+      let tooltip = this._doc.getElementById(perfDialogTooltipID);
+      if ( tooltip ) tooltip.addEventListener("popupshowing", this.PopupShowing, true);
       this._savedRules = autoArchivePref.options.rules;
       if ( win.arguments && win.arguments[0] ) { // new rule based on message selected, not including in the revert all
         let msgHdr = win.arguments[0];
@@ -410,6 +439,8 @@ let autoArchivePrefDialog = {
   unLoadPerfWindow: function() {
     if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog ) return true;
     autoArchiveService.removeStatusListener(this.statusCallback);
+    let tooltip = this._doc.getElementById(perfDialogTooltipID);
+    if ( tooltip ) tooltip.removeEventListener("popupshowing", this.PopupShowing, true);
     if ( this.instantApply ) autoArchivePref.validateRules();
     delete this._doc;
     delete this._win;

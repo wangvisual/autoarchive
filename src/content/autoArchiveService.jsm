@@ -689,7 +689,6 @@ let autoArchiveService = {
     if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
     // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
-    let advanced = { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient:['expressionsearch#toRegex'] };
     let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender, recipient: Ci.nsMsgSearchAttrib.ToOrCC };
     ["subject", "from", "recipient"].forEach( function(filter) {
       if ( typeof(rule[filter]) != 'undefined' && rule[filter] != '' ) {
@@ -700,7 +699,7 @@ let autoArchiveService = {
           attribute = attribute.substr(1);
         }
         if ( attribute.match(/^\/.*\/[ismxpgc]*$/) ) {
-          advanced[filter].some( function(term) { // .find need TB >=25
+          self.advancedTerms[filter].some( function(term) { // .find need TB >=25
             if ( MailServices.filters.getCustomTerm(term) ) {
               customId = term;
               return true;
@@ -709,7 +708,19 @@ let autoArchiveService = {
           if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "', 'FiltaQuilla' support RE search for subject, and 'Expression Search / GMailUI' support all.", 1);
         }
         if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
-        else self.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+        else {
+          if ( filter == 'subject' ) self.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+          else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
+            attribute.split(/[\s,;]+/).forEach( function(attr) {
+              positive = true;
+              if ( attr[0] == '!' ) {
+                positive = false;
+                attr = attr.substr(1);
+              }
+              if ( attr != '' ) self.addSearchTerm(searchSession, normal[filter], attr, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+            } );
+          }
+        }
       }
     } );
     
@@ -719,6 +730,7 @@ let autoArchiveService = {
     this.updateFolders(); // when updateFolders done, will call this function again, but have this._searchSession
     //searchSession.search(null);
   },
+  advancedTerms : { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient:['expressionsearch#toRegex'] },
 
   addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
     let aCustomId;

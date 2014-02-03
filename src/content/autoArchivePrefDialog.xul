@@ -206,4 +206,8 @@
     Components.utils.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
   ]]>
 </script>
+<popupset>
+  <tooltip id="awsome_auto_archive-perfDialogTooltip"><vbox><label/><description/><description/><description/></vbox>
+  </tooltip>
+</popupset>
 </prefwindow>
