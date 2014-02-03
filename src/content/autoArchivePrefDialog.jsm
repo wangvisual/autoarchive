@@ -6,6 +6,7 @@ var EXPORTED_SYMBOLS = ["autoArchivePrefDialog"];
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
+Cu.import("resource://app/modules/gloda/utils.js");
 //Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/folderUtils.jsm");
@@ -398,11 +399,45 @@ let autoArchivePrefDialog = {
       this._savedRules = autoArchivePref.options.rules;
       if ( win.arguments && win.arguments[0] ) { // new rule based on message selected, not including in the revert all
         let msgHdr = win.arguments[0];
-        this.creatNewRule( {action: 'archive', enable: true, src: msgHdr.folder.URI, sub: 0, from: msgHdr.mime2DecodedAuthor, recipient: msgHdr.mime2DecodedTo || msgHdr.mime2DecodedRecipients, subject: msgHdr.mime2DecodedSubject, age: autoArchivePref.options.default_days} );
+        this.creatNewRule( {action: 'archive', enable: true, src: msgHdr.folder.URI, sub: 0, from: this.getSearchStringFromAddress(msgHdr.mime2DecodedAuthor),
+          recipient: this.getSearchStringFromAddress(msgHdr.mime2DecodedTo || msgHdr.mime2DecodedRecipients), subject: msgHdr.mime2DecodedSubject, age: autoArchivePref.options.default_days} );
       }
     } catch (err) { autoArchiveLog.logException(err); }
     return true;
   },
+  getSearchStringFromAddress: function(mails) {
+    // GetDisplayNameInAddressBook() in http://mxr.mozilla.org/comm-central/source/mailnews/base/src/nsMsgDBView.cpp
+    try {
+      let parsedMails = GlodaUtils.parseMailAddresses(mails);
+      let returnMails = [];
+      for ( let i = 0; i < parsedMails.count; i++ ) {
+        let email = parsedMails.addresses[i], card, displayName;
+        let showCondensedAddresses = Services.prefs.getBoolPref("mail.showCondensedAddresses"); // the usage of getSearchStringFromAddress might be few, so won't add Observer 
+        if ( showCondensedAddresses ) {
+          let allAddressBooks = MailServices.ab.directories;
+          while ( !card && allAddressBooks.hasMoreElements()) {
+            let addressBook = allAddressBooks.getNext().QueryInterface(Ci.nsIAbDirectory);
+            if ( addressBook instanceof Ci.nsIAbDirectory /*&& !addressBook.isRemote*/ ) {
+              try {
+                card = addressBook.cardForEmailAddress(email); // case-insensitive && sync, only retrun 1st one if multiple match, but it search on all email addresses
+              } catch (err) {}
+              if ( card ) {
+                let PreferDisplayName = Number(card.getProperty('PreferDisplayName', 1));
+                if (PreferDisplayName) displayName = card.displayName;
+              }
+            }
+          }
+        }
+        if ( !displayName ) displayName = parsedMails.names[i] || parsedMails.fullAddresses[i];
+        displayName = displayName.replace(/['"<>]/g,'');
+        if ( parsedMails.fullAddresses[i].indexOf(displayName) != -1 ) email = displayName;
+        returnMails[i] = email.replace(/(.*)@.*/, '$1'); // use mail ID only if it's an email address.
+      }
+      return returnMails.join(", ");
+    } catch (err) { autoArchiveLog.logException(err); }
+    return mails;
+  },
+  
   getOneRule: function(row) {
     let rule = {};
     for ( let item of row.childNodes ) {
