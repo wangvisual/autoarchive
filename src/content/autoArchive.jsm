@@ -39,6 +39,7 @@ let autoArchive = {
       aWindow._autoarchive = { createdElements:[], hookedFunctions:[] };
       let status_bar = doc.getElementById('status-bar');
       let contextMenuSplit = doc.getElementById('paneContext-afterMove');
+      if ( !contextMenuSplit ) contextMenuSplit = doc.getElementById('mailContext-sep-print'); // SeaMonkey
       if ( status_bar ) { // add status bar icon
         this.createPopup(aWindow); // simple menu popup may can be in statusbarpanel by set that to 'statusbarpanel-menu-iconic', but better not
         let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
