@@ -490,7 +490,8 @@ let autoArchivePrefDialog = {
     let doc = self._doc;
     let group = doc.getElementById('awsome_auto_archive-IDs');
     let pane = doc.getElementById('awsome_auto_archive-perfpane');
-    if ( !group || !pane ) return;
+    let tabbox = doc.getElementById('awsome_auto_archive-tabbox');
+    if ( !group || !pane || !tabbox ) return;
     let firstNonNull = null, gIdentities = {}, gAccounts = {};
     for (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {
       let server = account.incomingServer;
@@ -523,6 +524,9 @@ let autoArchivePrefDialog = {
       let currentWinHeight = perfDialog.height;
       if ( currentWinHeight < targetWinHeight+62 ) perfDialog.setAttribute('height', targetWinHeight+62);
       perfDialog.style.minHeight = targetWinHeight + "px";
+      let width = Number(perfDialog.width || perfDialog.getAttribute("width"));
+      let targetWidth = Number(tabbox.clientWidth  || tabbox.scrollWidth) + 36;
+      if ( width < targetWidth ) perfDialog.setAttribute("width", targetWidth);
     } catch (err) {autoArchiveLog.logException(err);}
   },
   

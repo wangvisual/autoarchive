@@ -42,7 +42,7 @@
     <!--preference id="pref_default_applyIncomingFilters" name="mail.server.default.applyIncomingFilters" type="string"/-->
   </preferences>
   
-  <tabbox>
+  <tabbox id="awsome_auto_archive-tabbox">
     <tabs>
       <tab image="chrome://awsomeAutoArchive/content/icon_run.png" label=" &awsome_auto_archive.perf.general;"/>
       <tab image="chrome://mozapps/skin/extensions/extensionGeneric-16.png" label=" &awsome_auto_archive.perf.advanced;"/>
