@@ -9,6 +9,7 @@ Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
+  oldAPI: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
   popupDelay: 4,
   setPopupDelay: function(delay) {
     this.popupDelay = delay;
@@ -41,6 +42,7 @@ let autoArchiveLog = {
     */
     let cookie = Date.now();
     let args = [popupImage, title, msg, true, cookie, 0, '', '', null, this.popupListener];
+    if ( this.oldAPI ) args.splice(6,3); // remove '', '', null
     // win is nsIDOMJSWindow, nsIDOMWindow
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', "_blank", 'chrome,titlebar=no,popup=yes',
       // https://alexvincent.us/blog/?p=451
