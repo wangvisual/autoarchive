@@ -96,7 +96,7 @@
         <vbox flex="1">
           <groupbox>
             <caption label="&awsome_auto_archive.perf.enable_special;"/>
-            <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked'>
+            <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked' tooltiptext="&awsome_auto_archive.perf.special_tooltip;">
               <columns>
                 <column flex="1"/>
                 <column flex="1000"/>
@@ -126,19 +126,19 @@
                   <column flex="1000"/>
                 </columns> 
                 <rows>
-                  <row>
+                  <row tooltiptext="&awsome_auto_archive.perf.startup_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.startup_delay;"/>
                     <hbox><textbox preference="pref_startup_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
-                  <row>
+                  <row tooltiptext="&awsome_auto_archive.perf.idle_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.idle_delay;"/>
                     <hbox><textbox preference="pref_idle_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
-                  <row>
+                  <row tooltiptext="&awsome_auto_archive.perf.start_next_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.start_next_delay;"/>
                     <hbox><textbox preference="pref_start_next_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
-                  <row>
+                  <row tooltiptext="&awsome_auto_archive.perf.rule_timeout_tooltip;">
                     <label value="&awsome_auto_archive.perf.rule_timeout;"/>
                     <hbox><textbox preference="pref_rule_timeout" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>

@@ -37,12 +37,17 @@
 <!ENTITY awsome_auto_archive.perf.enable_unread "UnRead mails">
 <!ENTITY awsome_auto_archive.perf.old_than "that older than">
 <!ENTITY awsome_auto_archive.perf.days "days">
+<!ENTITY awsome_auto_archive.perf.special_tooltip "This is the global excptions except for 'Copy', Type of grey will NOT be included in any action. If enabled, The email in this type still need to be old enough">
 <!ENTITY awsome_auto_archive.perf.active_time "Time Settings">
 <!ENTITY awsome_auto_archive.perf.startup_delay "First run after">
 <!ENTITY awsome_auto_archive.perf.idle_delay "Wait for computer becomes idle for">
 <!ENTITY awsome_auto_archive.perf.start_next_delay "Start next run after">
 <!ENTITY awsome_auto_archive.perf.rule_timeout "Timeout for one rule in">
 <!ENTITY awsome_auto_archive.perf.seconds "seconds">
+<!ENTITY awsome_auto_archive.perf.startup_delay_tooltip "Archie will sleep for this long till wakeup">
+<!ENTITY awsome_auto_archive.perf.idle_delay_tooltip "After wakeup, Archie will wait computer to be idle for this time before start to work">
+<!ENTITY awsome_auto_archive.perf.start_next_delay_tooltip "After finishing one run, Archie will sleep this long till wakeup. Except batch run limit is exceeded">
+<!ENTITY awsome_auto_archive.perf.rule_timeout_tooltip "If run for one rule is stuck or hang, Archie will abort after this long">
 <!ENTITY awsome_auto_archive.perf.batch_run_limitation "Batch limitations for one run">
 <!ENTITY awsome_auto_archive.perf.messages_number_limit "Total number of messages">
 <!ENTITY awsome_auto_archive.perf.messages_number_limit_hint "(0 means no limit)">
