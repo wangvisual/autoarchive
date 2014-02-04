@@ -386,6 +386,7 @@ let autoArchivePrefDialog = {
   loadPerfWindow: function(win) {
     try {
       autoArchiveLog.info('loadPerfWindow');
+      if ( !this._win ) this.syncFromPerf(win); // SeaMonkey may have one dialog open from addon manager, and then open another one from icon or context menu
       this.instantApply = this._doc.getElementById('awsome_auto_archive-preferences').instantApply || false;
       autoArchivePref.setInstantApply(this.instantApply);
       if ( this.instantApply ) { // only use synctopreference for instantApply, else use acceptPerfWindow

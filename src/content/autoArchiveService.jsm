@@ -302,7 +302,12 @@ let autoArchiveService = {
           ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
           ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
-      if ( rule.action == 'archive' && ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) || !mail3PaneWindow.getIdentityForHeader(msgHdr).archiveEnabled ) ) return;
+      if ( rule.action == 'archive' ) {
+        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return;
+        let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
+        if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return;
+      }
+      
       if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         // check if dest folder has already has the message
@@ -604,7 +609,7 @@ let autoArchiveService = {
       if ( autoArchivePref.options.dry_run || self.dry_run ) {
         let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
         // openDialog with dialog=no, as open can't have additional parameter, and dialog has no maximize button
-        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "Info", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
+        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "_blank", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
         else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
       }
       this.updateStatus(this.STATUS_FINISH, total == 0 ? "Archie: Nothing done" : "Archie: Processed " + total + " msgs (" + report.join(", ") + ")");
