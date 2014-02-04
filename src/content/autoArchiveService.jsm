@@ -604,14 +604,13 @@ let autoArchiveService = {
         total += this.summary[action];
         report.push(this.summary[action] + " " + ( action == 'copy' ? 'copied' : action + "d"));
       }
-      if ( total != this.numOfMessages ) autoArchiveLog.info("Real change " + total + " messages, some folders might be busy.");
-      autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
       if ( autoArchivePref.options.dry_run || self.dry_run ) {
         let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
         // openDialog with dialog=no, as open can't have additional parameter, and dialog has no maximize button
         if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "_blank", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
         else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
-      }
+      } else if ( total != this.numOfMessages ) autoArchiveLog.info("Real change " + total + " messages, some folders might be busy.");
+      autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
       this.updateStatus(this.STATUS_FINISH, total == 0 ? "Archie: Nothing done" : "Archie: Processed " + total + " msgs (" + report.join(", ") + ")");
       let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
       this.clear();
