@@ -272,6 +272,7 @@ let autoArchivePrefDialog = {
   
   revertRules: function() {
     if ( !this._doc ) return;
+    this.syncToPerf(true);
     let preference = this._doc.getElementById("pref_rules");
     autoArchiveLog.info("Revert rules from " + preference.value + " to " + this._savedRules);
     preference.value = this._savedRules; // perfpane.userChangedValue is the same
