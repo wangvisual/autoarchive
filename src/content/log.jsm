@@ -10,7 +10,7 @@ const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
   oldAPI: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
-  popupDelay: 4,
+  popupDelay: Services.prefs.getIntPref("alerts.totalOpenTime") / 1000,
   setPopupDelay: function(delay) {
     this.popupDelay = delay;
   },
