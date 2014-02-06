@@ -18,6 +18,7 @@ const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
 const popupsetID = "autoArchive-statusbar-popup";
 const contextMenuID = "autoArchive-statusbar-contextmenu";
+const mailContextMenuID = "autoArchive-create-rule-contextmenuitem";
 const contextMenuScheduleID = "autoArchive-statusbar-contextmenu-schedule";
 const statusbarIconSrc = 'chrome://awsomeAutoArchive/content/icon.png';
 const statusbarIconSrcWait = 'chrome://awsomeAutoArchive/content/icon_wait.png';
@@ -36,7 +37,7 @@ let autoArchive = {
       //let winref = Cu.getWeakReference(aWindow);
       //let docref = Cu.getWeakReference(doc);
       if ( typeof(aWindow._autoarchive) != 'undefined' ) return autoArchiveLog.info("Already loaded, return");
-      aWindow._autoarchive = { createdElements:[], hookedFunctions:[] };
+      aWindow._autoarchive = { createdElements:[], hookedFunctions:[], contextMenuItem: null };
       let status_bar = doc.getElementById('status-bar');
       let contextMenuSplit = doc.getElementById('paneContext-afterMove');
       if ( !contextMenuSplit ) contextMenuSplit = doc.getElementById('mailContext-sep-print'); // SeaMonkey
@@ -92,17 +93,32 @@ let autoArchive = {
       }
       if ( autoArchivePref.options.add_context_munu_rule && contextMenuSplit && contextMenuSplit.parentNode ) {
         let newMenu = doc.createElementNS(XULNS, "menuitem");
+        newMenu.id = mailContextMenuID;
         newMenu.setAttribute('label', this.strBundle.GetStringFromName("mainwindow.menu.createRule"));
         newMenu.setAttribute('image', statusbarIconSrcWait);
         newMenu.addEventListener('command', this.createRuleBasedOn, false);
+        contextMenuSplit.parentNode.addEventListener('popupshowing', this.beforePopupShow, true);
         newMenu.setAttribute('class', "menuitem-iconic");
         contextMenuSplit.parentNode.insertBefore(newMenu, contextMenuSplit);
-        aWindow._autoarchive.createdElements.push(newMenu);
+        aWindow._autoarchive.contextMenuItem = newMenu;
+        aWindow._autoarchive.createdElements.push(mailContextMenuID);
       }
       aWindow.addEventListener("unload", autoArchive.onUnLoad, false);
     }catch(err) {
       autoArchiveLog.logException(err);
     }
+  },
+  
+  beforePopupShow: function(event) {
+    let shouldShow = true;
+    if ( !event.view ) return shouldShow = false;
+    else {
+      let folderDisplay = event.view.gFolderDisplay;
+      if ( !event.view._autoarchive || !event.view._autoarchive.contextMenuItem ) return true;
+      if ( !folderDisplay || folderDisplay.selectedCount <= 0 || folderDisplay.selectedMessages.length <= 0 ) shouldShow = false;
+    }
+    event.view._autoarchive.contextMenuItem.hidden = !shouldShow;
+    return true;
   },
  
   onUnLoad: function(event) {
@@ -121,11 +137,12 @@ let autoArchive = {
         } );
         if ( aWindow._autoarchive.statusCallback ) autoArchiveService.removeStatusListener(aWindow._autoarchive.statusCallback);
         if ( aWindow._autoarchive.prefCallback ) autoArchivePref.removePrefListener(aWindow._autoarchive.prefCallback);
+        if ( aWindow._autoarchive.contextMenuItem ) aWindow._autoarchive.contextMenuItem.parentNode.removeEventListener('popupshowing', this.beforePopupShow, true);
         let doc = aWindow.document;
         for ( let node of aWindow._autoarchive.createdElements ) {
           if ( typeof(node) == 'string' ) node = doc.getElementById(node);
           if ( node && node.parentNode ) {
-            autoArchiveLog.info("removed node " + node);
+            autoArchiveLog.info("removed node " + (node.id ? node.id : node));
             node.parentNode.removeChild(node);
           }
         }
