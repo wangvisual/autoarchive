@@ -192,7 +192,9 @@ let autoArchiveService = {
       //autoArchiveLog.info("OnProgress " + aProgress + "/"+ aProgressMax);
     };
     this.OnStopCopy = function(aStatus) {
-      autoArchiveLog.info("OnStop " + group.action);
+      autoArchiveLog.info("OnStop " + group.action + " 0x" + aStatus.toString(16));
+      if ( aStatus ) autoArchiveLog.log(autoArchiveUtil.Name + ": " + group.action + " failed with " + autoArchiveUtil.getErrorMsg(aStatus), "Error!");
+      else self.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
       if ( group.action == 'delete' || group.action == 'move' ) self.wait4Folders[group.src] = true;
       if ( group.action == 'copy' || group.action == 'move' ) self.wait4Folders[group.dest] = true;
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
@@ -207,7 +209,6 @@ let autoArchiveService = {
     this.msgsDeleted = function(aMsgList) { // Ci.nsIMsgFolderListener, for realDelete message, thus can't get onStopCopy/msgsMoveCopyCompleted
       autoArchiveLog.info("msgsDeleted");
       self.wait4Folders[group.src] = true;
-      autoArchiveLog.logObject(aMsgList,'aMsgList',1);
       for (let iMsgHdr = 0; iMsgHdr < aMsgList.length; iMsgHdr++) {
         let msgHdr = aMsgList.queryElementAt(iMsgHdr, Ci.nsIMsgDBHdr);
         let index = group.messages.indexOf(msgHdr);
@@ -216,6 +217,8 @@ let autoArchiveService = {
       if ( group.messages.length == 0 ) {
         autoArchiveLog.info("All msgsDeleted");
         MailServices.mfn.removeListener(this);
+        // if server connection fail, still report msgs deleted, but delete will fail, this is a BUG
+        self.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
         if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
         else self.updateFolders();
       }
@@ -244,6 +247,7 @@ let autoArchiveService = {
           autoArchiveLog.info("updateFolder " + folder.URI);
           folder.updateFolder(null);
         } catch(err) {
+          autoArchiveLog.info("update folder fail for " + folder.URI);
           autoArchiveLog.logException(err);
           failCount ++;
           delete self.wait4Folders[folder.URI];
@@ -561,7 +565,6 @@ let autoArchiveService = {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     let msgWindow = null;
     if ( mail3PaneWindow ) msgWindow = mail3PaneWindow.msgWindow;
-    this.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
     if ( group.action == 'delete' ) {
       // deleteMessages impacted by srcFolder.server.getIntValue('delete_model')
       // 0:mark as deleted, 1:move to trash, 2:remove it immediately
@@ -645,6 +648,7 @@ let autoArchiveService = {
       autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 'Error!');
       return this.doMoveOrArchiveOne();
     }
+    //srcFolder.server.closeCachedConnections();
     if ( rule.action == 'archive' ) { // mare sure we have at least one folder show, or hintMassMoveStarting will throw exception
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
       if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay && mail3PaneWindow.gFolderDisplay.view && !mail3PaneWindow.gFolderDisplay.view.dbView ) {

@@ -57,6 +57,17 @@ let autoArchiveUtil = {
       tabmail.openTab(args.type, args);
     }
   },
+  getErrorMsg: function(pStatus) { // https://developer.mozilla.org/en/docs/Table_Of_Errors
+    if ( ( pStatus & 0x80590000 ) == 0x80590000 ) { // http://dxr.mozilla.org/mozilla-central/source/xpcom/base/nsError.h
+      let ldapBundle = Services.strings.createBundle('chrome://mozldap/locale/ldap.properties');
+      try { return ldapBundle.GetStringFromID(pStatus & 0xff); } catch(err) {};
+    } else {
+      for ( let p in Cr ) {
+          if ( Cr[p] == pStatus ) return p;
+      }
+    }
+    return 'Unknown Error';
+  },
   // http://stackoverflow.com/questions/4498866/actual-numbers-to-the-human-readable-values
   readablizeBytes: function(bytes) {
     if ( bytes <= 0 ) return 0;
