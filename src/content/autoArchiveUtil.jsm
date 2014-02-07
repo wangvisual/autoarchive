@@ -14,8 +14,8 @@ const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 let autoArchiveUtil = {
   Name: "Awesome Auto Archive", // might get changed by getAddonByID function call
   Version: 'unknown',
-  isSeaMonkey: Services.appinfo.ID == SEAMONKEY_ID,
-  Applicaton: ( Services.appinfo.ID == SEAMONKEY_ID ) ? 'Seamonky' : 'Thunderbird',
+  //isSeaMonkey: Services.appinfo.ID == SEAMONKEY_ID,
+  //Application: Services.appinfo.name,
   initName: function() {
     autoArchiveLog.info("autoArchiveUtil initName");
     if ( this.Version != 'unknown' ) return;
