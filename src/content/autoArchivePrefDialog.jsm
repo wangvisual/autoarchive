@@ -433,7 +433,7 @@ let autoArchivePrefDialog = {
         if ( !displayName ) displayName = parsedMails.names[i] || parsedMails.fullAddresses[i];
         displayName = displayName.replace(/['"<>]/g,'');
         if ( parsedMails.fullAddresses[i].indexOf(displayName) != -1 ) email = displayName;
-        let search = email.replace(/(.*)@.*/, '$1'); // use mail ID only if it's an email address.
+        let search = email.replace(/(.*@).*/, '$1'); // use mail ID@ only if it's an email address.
         if ( returnMails.indexOf(search) < 0 ) returnMails.push(search);
       }
       return returnMails.join(", ");
