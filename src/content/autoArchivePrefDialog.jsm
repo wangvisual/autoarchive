@@ -393,6 +393,9 @@ let autoArchivePrefDialog = {
       if ( this.instantApply ) { // only use synctopreference for instantApply, else use acceptPerfWindow
         // must be a onsynctopreference attribute, not a event handler, ref preferences.xml
         this._doc.getElementById('awsome_auto_archive-rules').setAttribute("onsynctopreference", 'return autoArchivePrefDialog.syncToPerf();');
+        // no need to show 'Apply' button for instantApply
+        let extra1 = this._doc.documentElement.getButton("extra1");
+        if ( extra1 && extra1.parentNode ) extra1.parentNode.removeChild(extra1);
       }
       autoArchiveService.addStatusListener(this.statusCallback);
       this.fillIdentities(false);
