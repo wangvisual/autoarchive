@@ -26,9 +26,6 @@
 <!ENTITY awsome_auto_archive.perf.debug "Debug">
 <!ENTITY awsome_auto_archive.perf.verbose "Show verbose information in error console">
 <!ENTITY awsome_auto_archive.perf.update_statusbartext "Show information in status bar">
-<!ENTITY awsome_auto_archive.perf.disable_alert_animation "Disable TB's popup alert animation effect,">
-<!ENTITY awsome_auto_archive.perf.popup_show_time "Popup show time">
-<!ENTITY awsome_auto_archive.perf.popup_show_time_tooltip "When animation is disabled, the show time will be 4 seconds. User can change the time when enable alert animation. set to 0 to disable popup from this addon">
 <!ENTITY awsome_auto_archive.perf.dry_run "Dry run">
 
 <!ENTITY awsome_auto_archive.perf.enable_special "When doing Archive/Delete/Move, Including">
@@ -38,6 +35,18 @@
 <!ENTITY awsome_auto_archive.perf.old_than "that older than">
 <!ENTITY awsome_auto_archive.perf.days "days">
 <!ENTITY awsome_auto_archive.perf.special_tooltip "This is the global excptions except for 'Copy', Type of grey will NOT be included in any action. If enabled, The email in this type still need to be old enough">
+
+<!ENTITY awsome_auto_archive.perf.misc "Miscellaneous">
+<!ENTITY awsome_auto_archive.perf.disable_alert_animation "Disable TB's popup alert animation effect,">
+<!ENTITY awsome_auto_archive.perf.popup_show_time "Popup show time">
+<!ENTITY awsome_auto_archive.perf.popup_show_time_tooltip "When animation is disabled, the show time will be 4 seconds. User can change the time when enable alert animation. set to 0 to disable popup from this addon">
+<!ENTITY awsome_auto_archive.perf.generate_rule_before "For generated rule, use">
+<!ENTITY awsome_auto_archive.perf.generate_rule_after "as input">
+<!ENTITY awsome_auto_archive.perf.generate_rule.display_or_id "Display Name or mail@">
+<!ENTITY awsome_auto_archive.perf.generate_rule.id "mail@">
+<!ENTITY awsome_auto_archive.perf.generate_rule.email "mail@domain.com">
+<!ENTITY awsome_auto_archive.perf.generate_rule_tooltip "This is control how 'From'/'Recipient' get filled when you click the conext menu. If choose 'Display Nmae or mail@', then 'Display Name' will be used if it can be found in the full email adderss, else mail@ is used.">
+
 <!ENTITY awsome_auto_archive.perf.active_time "Time Settings">
 <!ENTITY awsome_auto_archive.perf.startup_delay "First run after">
 <!ENTITY awsome_auto_archive.perf.idle_delay "Wait for computer becomes idle for">
@@ -48,6 +57,7 @@
 <!ENTITY awsome_auto_archive.perf.idle_delay_tooltip "After wakeup, Archie will wait computer to be idle for this time before start to work">
 <!ENTITY awsome_auto_archive.perf.start_next_delay_tooltip "After finishing one run, Archie will sleep this long till wakeup. Except batch run limit is exceeded">
 <!ENTITY awsome_auto_archive.perf.rule_timeout_tooltip "If run for one rule is stuck or hang, Archie will abort after this long">
+
 <!ENTITY awsome_auto_archive.perf.batch_run_limitation "Batch limitations for one run">
 <!ENTITY awsome_auto_archive.perf.messages_number_limit "Total number of messages">
 <!ENTITY awsome_auto_archive.perf.messages_number_limit_hint "(0 means no limit)">
@@ -55,6 +65,7 @@
 <!ENTITY awsome_auto_archive.perf.messages_size_limit_hint "Mega Bytes (0 means no limit)">
 <!ENTITY awsome_auto_archive.perf.start_exceed_delay "Start next run after">
 <!ENTITY awsome_auto_archive.perf.start_exceed_delay_hint "seconds if exceed the limitations">
+
 <!ENTITY awsome_auto_archive.perf.system_config "System Configration">
 <!ENTITY awsome_auto_archive.perf.accountSettings "Account Settings">
 <!ENTITY awsome_auto_archive.perf.identities "Identities">

@@ -38,8 +38,7 @@
     <preference id="pref_start_exceed_delay" name="extensions.awsome_auto_archive.start_exceed_delay" type="int"/>
     <preference id="pref_disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
     <preference id="pref_alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
-    
-    <!--preference id="pref_default_applyIncomingFilters" name="mail.server.default.applyIncomingFilters" type="string"/-->
+    <preference id="pref_generate_rule_use" name="extensions.awsome_auto_archive.generate_rule_use" type="int"/>
   </preferences>
   
   <tabbox id="awsome_auto_archive-tabbox">
@@ -94,29 +93,53 @@
       </tabpanel>
       <tabpanel>
         <vbox flex="1">
-          <groupbox>
-            <caption label="&awsome_auto_archive.perf.enable_special;"/>
-            <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked' tooltiptext="&awsome_auto_archive.perf.special_tooltip;">
-              <columns>
-                <column flex="1"/>
-                <column flex="1000"/>
-              </columns> 
-              <rows>
-                <row>
-                  <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
-                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_tag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
-                </row>
-                <row>
-                  <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
-                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_flag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
-                </row>
-                <row>
-                  <checkbox preference="pref_enable_unread" label="&awsome_auto_archive.perf.enable_unread;"/>
-                  <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_unread" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
-                </row>
-              </rows>
-            </grid>
-          </groupbox>
+          <hbox>
+            <groupbox flex="1">
+              <caption label="&awsome_auto_archive.perf.enable_special;"/>
+              <grid class='awsome_auto_archive-center-rows awsome_auto_archive-enable-checked' tooltiptext="&awsome_auto_archive.perf.special_tooltip;">
+                <columns>
+                  <column flex="1"/>
+                  <column flex="1000"/>
+                </columns> 
+                <rows>
+                  <row>
+                    <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_tag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                  </row>
+                  <row>
+                    <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_flag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                  </row>
+                  <row>
+                    <checkbox preference="pref_enable_unread" label="&awsome_auto_archive.perf.enable_unread;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_unread" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                  </row>
+                </rows>
+              </grid>
+            </groupbox>
+            <groupbox flex="1">
+              <caption label="&awsome_auto_archive.perf.misc;"/>
+              <hbox align="center" tooltiptext='&awsome_auto_archive.perf.generate_rule_tooltip;'>
+                <label value="&awsome_auto_archive.perf.generate_rule_before;"/>
+                <menulist preference='pref_generate_rule_use'>
+                  <menupopup>
+                    <menuitem label="&awsome_auto_archive.perf.generate_rule.display_or_id;" value="0"/>
+                    <menuitem label="&awsome_auto_archive.perf.generate_rule.id;" value="1"/>
+                    <menuitem label="&awsome_auto_archive.perf.generate_rule.email;" value="2"/>
+                  </menupopup>
+                </menulist>
+                <label value="&awsome_auto_archive.perf.generate_rule_after;"/>
+              </hbox>
+              <hbox align="center" tooltiptext='&awsome_auto_archive.perf.popup_show_time_tooltip;'>
+                <checkbox preference="pref_disable_alert_animation" label="&awsome_auto_archive.perf.disable_alert_animation;" class='awsome_auto_archive-disable-checked'/>
+                <hbox align="center">
+                  <label value="        "/>
+                  <label value="&awsome_auto_archive.perf.popup_show_time;"/>
+                  <textbox preference="pref_alert_show_time" type='number' size='5' min='0'/>
+                </hbox>
+              </hbox>
+            </groupbox>
+          </hbox>
           <hbox>
             <groupbox flex="1">
               <caption label="&awsome_auto_archive.perf.active_time;"/>
@@ -172,7 +195,6 @@
           <groupbox>
             <caption label="&awsome_auto_archive.perf.system_config;"/>
             <vbox>
-              <!--hbox><label value="test"/><textbox preference="pref_default_applyIncomingFilters"/></hbox-->
               <hbox>
                 <button label="&awsome_auto_archive.perf.accountSettings;" oncommand="window.openDialog('chrome://messenger/content/AccountManager.xul');"/>
               </hbox>
@@ -185,14 +207,6 @@
             <checkbox preference="pref_update_statusbartext" label="&awsome_auto_archive.perf.update_statusbartext;"/>
             <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
             <checkbox preference="pref_dry_run" label="&awsome_auto_archive.perf.dry_run;"/>
-            <hbox align="center" tooltiptext='&awsome_auto_archive.perf.popup_show_time_tooltip;'>
-              <checkbox preference="pref_disable_alert_animation" label="&awsome_auto_archive.perf.disable_alert_animation;" class='awsome_auto_archive-disable-checked'/>
-              <hbox align="center">
-                <label value="        "/>
-                <label value="&awsome_auto_archive.perf.popup_show_time;"/>
-                <textbox preference="pref_alert_show_time" type='number' size='5' min='0'/>
-              </hbox>
-            </hbox>
           </groupbox>
         </vbox>
       </tabpanel>

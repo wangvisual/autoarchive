@@ -417,26 +417,27 @@ let autoArchivePrefDialog = {
       let returnMails = [];
       for ( let i = 0; i < parsedMails.count; i++ ) {
         let email = parsedMails.addresses[i], card, displayName;
-        let showCondensedAddresses = Services.prefs.getBoolPref("mail.showCondensedAddresses"); // the usage of getSearchStringFromAddress might be few, so won't add Observer 
-        if ( showCondensedAddresses ) {
-          let allAddressBooks = MailServices.ab.directories;
-          while ( !card && allAddressBooks.hasMoreElements()) {
-            let addressBook = allAddressBooks.getNext().QueryInterface(Ci.nsIAbDirectory);
-            if ( addressBook instanceof Ci.nsIAbDirectory /*&& !addressBook.isRemote*/ ) {
-              try {
-                card = addressBook.cardForEmailAddress(email); // case-insensitive && sync, only retrun 1st one if multiple match, but it search on all email addresses
-              } catch (err) {}
-              if ( card ) {
-                let PreferDisplayName = Number(card.getProperty('PreferDisplayName', 1));
-                if (PreferDisplayName) displayName = card.displayName;
+        if ( !autoArchivePref.options.generate_rule_use ) {
+          if ( Services.prefs.getBoolPref("mail.showCondensedAddresses") ) { // the usage of getSearchStringFromAddress might be few, so won't add Observer 
+            let allAddressBooks = MailServices.ab.directories;
+            while ( !card && allAddressBooks.hasMoreElements()) {
+              let addressBook = allAddressBooks.getNext().QueryInterface(Ci.nsIAbDirectory);
+              if ( addressBook instanceof Ci.nsIAbDirectory /*&& !addressBook.isRemote*/ ) {
+                try {
+                  card = addressBook.cardForEmailAddress(email); // case-insensitive && sync, only retrun 1st one if multiple match, but it search on all email addresses
+                } catch (err) {}
+                if ( card ) {
+                  let PreferDisplayName = Number(card.getProperty('PreferDisplayName', 1));
+                  if (PreferDisplayName) displayName = card.displayName;
+                }
               }
             }
           }
+          if ( !displayName ) displayName = parsedMails.names[i] || parsedMails.fullAddresses[i];
+          displayName = displayName.replace(/['"<>]/g,'');
+          if ( parsedMails.fullAddresses[i].indexOf(displayName) != -1 ) email = displayName;
         }
-        if ( !displayName ) displayName = parsedMails.names[i] || parsedMails.fullAddresses[i];
-        displayName = displayName.replace(/['"<>]/g,'');
-        if ( parsedMails.fullAddresses[i].indexOf(displayName) != -1 ) email = displayName;
-        let search = email.replace(/(.*@).*/, '$1'); // use mail ID@ only if it's an email address.
+        let search = (autoArchivePref.options.generate_rule_use == 2) ? email : email.replace(/(.*@).*/, '$1');
         if ( returnMails.indexOf(search) < 0 ) returnMails.push(search);
       }
       return returnMails.join(", ");
