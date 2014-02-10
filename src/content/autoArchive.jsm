@@ -111,11 +111,15 @@ let autoArchive = {
   
   beforePopupShow: function(event) {
     let shouldShow = true;
-    if ( !event.view ) return shouldShow = false;
+    if ( !event.view || !event.view.document || !event.view._autoarchive || !event.view._autoarchive.contextMenuItem ) return true;
     else {
       let folderDisplay = event.view.gFolderDisplay;
-      if ( !event.view._autoarchive || !event.view._autoarchive.contextMenuItem ) return true;
       if ( !folderDisplay || folderDisplay.selectedCount <= 0 || folderDisplay.selectedMessages.length <= 0 ) shouldShow = false;
+      else {
+        // don't show if not a mail tab
+        let tabmail = event.view.document.getElementById("tabmail");
+        if ( tabmail && tabmail.selectedTab && tabmail.selectedTab.mode && event.view.mailTabType && !(tabmail.selectedTab.mode.name in event.view.mailTabType.modes) ) shouldShow = false;
+      }
     }
     event.view._autoarchive.contextMenuItem.hidden = !shouldShow;
     return true;
