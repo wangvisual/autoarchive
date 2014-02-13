@@ -126,6 +126,7 @@ let autoArchiveService = {
     this.dryRunLogItems = [];
     this._status = [];
     this.summary = {};
+    //this.serverStatus = {};
   },
   rules: [],
   wait4Folders: {},
@@ -158,6 +159,7 @@ let autoArchiveService = {
   doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.clear();
+    this.serverStatus = {};
     this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
       return rule.enable;
     } );
@@ -178,6 +180,9 @@ let autoArchiveService = {
         self.doMoveOrArchiveOne();
       }
     },
+    //OnStopRunningUrl: function(url, aExitCode) {
+//      autoArchiveLog.info("OnStopRunningUrl2:" + url + ":" + aExitCode);
+    //},
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
     this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]);
@@ -225,10 +230,7 @@ let autoArchiveService = {
     };
   },
   
-  // updateFolders may get called before when we run search ( when _searchSession was set )
-  // or get called after we doing one group of Move/Delete/Copy, or one Archive ( when _searchSession was null )
-  // any case we will chain doMoveOrArchiveOne here or in folderListener, and let it to decide either start process a new rule, or continue to search
-  updateFolders: function() {
+  getFoldersFromWait4Folders: function() {
     let folders = [];
     Object.keys(self.wait4Folders).forEach( function(uri) {
       let folder;
@@ -238,6 +240,84 @@ let autoArchiveService = {
       if ( folder ) folders.push(folder);
       else delete self.wait4Folders[uri];
     } );
+    return folders;
+  },
+
+  // Check if all servers in current rule is online before updateFolders
+  serverStatus: {
+    // key: { OK: true, time: Date.now() },
+    // _count: 1, _bad: false
+  },
+  serverListener: function(key) {
+    this.key = key;
+    this.OnStartRunningUrl = function(url) {};
+    this.OnStopRunningUrl = function(url, aExitCode) {
+      if ( !self || !autoArchiveLog ) return;
+      autoArchiveLog.logObject(url,'url',1);
+      autoArchiveLog.info("key:" + this.key);
+      if ( Components.isSuccessCode(aExitCode) ) autoArchiveLog.info("OnStopRunningUrl:" + url + "OK");
+      else {
+        self.serverStatus['_bad'] = true;
+        autoArchiveLog.log("Check Mail Server:" + autoArchiveUtil.getErrorMsg(aExitCode) + "(" + aExitCode.toString(16) + ") for " + url, 1);
+      } 
+      //self.serverStatus[server.key] ?
+      self.serverStatus['_count']--;
+      if ( self.serverStatus['_count'] <= 0 ) {
+        if ( self.serverStatus['_bad'] ) {
+          self._searchSession = null;
+          return self.doMoveOrArchiveOne(); // next rule
+        } else return self.updateFolders();
+      }
+    };
+  },
+  checkServers: function() {
+    let servers = {}, hasBad = false;
+    self.serverStatus['_count'] = 0;
+    self.serverStatus['_bad'] = false;
+    this.getFoldersFromWait4Folders().some( function(folder) {
+      let server = folder.server, needCheck = false;
+      if ( server.type != 'none' && !servers[server.key] ) {
+        if ( self.serverStatus[server.key] ) {
+          if ( Date.now() - self.serverStatus[server.key]['time'] > self.serverStatus[server.key]['OK'] ? 600000 : 60000 ) { // if pos cache 10 minutes, neg cache 1 minute
+            autoArchiveLog.info("Need re-check server:" + server.prettyName);
+            delete self.serverStatus[server.key];
+            needCheck = true;
+          } else if ( !self.serverStatus[server.key]['OK'] ) {
+            autoArchiveLog.log("Skip bad server " + server.prettyName);
+            return ( hasBad = true ); // break 'some'
+          }
+        } else needCheck = true;
+      }
+      if ( needCheck ) {
+        // serverBusy means we already getting new Messages
+        // performingBiff: are we running a url as a result of biff going off
+        autoArchiveLog.info("needCheck:" + server.prettyName);
+        //if ( server.serverBusy || server.performingBiff || ( server instanceof Ci.nsIPop3IncomingServer && server.runningProtocol ) )
+//          self.serverStatus[server.key] = { OK: true, time: Date.now() };
+        //else servers[server.key] = server;
+        servers[server.key] = server;
+      }
+      return false;
+    } );
+    if ( hasBad ) {
+      self._searchSession = null;
+      return self.doMoveOrArchiveOne(); // next rule
+    }
+    autoArchiveLog.logObject(servers,'servers',0);
+    self.serverStatus['_count'] = Object.keys(servers).length;
+    if ( self.serverStatus['_count'] ) {
+      for ( let key in servers ) {
+        servers[key].verifyLogon( new self.serverListener(key), null);
+      }
+    }
+    else self.updateFolders();
+  },
+  
+  // updateFolders may get called before when we run search ( when _searchSession was set )
+  // or get called after we doing one group of Move/Delete/Copy, or one Archive ( when _searchSession was null )
+  // any case we will chain doMoveOrArchiveOne here or in folderListener, and let it to decide either start process a new rule, or continue to search
+  updateFolders: function() {
+    let folders = this.getFoldersFromWait4Folders();
     if ( folders.length ) {
       MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
       self.folderListeners.push(self.folderListener);
@@ -735,7 +815,8 @@ let autoArchiveService = {
     self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
     searchSession.registerListener(new self.searchListener(rule, srcFolder, destFolder));
     this._searchSession = searchSession;
-    this.updateFolders(); // when updateFolders done, will call this function again, but have this._searchSession
+    this.checkServers(); // when check done, call updateFolders if OK, or reset searcSession and call this function again;
+    //this.updateFolders(); // when updateFolders done, will call this function again, but have this._searchSession
     //searchSession.search(null);
   },
   advancedTerms : { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient:['expressionsearch#toRegex'] },
@@ -807,5 +888,6 @@ let autoArchiveService = {
   },
 
 };
+
 let self = autoArchiveService;
 self.preStart(autoArchivePref.options.startup_delay);
