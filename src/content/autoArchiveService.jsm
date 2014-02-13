@@ -104,29 +104,38 @@ let autoArchiveService = {
     else autoArchiveLog.info("Can't remvoe FolderListener", 1);
   },
   clear: function() {
-    this.cleanupIdleObserver();
-    if ( this.timer ) this.timer.cancel();
-    this.folderListeners.forEach( function(listener) {
-      self.removeFolderListener(listener);
-    } );
-    this.hookedFunctions.forEach( function(hooked) {
-      hooked.unweave();
-    } );
-    this.closeAllFoldersDB();
-    this.hookedFunctions = [];
-    this.rules = [];
-    this.copyGroups = [];
-    this.status = [];
-    this.wait4Folders = {};
-    this._searchSession = null;
-    this.folderListeners = [];
-    this.isExceed = this.dry_run = false;
-    this.showStatusText = true;
-    this.numOfMessages = this.totalSize = this.showStatusText = 0;
-    this.dryRunLogItems = [];
-    this._status = [];
-    this.summary = {};
-    //this.serverStatus = {};
+    try {
+      this.cleanupIdleObserver();
+      if ( this.timer ) this.timer.cancel();
+      this.folderListeners.forEach( function(listener) {
+        self.removeFolderListener(listener);
+      } );
+      this.hookedFunctions.forEach( function(hooked) {
+        hooked.unweave();
+      } );
+      this.closeAllFoldersDB();
+      this.hookedFunctions = [];
+      this.rules = [];
+      this.copyGroups = [];
+      this.status = [];
+      this.wait4Folders = {};
+      this._searchSession = null;
+      this.folderListeners = [];
+      this.isExceed = this.dry_run = false;
+      this.showStatusText = true;
+      this.numOfMessages = this.totalSize = this.showStatusText = 0;
+      this.dryRunLogItems = [];
+      this._status = [];
+      this.summary = {};
+      if ( this.serverStatus['_listeners_'] ) {
+        this.serverStatus['_listeners_'].forEach( function(listener) {
+          let url = listener.URI.QueryInterface(Ci.nsIMsgMailNewsUrl);
+          url.UnRegisterListener(listener);
+          autoArchiveLog.info("UnRegister server verify listener for server " + listener.URI.prePath);
+        } );
+        delete this.serverStatus['_listeners_'];
+      }
+    } catch(err) { autoArchiveLog.logException(err); }
   },
   rules: [],
   wait4Folders: {},
@@ -180,9 +189,6 @@ let autoArchiveService = {
         self.doMoveOrArchiveOne();
       }
     },
-    //OnStopRunningUrl: function(url, aExitCode) {
-//      autoArchiveLog.info("OnStopRunningUrl2:" + url + ":" + aExitCode);
-    //},
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
     this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]);
@@ -246,24 +252,27 @@ let autoArchiveService = {
   // Check if all servers in current rule is online before updateFolders
   serverStatus: {
     // key: { OK: true, time: Date.now() },
-    // _count: 1, _bad: false
+    // _bad_: false
+    // _listeners_: []
   },
   serverListener: function(key) {
     this.key = key;
-    this.OnStartRunningUrl = function(url) {};
-    this.OnStopRunningUrl = function(url, aExitCode) {
+    this.URI = null; // will be replaced by real URI
+    this.OnStartRunningUrl = function(uri) {};
+    this.OnStopRunningUrl = function(uri, aExitCode) {
       if ( !self || !autoArchiveLog ) return;
-      autoArchiveLog.logObject(url,'url',1);
-      autoArchiveLog.info("key:" + this.key);
-      if ( Components.isSuccessCode(aExitCode) ) autoArchiveLog.info("OnStopRunningUrl:" + url + "OK");
+      let index = self.serverStatus['_listeners_'].indexOf(this);
+      if ( index >= 0 ) self.serverStatus['_listeners_'].splice(index, 1);
+      autoArchiveLog.info("OnStopRunningUrl: server " + this.key);
+      if ( Components.isSuccessCode(aExitCode) ) autoArchiveLog.info(uri.prePath + " OK");
       else {
-        self.serverStatus['_bad'] = true;
-        autoArchiveLog.log("Check Mail Server:" + autoArchiveUtil.getErrorMsg(aExitCode) + "(" + aExitCode.toString(16) + ") for " + url, 1);
+        self.serverStatus['_bad_'] = true;
+        autoArchiveLog.log("Check Mail Server, got " + autoArchiveUtil.getErrorMsg(aExitCode) + "(" + aExitCode.toString(16) + ") for " + uri.prePath, 1);
       } 
-      //self.serverStatus[server.key] ?
-      self.serverStatus['_count']--;
-      if ( self.serverStatus['_count'] <= 0 ) {
-        if ( self.serverStatus['_bad'] ) {
+      self.serverStatus[this.key] = { OK: Components.isSuccessCode(aExitCode), time: Date.now() };
+      if ( self.serverStatus['_listeners_'].length == 0 ) {
+        autoArchiveLog.info("All servers checking done, has bad server? : " + self.serverStatus['_bad_']);
+        if ( self.serverStatus['_bad_'] ) {
           self._searchSession = null;
           return self.doMoveOrArchiveOne(); // next rule
         } else return self.updateFolders();
@@ -272,13 +281,13 @@ let autoArchiveService = {
   },
   checkServers: function() {
     let servers = {}, hasBad = false;
-    self.serverStatus['_count'] = 0;
-    self.serverStatus['_bad'] = false;
+    self.serverStatus['_bad_'] = false;
+    self.serverStatus['_listeners_'] = [];
     this.getFoldersFromWait4Folders().some( function(folder) {
       let server = folder.server, needCheck = false;
-      if ( server.type != 'none' && !servers[server.key] ) {
+      if ( ['none', 'nntp', 'rss'].indexOf(server.type) < 0 && !servers[server.key] ) {
         if ( self.serverStatus[server.key] ) {
-          if ( Date.now() - self.serverStatus[server.key]['time'] > self.serverStatus[server.key]['OK'] ? 600000 : 60000 ) { // if pos cache 10 minutes, neg cache 1 minute
+          if ( Date.now() - self.serverStatus[server.key]['time'] > ( self.serverStatus[server.key]['OK'] ? 180000 : 60000 ) ) { // positive cache 3 minutes, neg cache 1 minute
             autoArchiveLog.info("Need re-check server:" + server.prettyName);
             delete self.serverStatus[server.key];
             needCheck = true;
@@ -291,11 +300,10 @@ let autoArchiveService = {
       if ( needCheck ) {
         // serverBusy means we already getting new Messages
         // performingBiff: are we running a url as a result of biff going off
-        autoArchiveLog.info("needCheck:" + server.prettyName);
-        //if ( server.serverBusy || server.performingBiff || ( server instanceof Ci.nsIPop3IncomingServer && server.runningProtocol ) )
-//          self.serverStatus[server.key] = { OK: true, time: Date.now() };
-        //else servers[server.key] = server;
-        servers[server.key] = server;
+        autoArchiveLog.info("needCheck mail server: " + server.prettyName);
+        if ( server.serverBusy || ( server instanceof Ci.nsIPop3IncomingServer && server.runningProtocol ) )
+          self.serverStatus[server.key] = { OK: true, time: Date.now() };
+        else servers[server.key] = server;
       }
       return false;
     } );
@@ -303,14 +311,14 @@ let autoArchiveService = {
       self._searchSession = null;
       return self.doMoveOrArchiveOne(); // next rule
     }
-    autoArchiveLog.logObject(servers,'servers',0);
-    self.serverStatus['_count'] = Object.keys(servers).length;
-    if ( self.serverStatus['_count'] ) {
-      for ( let key in servers ) {
-        servers[key].verifyLogon( new self.serverListener(key), null);
-      }
+    if ( !Object.keys(servers).length ) return self.updateFolders();
+    for ( let key in servers ) {
+      let listener = new self.serverListener(key);
+      self.serverStatus['_listeners_'].push(listener); // the listener can be unregistered if clear / stop
+      let URI = servers[key].verifyLogon(listener, null);
+      listener.URI = URI;
+      autoArchiveLog.info("Checking if server " + key + " on line using " + URI.spec);
     }
-    else self.updateFolders();
   },
   
   // updateFolders may get called before when we run search ( when _searchSession was set )
