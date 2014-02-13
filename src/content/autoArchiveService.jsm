@@ -286,6 +286,10 @@ let autoArchiveService = {
     this.getFoldersFromWait4Folders().some( function(folder) {
       let server = folder.server, needCheck = false;
       if ( ['none', 'nntp', 'rss'].indexOf(server.type) < 0 && !servers[server.key] ) {
+        if ( Services.io.offline ) {
+          autoArchiveLog.log("Skip rule due to offline now");
+          return ( hasBad = true ); // break 'some'
+        }
         if ( self.serverStatus[server.key] ) {
           if ( Date.now() - self.serverStatus[server.key]['time'] > ( self.serverStatus[server.key]['OK'] ? 180000 : 60000 ) ) { // positive cache 3 minutes, neg cache 1 minute
             autoArchiveLog.info("Need re-check server:" + server.prettyName);
@@ -293,7 +297,7 @@ let autoArchiveService = {
             needCheck = true;
           } else if ( !self.serverStatus[server.key]['OK'] ) {
             autoArchiveLog.log("Skip bad server " + server.prettyName);
-            return ( hasBad = true ); // break 'some'
+            return ( hasBad = true );
           }
         } else needCheck = true;
       }
@@ -311,14 +315,18 @@ let autoArchiveService = {
       self._searchSession = null;
       return self.doMoveOrArchiveOne(); // next rule
     }
-    if ( !Object.keys(servers).length ) return self.updateFolders();
+    let count = 0;
     for ( let key in servers ) {
-      let listener = new self.serverListener(key);
-      self.serverStatus['_listeners_'].push(listener); // the listener can be unregistered if clear / stop
-      let URI = servers[key].verifyLogon(listener, null);
-      listener.URI = URI;
-      autoArchiveLog.info("Checking if server " + key + " on line using " + URI.spec);
+      try {
+        let listener = new self.serverListener(key);
+        let URI = servers[key].verifyLogon(listener, null);
+        self.serverStatus['_listeners_'].push(listener); // the listener can be unregistered if clear / stop
+        listener.URI = URI;
+        autoArchiveLog.info("Checking if server " + key + " on line using " + URI.spec);
+        count ++;
+      } catch(err) { autoArchiveLog.logException(err); }
     }
+    if ( count == 0 ) return self.updateFolders(); // continue to update folder and then search
   },
   
   // updateFolders may get called before when we run search ( when _searchSession was set )
