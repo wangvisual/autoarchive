@@ -9,7 +9,7 @@
 
     <!-- Front End MetaData -->
     <em:name>Awesome Auto Archive</em:name>
-    <em:description>Automatically do Archive/Copy/Delete/Move actions based on user defined rules</em:description>
+    <em:description>Automatically Archive/Copy/Delete/Move emails based on user defined rules</em:description>
     <em:creator>Opera Wang</em:creator>
     <!--em:aboutURL>chrome://awsomeAutoArchive/content/about.xul</em:aboutURL-->
     <!--em:optionsURL>chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul</em:optionsURL-->
