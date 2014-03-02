@@ -13,6 +13,7 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveActivity.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const statusbarIconID = "autoArchive-statusbar-icon";
@@ -54,13 +55,9 @@ let autoArchive = {
         aWindow._autoarchive.createdElements.push(statusbarIconID);
         let [preStatus, preDetail] = [autoArchiveService.STATUS_INIT, ""];
         aWindow._autoarchive.statusCallback = function(status, detail) {
-          if ( [autoArchiveService.STATUS_SLEEP, autoArchiveService.STATUS_FINISH].indexOf(status) >= 0 ) {
-            statusbarIcon.setAttribute('src', statusbarIconSrc);
-          } else if ( status == autoArchiveService.STATUS_WAITIDLE ) {
-            statusbarIcon.setAttribute('src', statusbarIconSrcWait);
-          } else if ( status == autoArchiveService.STATUS_RUN ) {
-            statusbarIcon.setAttribute('src', statusbarIconSrcRun);
-          }
+          if ( status == autoArchiveService.STATUS_WAITIDLE ) statusbarIcon.setAttribute('src', statusbarIconSrcWait);
+          else if ( status == autoArchiveService.STATUS_RUN ) statusbarIcon.setAttribute('src', statusbarIconSrcRun);
+          else statusbarIcon.setAttribute('src', statusbarIconSrc);
           statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + "\n": "" ) + detail);
           if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
             aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + ", ": "" ) + detail);
@@ -164,6 +161,7 @@ let autoArchive = {
       if ( this.timer ) this.timer.cancel();
       this.timer = null;
       autoArchivePrefDialog.cleanup();
+      autoArchiveActivity.cleanup();
       autoArchiveService.cleanup();
       autoArchivePref.cleanup();
       autoArchiveLog.cleanup();

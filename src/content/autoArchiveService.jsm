@@ -116,6 +116,7 @@ let autoArchiveService = {
       this.closeAllFoldersDB();
       this.hookedFunctions = [];
       this.rules = [];
+      this.ruleIndex = 0;
       this.copyGroups = [];
       this.status = [];
       this.wait4Folders = {};
@@ -157,13 +158,8 @@ let autoArchiveService = {
     this.accessedFolders = {};
   },
   starStopNow: function(rules, dry_run) {
-    if (this._status && this._status[0] == this.STATUS_RUN) autoArchiveService.stop();
+    if (this._status && this._status[0] == this.STATUS_RUN) autoArchiveService.reportSummaryAndStartNext();
     else autoArchiveService.doArchive(rules, dry_run);
-  },
-  stop: function() {
-    this.clear();
-    // for maunal stop, we always use start_next_delay, and ignore this.isExceed
-    this.preStart(autoArchivePref.options.start_next_delay);
   },
   doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
@@ -173,7 +169,7 @@ let autoArchiveService = {
       return rule.enable;
     } );
     if ( dry_run ) this.dry_run = true;
-    this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)");
+    this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)", this.ruleIndex, this.rules.length);
     autoArchiveLog.logObject(this.rules, 'this.rules',1);
     this.doMoveOrArchiveOne();
   },
@@ -217,6 +213,7 @@ let autoArchiveService = {
     };
     this.SetMessageKey = function(aKey) {};
     this.GetMessageId = function() {};
+    let numberOfMessages = group.messages.length;
     this.msgsDeleted = function(aMsgList) { // Ci.nsIMsgFolderListener, for realDelete message, thus can't get onStopCopy/msgsMoveCopyCompleted
       autoArchiveLog.info("msgsDeleted");
       self.wait4Folders[group.src] = true;
@@ -229,7 +226,7 @@ let autoArchiveService = {
         autoArchiveLog.info("All msgsDeleted");
         MailServices.mfn.removeListener(this);
         // if server connection fail, still report msgs deleted, but delete will fail, this is a BUG
-        self.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
+        self.summary[group.action] = ( self.summary[group.action] || 0 ) + numberOfMessages;
         if ( self.copyGroups.length ) self.doCopyDeleteMoveOne(self.copyGroups.shift());
         else self.updateFolders();
       }
@@ -688,35 +685,37 @@ let autoArchiveService = {
     } catch (err) {autoArchiveLog.logException(err);}
   },
   _searchSession: null,
+  reportSummaryAndStartNext: function() {
+    autoArchiveLog.info("Proposed to change " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
+    let total = 0, report = [];
+    for ( let action in this.summary ) {
+      total += this.summary[action];
+      report.push(this.summary[action] + " " + ( action == 'copy' ? 'copied' : action + "d"));
+    }
+    if ( autoArchivePref.options.dry_run || self.dry_run ) {
+      let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
+      // openDialog with dialog=no, as open can't have additional parameter, and dialog has no maximize button
+      if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "_blank", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
+      else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
+    } else if ( total != this.numOfMessages ) autoArchiveLog.info("Real change " + total + " messages, some folders might be busy.");
+    autoArchiveLog.info( self.isExceed ? "Limitation reached, set next" : "auto archive done for all rules, set next");
+    this.updateStatus(this.STATUS_FINISH, total == 0 ? "Archie: Nothing done" : "Archie: Processed " + total + " msgs (" + report.join(", ") + ")");
+    let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
+    this.clear();
+    return this.preStart(delay);
+  },
   doMoveOrArchiveOne: function() {
     if ( this._searchSession ) { // updateFolder done, continue to search now
       this._searchSession.search(null);
       return this._searchSession = null;
     }
     //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "recipient": whom, "enable": true}]
-    if ( this.rules.length == 0 || self.isExceed ) {
+    if ( this.ruleIndex >= this.rules.length || self.isExceed ) {
       this.closeAllFoldersDB();
-      //if ( this.timer ) this.timer.cancel(); // no need to call cancel, start will init another one.
-      autoArchiveLog.info("Proposed to change " + this.numOfMessages + " messages, " + autoArchiveUtil.readablizeBytes(this.totalSize) + " bytes");
-      let total = 0, report = [];
-      for ( let action in this.summary ) {
-        total += this.summary[action];
-        report.push(this.summary[action] + " " + ( action == 'copy' ? 'copied' : action + "d"));
-      }
-      if ( autoArchivePref.options.dry_run || self.dry_run ) {
-        let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
-        // openDialog with dialog=no, as open can't have additional parameter, and dialog has no maximize button
-        if ( mail3PaneWindow ) mail3PaneWindow.openDialog("chrome://awsomeAutoArchive/content/autoArchiveInfo.xul", "_blank", "chrome,modal,resizable,centerscreen,dialog=no", this.dryRunLogItems);
-        else Services.prompt.select(null, 'Dry Run', 'These changes would be applied in real run:', this.dryRunLogItems.length, this.dryRunLogItems, {});
-      } else if ( total != this.numOfMessages ) autoArchiveLog.info("Real change " + total + " messages, some folders might be busy.");
-      autoArchiveLog.info( self.isExceed? "Limitation reached, set next" : "auto archive done for all rules, set next");
-      this.updateStatus(this.STATUS_FINISH, total == 0 ? "Archie: Nothing done" : "Archie: Processed " + total + " msgs (" + report.join(", ") + ")");
-      let delay = this.isExceed ? autoArchivePref.options.start_exceed_delay : autoArchivePref.options.start_next_delay;
-      this.clear();
-      return this.preStart(delay);
+      return this.reportSummaryAndStartNext();
     }
 
-    let rule = this.rules.shift();
+    let rule = this.rules[this.ruleIndex];
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) + " with filter { "
       + ["age", "subject", "from", "recipient"].filter( function(item) {
@@ -724,7 +723,7 @@ let autoArchiveService = {
       } ).map( function(item) {
         return item + " => " + rule[item];
       } ).join(", ")
-      + " }");
+      + " }", this.ruleIndex++, this.rules.length); // ruleIndex will ++ after this
     this.timer.initWithCallback( function() { // watch dog, will be reset by next doMoveOrArchiveOne watch dog or start
       autoArchiveLog.log("Timeout when " + self._status[1], 1);
       return self.doMoveOrArchiveOne(); // call doMoveOrArchiveOne might make me crazy, but it can make sure all rules have chance to run
@@ -886,7 +885,7 @@ let autoArchiveService = {
   },
   updateStatus: function(status, detail) {
     if ( detail ) autoArchiveLog.info(detail);
-    self._status = [status, detail];
+    self._status = arguments;
     this.statusListeners.forEach( function(listener) {
       listener.apply(null, self._status);
     } );

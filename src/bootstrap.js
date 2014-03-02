@@ -88,11 +88,11 @@ function shutdown(aData, aReason) {
   } catch (err) {Cu.reportError(err);}
   if (aReason == APP_SHUTDOWN) return;
   Services.strings.flushBundles(); // clear string bundles
-  ["aop", "autoArchiveService", "autoArchiveUtil", "autoArchivePrefDialog", "autoArchive", "autoArchivePref", "log"].forEach( function(file) {
+  ["aop", "autoArchiveService", "autoArchiveUtil", "autoArchivePrefDialog", "autoArchiveActivity", "autoArchive", "autoArchivePref", "log"].forEach( function(file) {
     Cu.unload("chrome://awsomeAutoArchive/content/" + file + ".jsm");
   } );
   try {
-    autoArchive = autoArchivePref = autoArchiveLog = autoArchiveUtil = null;
+    autoArchive = autoArchivePref = autoArchiveLog = autoArchiveUtil = autoArchiveActivity = null;
   } catch (err) {}
   // flushStartupCache
   // Init this, so it will get the notification.
