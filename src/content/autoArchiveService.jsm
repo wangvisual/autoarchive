@@ -9,9 +9,6 @@ Cu.import("resource:///modules/MailUtils.js");
 Cu.import("resource:///modules/virtualFolderWrapper.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
-//Cu.import("resource://app/modules/activity/autosync.js");
-//Cu.import("resource://app/modules/gloda/utils.js");
-//Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
@@ -709,7 +706,7 @@ let autoArchiveService = {
       this._searchSession.search(null);
       return this._searchSession = null;
     }
-    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "recipient": whom, "enable": true}]
+    //[{"src": "xx", "dest": "yy", "action": "move", "age": 180, "sub": 1, "subject": /test/i, "from": who, "recipient": whom, "size": 100000, "tags": "!important", "enable": true}]
     if ( this.ruleIndex >= this.rules.length || self.isExceed ) {
       this.closeAllFoldersDB();
       return this.reportSummaryAndStartNext();
@@ -718,7 +715,7 @@ let autoArchiveService = {
     let rule = this.rules[this.ruleIndex];
     //autoArchiveLog.logObject(rule, 'running rule', 1);
     this.updateStatus(this.STATUS_RUN, "Running rule " + rule.action + " " + rule.src + ( ["move", "copy"].indexOf(rule.action)>=0 ? " to " + rule.dest : "" ) + " with filter { "
-      + ["age", "subject", "from", "recipient"].filter( function(item) {
+      + ["age", "subject", "from", "recipient", "size", "tags"].filter( function(item) {
         return typeof(rule[item]) != 'undefined';
       } ).map( function(item) {
         return item + " => " + rule[item];
@@ -789,11 +786,11 @@ let autoArchiveService = {
       }
     }
     
-    if ( rule.age ) self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
+    if ( rule.age ) autoArchiveUtil.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.AgeInDays, rule.age, Ci.nsMsgSearchOp.IsGreaterThan);
 
     // expressionsearch has logic to deal with Ci.nsMsgMessageFlags.HasRe, use it first
-    let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender, recipient: Ci.nsMsgSearchAttrib.ToOrCC };
-    ["subject", "from", "recipient"].forEach( function(filter) {
+    let normal = { subject: Ci.nsMsgSearchAttrib.Subject, from: Ci.nsMsgSearchAttrib.Sender, recipient: Ci.nsMsgSearchAttrib.ToOrCC, size:Ci.nsMsgSearchAttrib.Size, tags: Ci.nsMsgSearchAttrib.Keywords };
+    ["subject", "from", "recipient", "size", "tags"].forEach( function(filter) {
       if ( typeof(rule[filter]) != 'undefined' && rule[filter] != '' ) {
         // if subject in format ^/.*/[ismxpgc]*$ and have customTerm expressionsearch#subjectRegex or filtaquilla@mesquilla.com#subjectRegex
         let customId, positive = true, attribute = rule[filter];
@@ -808,73 +805,52 @@ let autoArchiveService = {
               return true;
             } else return false;
           } );
-          if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "', 'FiltaQuilla' support RE search for subject, and 'Expression Search / GMailUI' support all.", 1);
+          if ( !customId ) autoArchiveLog.log("Can't support regular expression search patterns '" + rule[filter] + "', 'FiltaQuilla' support RE search for subject, and 'Expression Search / GMailUI' support from/recipient/subject.", 1);
         }
-        if ( customId ) self.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
+        if ( customId ) autoArchiveUtil.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
         else {
-          if ( filter == 'subject' ) self.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
-          else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
+          if ( filter == 'tags' ) attribute = autoArchiveUtil.getKeyFromTag(attribute);
+          if ( filter == 'subject' || filter == 'tags' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+          else if ( filter == 'size' ) {
+            let match = attribute.match(/^([-.\d]*)(\w*)/i); // default KB, can be M,G
+            if ( match.length == 3 ) {
+              let [, size, scale] = match;
+              if ( scale == '' ) scale = 1;
+              if ( /^m/i.test(scale) ) {
+                scale = 1024;
+              } else if ( /^G/i.test(scale) ) {
+                scale = 1024 * 1024;
+              } else if ( /^K/i.test(scale) ) {
+                scale = 1;
+              } else if ( scale != 1 ) {
+                autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
+                scale = 1;
+              }
+              attribute = size * scale; 
+              autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? nsMsgSearchOp.IsGreaterThan : nsMsgSearchOp.IsLessThan);
+            } else autoArchiveLog.log("Can't parse size " + attribute + " , ignore!", 1);
+          } else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
             attribute.split(/[\s,;]+/).forEach( function(attr) {
               positive = true;
               if ( attr[0] == '!' ) {
                 positive = false;
                 attr = attr.substr(1);
               }
-              if ( attr != '' ) self.addSearchTerm(searchSession, normal[filter], attr, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+              if ( attr != '' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attr, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
             } );
           }
         }
       }
     } );
     
-    self.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
+    autoArchiveUtil.addSearchTerm(searchSession, Ci.nsMsgSearchAttrib.MsgStatus, Ci.nsMsgMessageFlags.IMAPDeleted, Ci.nsMsgSearchOp.Isnt);
     searchSession.registerListener(new self.searchListener(rule, srcFolder, destFolder));
     this._searchSession = searchSession;
     this.checkServers(); // when check done, call updateFolders if OK, or reset searcSession and call this function again;
     //this.updateFolders(); // when updateFolders done, will call this function again, but have this._searchSession
     //searchSession.search(null);
   },
-  advancedTerms : { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient:['expressionsearch#toRegex'] },
-
-  addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
-    let aCustomId;
-    if ( typeof(attr) == 'object' && attr.type == Ci.nsMsgSearchAttrib.Custom ) {
-      aCustomId = attr.customId;
-      attr = Ci.nsMsgSearchAttrib.Custom;
-    }
-    let term = searchSession.createTerm();
-    term.attrib = attr;
-    let value = term.value;
-    // This is tricky - value.attrib must be set before actual values, from searchTestUtils.js 
-    value.attrib = attr;
-    if (attr == Ci.nsMsgSearchAttrib.JunkPercent)
-      value.junkPercent = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Priority)
-      value.priority = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Date)
-      value.date = str;
-    else if (attr == Ci.nsMsgSearchAttrib.MsgStatus || attr == Ci.nsMsgSearchAttrib.FolderFlag || attr == Ci.nsMsgSearchAttrib.Uint32HdrProperty)
-      value.status = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Size)
-      value.size = str;
-    else if (attr == Ci.nsMsgSearchAttrib.AgeInDays)
-      value.age = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Label)
-      value.label = str;
-    else if (attr == Ci.nsMsgSearchAttrib.JunkStatus)
-      value.junkStatus = str;
-    else if (attr == Ci.nsMsgSearchAttrib.HasAttachmentStatus)
-      value.status = nsMsgMessageFlags.Attachment;
-    else
-      value.str = str;
-    if (attr == Ci.nsMsgSearchAttrib.Custom)
-      term.customId = aCustomId;
-    term.value = value;
-    term.op = op;
-    term.booleanAnd = true;
-    searchSession.appendTerm(term);
-  },
-
+  advancedTerms : { subject: ['expressionsearch#subjectRegex', 'filtaquilla@mesquilla.com#subjectRegex'], from: ['expressionsearch#fromRegex'], recipient: ['expressionsearch#toRegex'], size: [], tags: [] },
   addStatusListener: function(listener) {
     this.statusListeners.push(listener);
     listener.apply(null, self._status);

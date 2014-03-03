@@ -223,5 +223,10 @@
 <popupset>
   <tooltip id="awsome_auto_archive-perfDialogTooltip"><vbox><label/><description/><description/><description/></vbox>
   </tooltip>
+    <menupopup id='awsome_auto_archive-rule-header-context'>
+      <menuitem label="&awsome_auto_archive.perf.generate_rule.display_or_id;" type="checkbox" value="0"/>
+      <menuitem label="&awsome_auto_archive.perf.generate_rule.id;" type="checkbox" value="1"/>
+      <menuitem label="&awsome_auto_archive.perf.generate_rule.email;" type="checkbox" value="2"/>
+    </menupopup>
 </popupset>
 </prefwindow>

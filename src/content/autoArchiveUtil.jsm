@@ -75,6 +75,63 @@ let autoArchiveUtil = {
     let e = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, e)).toFixed(2) + s[e];
   },
+  getKeyFromTag: function(myTag) {
+    if ( myTag == 'na' ) return myTag;
+    var tagArray = MailServices.tags.getAllTags({});
+    // consider two tags, one is "ABC", the other is "ABCD", when searching for "AB", perfect is return both.
+    // but here I just return the best fit "ABC".
+    let uniqueKey = '';
+    let myTagLen = myTag.length;
+    let lenDiff = 10000000; // big enough?
+    for (var i = 0; i < tagArray.length; ++i) {
+      let tag = tagArray[i].tag.toLowerCase();
+      if (tag.indexOf(myTag) >= 0 && ( tag.length-myTagLen < lenDiff ) ) {
+        uniqueKey = tagArray[i].key;
+        lenDiff = tag.length-myTagLen;
+        if ( lenDiff == 0 ) break;
+      }
+    }
+    if (uniqueKey != '') return uniqueKey;
+    return "..unknown.."; 
+  },
+  addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
+    let aCustomId;
+    if ( typeof(attr) == 'object' && attr.type == Ci.nsMsgSearchAttrib.Custom ) {
+      aCustomId = attr.customId;
+      attr = Ci.nsMsgSearchAttrib.Custom;
+    }
+    let term = searchSession.createTerm();
+    term.attrib = attr;
+    let value = term.value;
+    // This is tricky - value.attrib must be set before actual values, from searchTestUtils.js 
+    value.attrib = attr;
+    if (attr == Ci.nsMsgSearchAttrib.JunkPercent)
+      value.junkPercent = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Priority)
+      value.priority = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Date)
+      value.date = str;
+    else if (attr == Ci.nsMsgSearchAttrib.MsgStatus || attr == Ci.nsMsgSearchAttrib.FolderFlag || attr == Ci.nsMsgSearchAttrib.Uint32HdrProperty)
+      value.status = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Size)
+      value.size = str;
+    else if (attr == Ci.nsMsgSearchAttrib.AgeInDays)
+      value.age = str;
+    else if (attr == Ci.nsMsgSearchAttrib.Label)
+      value.label = str;
+    else if (attr == Ci.nsMsgSearchAttrib.JunkStatus)
+      value.junkStatus = str;
+    else if (attr == Ci.nsMsgSearchAttrib.HasAttachmentStatus)
+      value.status = nsMsgMessageFlags.Attachment;
+    else
+      value.str = str;
+    if (attr == Ci.nsMsgSearchAttrib.Custom)
+      term.customId = aCustomId;
+    term.value = value;
+    term.op = op;
+    term.booleanAnd = true;
+    searchSession.appendTerm(term);
+  },
   cleanup: function() {
   },
 }

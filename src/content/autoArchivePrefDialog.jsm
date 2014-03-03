@@ -17,6 +17,7 @@ Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const perfDialogTooltipID = "awsome_auto_archive-perfDialogTooltip";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const ruleClass = 'awsome_auto_archive-rule';
+const ruleHeaderContextMenuID = 'awsome_auto_archive-rule-header-context';
 
 let autoArchivePrefDialog = {
   strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
@@ -132,6 +133,7 @@ let autoArchivePrefDialog = {
         row.insertBefore(item, null);
       } );
       row.id = "awsome_auto_archive-rules-header";
+      row.setAttribute('context', ruleHeaderContextMenuID);
       container.insertBefore(row, null);
     } catch (err) {
       autoArchiveLog.logException(err);
