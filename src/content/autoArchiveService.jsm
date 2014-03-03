@@ -395,7 +395,7 @@ let autoArchiveService = {
         ( msgHdr.folder.locked ||
           ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
           ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
-          ( this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
+          ( typeof(rule.tags) == 'undefined' && this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
       if ( rule.action == 'archive' ) {
         if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return;
         let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
@@ -812,23 +812,9 @@ let autoArchiveService = {
           if ( filter == 'tags' ) attribute = autoArchiveUtil.getKeyFromTag(attribute);
           if ( filter == 'subject' || filter == 'tags' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
           else if ( filter == 'size' ) {
-            let match = attribute.match(/^([-.\d]*)(\w*)/i); // default KB, can be M,G
-            if ( match.length == 3 ) {
-              let [, size, scale] = match;
-              if ( scale == '' ) scale = 1;
-              if ( /^m/i.test(scale) ) {
-                scale = 1024;
-              } else if ( /^G/i.test(scale) ) {
-                scale = 1024 * 1024;
-              } else if ( /^K/i.test(scale) ) {
-                scale = 1;
-              } else if ( scale != 1 ) {
-                autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
-                scale = 1;
-              }
-              attribute = size * scale; 
-              autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? nsMsgSearchOp.IsGreaterThan : nsMsgSearchOp.IsLessThan);
-            } else autoArchiveLog.log("Can't parse size " + attribute + " , ignore!", 1);
+            let value = autoArchiveUtil.sizeToKB(attribute);
+            if ( value != -1 ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], value, positive ? nsMsgSearchOp.IsGreaterThan : nsMsgSearchOp.IsLessThan);
+            else autoArchiveLog.log("Can't parse size " + attribute + " , ignore!", 1);
           } else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
             attribute.split(/[\s,;]+/).forEach( function(attr) {
               positive = true;

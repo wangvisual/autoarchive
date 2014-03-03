@@ -132,6 +132,24 @@ let autoArchiveUtil = {
     term.booleanAnd = true;
     searchSession.appendTerm(term);
   },
+  sizeToKB: function(expression) {
+    let match = expression.match(/^([-.\d]*)(\w*)/i); // default KB, can be M,G
+    if ( match.length == 3 ) {
+      let [, size, scale] = match;
+      if ( scale == '' ) scale = 1;
+      if ( /^m/i.test(scale) ) {
+        scale = 1024;
+      } else if ( /^G/i.test(scale) ) {
+        scale = 1024 * 1024;
+      } else if ( /^K/i.test(scale) ) {
+        scale = 1;
+      } else if ( scale != 1 ) {
+        autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
+        scale = 1;
+      }
+      return = size * scale; 
+    } else return -1;
+  },
   cleanup: function() {
   },
 }

@@ -34,7 +34,7 @@
 <!ENTITY awsome_auto_archive.perf.enable_unread "UnRead mails">
 <!ENTITY awsome_auto_archive.perf.old_than "that older than">
 <!ENTITY awsome_auto_archive.perf.days "days">
-<!ENTITY awsome_auto_archive.perf.special_tooltip "This is the global excptions except for 'Copy', Type of grey will NOT be included in any action. If enabled, The email in this type still need to be old enough">
+<!ENTITY awsome_auto_archive.perf.special_tooltip "This is the global exceptions except for 'Copy', Type of grey will NOT be included in any action. If enabled, The email in this type still need to be old enough. This settings will be ignored if the rule itself has the same kind of criteria">
 
 <!ENTITY awsome_auto_archive.perf.misc "Miscellaneous">
 <!ENTITY awsome_auto_archive.perf.disable_alert_animation "Disable TB's popup alert animation effect,">
