@@ -206,18 +206,16 @@ let autoArchivePrefDialog = {
           return element;
         } );
       
-      let up = doc.createElementNS(XUL, "toolbarbutton");
-      up.setAttribute("label", '\u2191');
-      up.addEventListener("command", function(aEvent) { self.upDownRule(row, true); }, false );
-      
-      let down = doc.createElementNS(XUL, "toolbarbutton");
-      down.setAttribute("label", '\u2193');
-      down.addEventListener("command", function(aEvent) { self.upDownRule(row, false); }, false );
-      
-      let remove = doc.createElementNS(XUL, "toolbarbutton");
-      remove.setAttribute("label", "x");
-      remove.classList.add("awsome_auto_archive-delete-rule");
-      remove.addEventListener("command", function(aEvent) { self.removeRule(row); }, false );
+      let [up, down, remove ] = [
+        ['\u2191', function(aEvent) { self.upDownRule(row, true); }, ''],
+        ['\u2193', function(aEvent) { self.upDownRule(row, false); }, ''],
+        ['x', function(aEvent) { self.removeRule(row); }, 'awsome_auto_archive-delete-rule'] ].map( function(attributes) {
+          let element = doc.createElementNS(XUL, "toolbarbutton");
+          element.setAttribute("label", attributes[0]);
+          element.addEventListener("command", attributes[1], false );
+          if (attributes[2]) element.classList.add(attributes[2]);
+          return element;
+        } );
       
       row.classList.add(ruleClass);
       [enable, menulistAction, menulistSrc, menulistSub, menulistDest, from, recipient, subject, size, tags, age, up, down, remove].forEach( function(item) {
