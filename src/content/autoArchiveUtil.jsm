@@ -147,7 +147,7 @@ let autoArchiveUtil = {
         autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
         scale = 1;
       }
-      return = size * scale; 
+      return size * scale; 
     } else return -1;
   },
   cleanup: function() {

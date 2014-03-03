@@ -127,7 +127,7 @@ let autoArchivePrefDialog = {
       if ( !container ) return;
       while (container.firstChild) container.removeChild(container.firstChild);
       let row = doc.createElementNS(XUL, "row");
-      ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "age", "", "", ""].forEach( function(label) {
+      ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "size", "tags", "age", "", "", ""].forEach( function(label) {
         let item = doc.createElementNS(XUL, "label");
         item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
         row.insertBefore(item, null);
@@ -187,29 +187,24 @@ let autoArchivePrefDialog = {
       menulistDest.value = rule.dest || '';
       menulistDest.setAttribute("rule", 'dest');
 
-      let sender = doc.createElementNS(XUL, "textbox");
-      sender.setAttribute("value", rule.from || '');
-      sender.setAttribute("rule", 'from');
-      sender.setAttribute("size", "10");
-      sender.tooltip = perfDialogTooltipID;
-      
-      let recipient = doc.createElementNS(XUL, "textbox");
-      recipient.setAttribute("value", rule.recipient || '');
-      recipient.setAttribute("rule", 'recipient');
-      recipient.setAttribute("size", "10");
-      recipient.tooltip = perfDialogTooltipID;
-      
-      let subject = doc.createElementNS(XUL, "textbox");
-      subject.setAttribute("value", rule.subject || '');
-      subject.setAttribute("rule", 'subject');
-      subject.tooltip = perfDialogTooltipID;
-      
-      let age = doc.createElementNS(XUL, "textbox");
-      age.setAttribute("type", "number");
-      age.setAttribute("min", "0");
-      age.setAttribute("value", typeof(rule.age)!='undefined' ? rule.age : autoArchivePref.options.default_days);
-      age.setAttribute("rule", 'age');
-      age.setAttribute("size", "4");
+      let [from, recipient, subject, size, tags, age] = [
+        // filter, size, default, tooltip, type, min          
+        ["from", "10", '', perfDialogTooltipID],
+        ["recipient", "10", '', perfDialogTooltipID],
+        ["subject", '',  '', perfDialogTooltipID],
+        ["size", '5', ''],
+        ["tags", '10', ''],
+        ["age", "4", autoArchivePref.options.default_days, '', 'number', "0"] ].map( function(attributes) {
+          let element = doc.createElementNS(XUL, "textbox");
+          let [filter, size, defaultValue, tooltip, type, min] = attributes;
+          element.setAttribute("rule", filter);
+          if ( size ) element.setAttribute("size", size);
+          element.setAttribute("value", typeof(rule[filter]) != 'undefined' ? rule[filter] : defaultValue);
+          if ( tooltip ) element.tooltip = tooltip;
+          if ( type ) element.setAttribute("type", type);
+          if ( typeof(min) != 'undefined' ) element.setAttribute("min", "0");
+          return element;
+        } );
       
       let up = doc.createElementNS(XUL, "toolbarbutton");
       up.setAttribute("label", '\u2191');
@@ -225,7 +220,7 @@ let autoArchivePrefDialog = {
       remove.addEventListener("command", function(aEvent) { self.removeRule(row); }, false );
       
       row.classList.add(ruleClass);
-      [enable, menulistAction, menulistSrc, menulistSub, menulistDest, sender, recipient, subject, age, up, down, remove].forEach( function(item) {
+      [enable, menulistAction, menulistSrc, menulistSub, menulistDest, from, recipient, subject, size, tags, age, up, down, remove].forEach( function(item) {
         row.insertBefore(item, null);
       } );
       container.insertBefore(row, ref);

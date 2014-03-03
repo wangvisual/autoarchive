@@ -43,27 +43,29 @@ var windowListener = {
 
 // A toplevel window in a XUL app is an nsXULWindow.  Inside that there is an nsGlobalWindow (aka nsIDOMWindow).
 function startup(aData, aReason) {
-  Services.console.logStringMessage("Awesome Auto Archive startup...");
-  Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
-  Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
-  autoArchivePref.initPerf(__SCRIPT_URI_SPEC__);
-  Cu.import("chrome://awsomeAutoArchive/content/autoArchive.jsm");
-  Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
-  //autoArchiveUtil.setChangeCallback( function(clean) { autoArchive.clearCache(clean); } );
-  // Load into any existing windows, but not hidden/cached compose window, until compose window recycling is disabled by bug https://bugzilla.mozilla.org/show_bug.cgi?id=777732
-  let windows = Services.wm.getEnumerator(null);
-  while (windows.hasMoreElements()) {
-    let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-    if ( domWindow.document.readyState == "complete" && targetWindows.indexOf(domWindow.document.documentElement.getAttribute('windowtype')) >= 0 ) {
-      loadIntoWindow(domWindow);
-    } else {
-      windowListener.onOpenWindow(domWindow);
+  try {
+    Services.console.logStringMessage("Awesome Auto Archive startup...");
+    Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
+    Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+    autoArchivePref.initPerf(__SCRIPT_URI_SPEC__);
+    Cu.import("chrome://awsomeAutoArchive/content/autoArchive.jsm");
+    Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
+    //autoArchiveUtil.setChangeCallback( function(clean) { autoArchive.clearCache(clean); } );
+    // Load into any existing windows, but not hidden/cached compose window, until compose window recycling is disabled by bug https://bugzilla.mozilla.org/show_bug.cgi?id=777732
+    let windows = Services.wm.getEnumerator(null);
+    while (windows.hasMoreElements()) {
+      let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
+      if ( domWindow.document.readyState == "complete" && targetWindows.indexOf(domWindow.document.documentElement.getAttribute('windowtype')) >= 0 ) {
+        loadIntoWindow(domWindow);
+      } else {
+        windowListener.onOpenWindow(domWindow);
+      }
     }
-  }
-  // Wait for new windows
-  Services.obs.addObserver(windowListener, "xul-window-registered", false);
-  // validator warnings on the below line, ignore it
-  if ( !sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.loadAndRegisterSheet(userCSS, sss.USER_SHEET); // will be unregister when shutdown
+    // Wait for new windows
+    Services.obs.addObserver(windowListener, "xul-window-registered", false);
+    // validator warnings on the below line, ignore it
+    if ( !sss.sheetRegistered(userCSS, sss.USER_SHEET) ) sss.loadAndRegisterSheet(userCSS, sss.USER_SHEET); // will be unregistered when shut down
+  } catch (err) { Cu.reportError(err); }
 }
  
 function shutdown(aData, aReason) {
