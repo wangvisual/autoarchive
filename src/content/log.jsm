@@ -144,29 +144,25 @@ let autoArchiveLog = {
     let pfx = "";
     let tee = "";
     try {
-      if (recurse === undefined)
-        recurse = 0;
-      if (level === undefined)
-        level = 0;
-      if (compress === undefined)
-        compress = true;
+      if (recurse === undefined) recurse = 0;
+      if (level === undefined) level = 0;
+      if (compress === undefined) compress = true;
       
       for (let junk = 0; junk < level; junk++)
         pfx += (compress) ? "| " : "|  ";
-      
       tee = (compress) ? "+ " : "+- ";
-      
-      if (typeof(o) != "object") {
-        s += pfx + tee + " (" + typeof(o) + ") " + o + "\n";
+      if ( typeof(o) != 'undefined' && o != null ) {
+        let index = this._checked.indexOf(o);
+        if ( index >= 0 ) return pfx + tee + '[already shown]\n';
+        else this._checked.push(o);
       }
+      if (typeof(o) != "object" || o == null ) s += pfx + tee + " (" + typeof(o) + ") " + o + "\n";
       else {
-        for (let i in o) {
+        let self = this;
+        Object.getOwnPropertyNames(o).forEach( function(i) {
           let t = "";
-          try {
-            t = typeof(o[i]);
-          } catch (err) {
-            s += pfx + tee + " (exception) " + err + "\n";
-          }
+          try { t = typeof(o[i]); }
+          catch (err) { s += pfx + tee + " (exception) " + err + "\n"; }
           switch (t) {
             case "function":
               let sfunc = String(o[i]).split("\n");
@@ -180,12 +176,11 @@ let autoArchiveLog = {
               s += pfx + tee + i + " (object) " + o[i] + "\n";
               if (!compress)
                 s += pfx + "|\n";
-              if ((i != "parent") && (recurse))
-                s += this.objectTreeAsString(o[i], recurse - 1,
-                                             compress, level + 1);
+              if ((i != "parent") && (recurse) && o[i] != null)
+                s += self.objectTreeAsString(o[i], recurse - 1, compress, level + 1);
               break;
             case "string":
-              if (o[i].length > 200)
+              if (o[i].length > 8192)
                 s += pfx + tee + i + " (" + t + ") " + o[i].length + " chars\n";
               else
                 s += pfx + tee + i + " (" + t + ") '" + o[i] + "'\n";
@@ -195,19 +190,21 @@ let autoArchiveLog = {
             default:
               s += pfx + tee + i + " (" + t + ") " + o[i] + "\n";
           }
-          if (!compress)
-            s += pfx + "|\n";
-        }
+          if (!compress)  s += pfx + "|\n";
+        } );
       }
     } catch (ex) {
       s += pfx + tee + " (exception) " + ex + "\n";
+      //this.logException(ex);
     }
     s += pfx + "*\n";
     return s;
   },
   
   logObject: function(obj, name, maxDepth, curDepth) {
+    this._checked = [];
     this.info(name + ":\n" + this.objectTreeAsString(obj,maxDepth,true));
+    this._checked = [];
   },
   
   logException: function(e, popup) {
