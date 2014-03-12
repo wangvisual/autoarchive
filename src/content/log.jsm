@@ -139,6 +139,40 @@ let autoArchiveLog = {
   },
   
   // from errorUtils.js
+  dumpValue: function(value, i, recurse, compress, pfx, tee, level) {
+    let t = "", s= "";
+    try { t = typeof(value); }
+    catch (err) { s += pfx + tee + " (exception) " + err + "\n"; }
+    switch (t) {
+      case "function":
+        let sfunc = String(value).split("\n");
+        if ( typeof(sfunc[2]) != 'undefined' && sfunc[2] == "    [native code]" )
+          sfunc = "[native code]";
+        else
+          sfunc = sfunc.length + " lines";
+        s += pfx + tee + i + " (function) " + sfunc + "\n";
+        break;
+      case "object":
+        s += pfx + tee + i + " (object) " + value + "\n";
+        if (!compress)
+          s += pfx + "|\n";
+        if ((i != "parent") && (recurse) && value != null)
+          s += this.objectTreeAsString(value, recurse - 1, compress, level + 1);
+        break;
+      case "string":
+        if (value.length > 8192)
+          s += pfx + tee + i + " (" + t + ") " + value.length + " chars\n";
+        else
+          s += pfx + tee + i + " (" + t + ") '" + value + "'\n";
+        break;
+      case "":
+        break;
+      default:
+        s += pfx + tee + i + " (" + t + ") " + value + "\n";
+    }
+    if (!compress)  s += pfx + "|\n";
+    return s;
+  },
   objectTreeAsString: function(o, recurse, compress, level) {
     let s = "";
     let pfx = "";
@@ -158,40 +192,14 @@ let autoArchiveLog = {
       }
       if (typeof(o) != "object" || o == null ) s += pfx + tee + " (" + typeof(o) + ") " + o + "\n";
       else {
-        let self = this;
-        Object.getOwnPropertyNames(o).forEach( function(i) {
-          let t = "";
-          try { t = typeof(o[i]); }
-          catch (err) { s += pfx + tee + " (exception) " + err + "\n"; }
-          switch (t) {
-            case "function":
-              let sfunc = String(o[i]).split("\n");
-              if ( typeof(sfunc[2]) != 'undefined' && sfunc[2] == "    [native code]" )
-                sfunc = "[native code]";
-              else
-                sfunc = sfunc.length + " lines";
-              s += pfx + tee + i + " (function) " + sfunc + "\n";
-              break;
-            case "object":
-              s += pfx + tee + i + " (object) " + o[i] + "\n";
-              if (!compress)
-                s += pfx + "|\n";
-              if ((i != "parent") && (recurse) && o[i] != null)
-                s += self.objectTreeAsString(o[i], recurse - 1, compress, level + 1);
-              break;
-            case "string":
-              if (o[i].length > 8192)
-                s += pfx + tee + i + " (" + t + ") " + o[i].length + " chars\n";
-              else
-                s += pfx + tee + i + " (" + t + ") '" + o[i] + "'\n";
-              break;
-            case "":
-              break;
-            default:
-              s += pfx + tee + i + " (" + t + ") " + o[i] + "\n";
+        for ( let i of Object.getOwnPropertyNames(o) ) {
+          s += this.dumpValue(o[i], i, recurse, compress, pfx, tee, level);
+        }
+        if ( typeof(o.keys) == 'function' &&  typeof(o.get) == 'function' ) {
+          for ( let i of o.keys() ) {
+            s += this.dumpValue(o.get(i), i, recurse, compress, pfx, tee, level);
           }
-          if (!compress)  s += pfx + "|\n";
-        } );
+        }
       }
     } catch (ex) {
       s += pfx + tee + " (exception) " + ex + "\n";
@@ -209,22 +217,14 @@ let autoArchiveLog = {
   
   logException: function(e, popup) {
     let msg = "";
-    if ( typeof(e.name) != 'undefined' && typeof(e.message) != 'undefined' ) {
-      msg += e.name + ": " + e.message + "\n";
-    }
-    if ( e.stack ) {
-      msg += e.stack;
-    }
-    if ( e.location ) {
-      msg += e.location + "\n";
-    }
-    if ( msg == '' ){
-      msg += " " + e + "\n";
-    }
+    if ( name in e && message in e ) msg += e.name + ": " + e.message + "\n";
+    if ( stack in e ) msg += e.stack;
+    if ( location in e ) msg += e.location + "\n";
+    if ( msg == '' ) msg += " " + e + "\n";
     msg = 'Caught Exception ' + msg;
-    let fileName= e.fileName || e.filename || Cs.caller.filename;
-    let lineNumber= e.lineNumber || Cs.caller.lineNumber;
-    let sourceLine= e.sourceLine || Cs.caller.sourceLine;
+    let fileName= e.fileName || e.filename || ( Cs.caller && Cs.caller.filename );
+    let lineNumber= e.lineNumber || ( Cs.caller && Cs.caller.lineNumber );
+    let sourceLine= e.sourceLine || ( Cs.caller && Cs.caller.sourceLine );
     let scriptError = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError);
     scriptError.init(msg, fileName, sourceLine, lineNumber, e.columnNumber, scriptError.errorFlag, "chrome javascript");
     Services.console.logMessage(scriptError);
