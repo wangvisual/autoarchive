@@ -390,7 +390,7 @@ let autoArchiveService = {
       if ( !msgHdr.messageId || !msgHdr.folder || !msgHdr.folder.URI || msgHdr.folder.URI == rule.dest ) return;
       if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
       if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
-      let age = ( Date().now / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
+      let age = ( Date.now() / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
       if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
         ( msgHdr.folder.locked ||
           ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
