@@ -217,9 +217,9 @@ let autoArchiveLog = {
   
   logException: function(e, popup) {
     let msg = "";
-    if ( name in e && message in e ) msg += e.name + ": " + e.message + "\n";
-    if ( stack in e ) msg += e.stack;
-    if ( location in e ) msg += e.location + "\n";
+    if ( 'name' in e && 'message' in e ) msg += e.name + ": " + e.message + "\n";
+    if ( 'stack' in e ) msg += e.stack;
+    if ( 'location' in e ) msg += e.location + "\n";
     if ( msg == '' ) msg += " " + e + "\n";
     msg = 'Caught Exception ' + msg;
     let fileName= e.fileName || e.filename || ( Cs.caller && Cs.caller.filename );

@@ -583,21 +583,20 @@ let autoArchiveService = {
           self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, myFunc )[0] );
           self.hookedFunctions.push( autoArchiveaop.around( {target: batchMover, method: 'processNextBatch'}, function(invocation) {
             autoArchiveLog.info("BatchMessageMover processNextBatch");
-            for ( let key in batchMover._batches ) {
-              autoArchiveLog.info("key " + key);
-              autoArchiveLog.logObject(batchMover._batches[key], 'batchMover._batches[key] out', 0);
-            }
             try {
               if ( !batchMover.awsome_auto_archive_getFolders ) {
                 for ( let key in batchMover._batches ) {
-                  autoArchiveLog.logObject(batchMover._batches[key], 'batchMover._batches[key]', 0);
-                  let [srcFolder, archiveFolderUri, granularity, keepFolderStructure, msgYear, msgMonth] = batchMover._batches[key];
-                  let archiveFolder = MailUtils.getFolderForURI(archiveFolderUri, false);
+                  // before https://bugzilla.mozilla.org/show_bug.cgi?id=975795, batchMover._batches = { key: [folder, URI, ..., monthFolderName, msghdr1, msghdr2,...], ... }
+                  // after, batchMover._batches = { key: srcFolder: msgHdr.folder, ...,  monthFolderName: monthFolderName, messages: [...] }, ... }
+                  let { srcFolder: srcFolder, archiveFolderURI: archiveFolderURI, granularity: granularity, keepFolderStructure: keepFolderStructure, yearFolderName: msgYear, monthFolderName: msgMonth } = batchMover._batches[key];
+                  if ( batchMover._batches[key] instanceof Array )
+                    [srcFolder, archiveFolderURI, granularity, keepFolderStructure, msgYear, msgMonth] = batchMover._batches[key];
+                  let archiveFolder = MailUtils.getFolderForURI(archiveFolderURI, false);
                   let forceSingle = !archiveFolder.canCreateSubfolders;
                   if (!forceSingle && (archiveFolder.server instanceof Ci.nsIImapIncomingServer)) forceSingle = archiveFolder.server.isGMailServer;
                   if (forceSingle) granularity = Ci.nsIMsgIncomingServer.singleArchiveFolder;
-                  if (granularity >= Ci.nsIMsgIdentity.perYearArchiveFolders) archiveFolderUri += "/" + msgYear;
-                  if (granularity >= Ci.nsIMsgIdentity.perMonthArchiveFolders) archiveFolderUri += "/" + msgMonth;
+                  if (granularity >= Ci.nsIMsgIdentity.perYearArchiveFolders) archiveFolderURI += "/" + msgYear;
+                  if (granularity >= Ci.nsIMsgIdentity.perMonthArchiveFolders) archiveFolderURI += "/" + msgMonth;
                   if (archiveFolder.canCreateSubfolders && keepFolderStructure) {
                     // .../Inbox/test/a/b/c => .../archive/2014/01/test/a/b/c
                     // .../another/test/d => .../archive/2014/01/another/test/d
@@ -608,10 +607,10 @@ let autoArchiveService = {
                       folderNames.unshift(folder.name);
                       folder = folder.parent;
                     }
-                    archiveFolderUri += "/" + folderNames.join('/');
+                    archiveFolderURI += "/" + folderNames.join('/');
                   }
-                  autoArchiveLog.info("add update folders " + srcFolder.URI + " => " + archiveFolderUri);
-                  self.wait4Folders[srcFolder.URI] = self.wait4Folders[archiveFolderUri] = self.accessedFolders[archiveFolderUri] = true;
+                  autoArchiveLog.info("add update folders " + srcFolder.URI + " => " + archiveFolderURI);
+                  self.wait4Folders[srcFolder.URI] = self.wait4Folders[archiveFolderURI] = self.accessedFolders[archiveFolderURI] = true;
                 }
                 batchMover.awsome_auto_archive_getFolders = true;
               }
