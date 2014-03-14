@@ -161,7 +161,7 @@ let autoArchiveService = {
   doArchive: function(rules, dry_run) {
     autoArchiveLog.info("autoArchiveService doArchive");
     this.clear();
-    this.serverStatus = {};
+    this.serverStatus = {}; // won't cache between runs
     this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
       return rule.enable;
     } );
@@ -262,7 +262,7 @@ let autoArchiveService = {
       else {
         self.serverStatus['_bad_'] = true;
         autoArchiveLog.log("Check Mail Server, got " + autoArchiveUtil.getErrorMsg(aExitCode) + "(" + aExitCode.toString(16) + ") for " + uri.prePath, 1);
-      } 
+      }
       self.serverStatus[this.key] = { OK: Components.isSuccessCode(aExitCode), time: Date.now() };
       if ( self.serverStatus['_listeners_'].length == 0 ) {
         autoArchiveLog.info("All servers checking done, has bad server? : " + self.serverStatus['_bad_']);
@@ -414,10 +414,11 @@ let autoArchiveService = {
             autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " not from src folder?");
             return;
           }
+          //additonal = encodeURI(msgHdr.folder.URI.substr(rule.src.length));
           additonal = msgHdr.folder.URI.substr(rule.src.length);
           realDest = rule.dest + additonal;
         }
-        //autoArchiveLog.info(msgHdr.mime2DecodedSubject + ":" + msgHdr.folder.URI + " => " + realDest);
+        autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
         if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
@@ -429,7 +430,7 @@ let autoArchiveService = {
         // http://mxr.mozilla.org/comm-central/source/mailnews/local/src/nsLocalMailFolder.cpp
         // If target folder already exists but not subscribed, sometimes createStorageIfMissing will not trigger OnStopRunningUrl
         if ( !realDestFolder.parent ) {
-          //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
+          autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[additonal] = true;
         } else {
           if ( realDestFolder.locked ) return;
@@ -489,11 +490,13 @@ let autoArchiveService = {
             } );
             this.sequenceCreateFolders = [];
           } else if ( !isAsync ) {
-            autoArchiveLog.info("create folders sync");
             this.sequenceCreateFolders.forEach( function(path) {
               let [, parent, child] = path.match(/(.*)\/([^\/]+)$/);
               let parentFolder = MailUtils.getFolderForURI(parent);
-              parentFolder.createSubfolder(child, null);
+              autoArchiveLog.info("create folders sync: " + parent + " => " + child);
+              try {
+                parentFolder.createSubfolder(child, null); // if DB is messed-up, then the folder might be invisible but there
+              } catch(err) {}
             } );
             this.sequenceCreateFolders = [];
           } else {
@@ -731,6 +734,16 @@ let autoArchiveService = {
       if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
         destFolder = MailUtils.getFolderForURI(rule.dest);
         self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
+        if ( rule.sub == 2 ) {
+          let folders = destFolder.descendants /* >=TB21 */;
+          if ( ! 'descendants' in destFolder ) {
+            folders = toXPCOMArray([destFolder], Ci.nsIMutableArray);
+            destFolder.ListDescendants(folders); 
+          }
+          for (let folder in fixIterator(folders, Ci.nsIMsgFolder)) {
+            self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
+          }
+        }
       } else rule.dest = '';
     } catch (err) {
       autoArchiveLog.logException(err);
@@ -773,7 +786,12 @@ let autoArchiveService = {
       searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
       self.wait4Folders[rule.src] = self.accessedFolders[rule.src] = true;
       if ( rule.sub ) {
-        for (let folder in fixIterator(srcFolder.descendants /* >=TB21 */, Ci.nsIMsgFolder)) {
+        let folders = srcFolder.descendants /* >=TB21 */;
+        if ( ! 'descendants' in srcFolder ) {
+          folders = toXPCOMArray([srcFolder], Ci.nsIMutableArray);
+          srcFolder.ListDescendants(folders); 
+        }
+        for (let folder in fixIterator(folders, Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
@@ -865,5 +883,6 @@ let autoArchiveService = {
 
 };
 
+// MailUtils.discoverFolders(); // https://bugzilla.mozilla.org/show_bug.cgi?id=502900
 let self = autoArchiveService;
 self.preStart(autoArchivePref.options.startup_delay);
