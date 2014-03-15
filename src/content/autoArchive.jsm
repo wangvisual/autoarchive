@@ -28,7 +28,12 @@ const statusbarIconSrcRun = 'chrome://awsomeAutoArchive/content/icon_run.png';
 let autoArchive = {
   strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
   Load: function(aWindow) {
-    return autoArchive.realLoad(aWindow);
+    if ( typeof(aWindow._autoarchive) != 'undefined' ) return autoArchiveLog.info("Already loaded, return");
+    aWindow._autoarchive = { createdElements:[], hookedFunctions:[], contextMenuItem: null, timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer) };
+    aWindow._autoarchive.timer.initWithCallback( function() { // can be function, or nsITimerCallback
+      autoArchive.realLoad(aWindow);
+    }, 0, Ci.nsITimer.TYPE_ONE_SHOT );
+    //return autoArchive.realLoad(aWindow);
   },
 
   realLoad: function(aWindow) {
@@ -37,8 +42,6 @@ let autoArchive = {
       let doc = aWindow.document;
       //let winref = Cu.getWeakReference(aWindow);
       //let docref = Cu.getWeakReference(doc);
-      if ( typeof(aWindow._autoarchive) != 'undefined' ) return autoArchiveLog.info("Already loaded, return");
-      aWindow._autoarchive = { createdElements:[], hookedFunctions:[], contextMenuItem: null };
       let status_bar = doc.getElementById('status-bar');
       let contextMenuSplit = doc.getElementById('paneContext-afterMove');
       if ( !contextMenuSplit ) contextMenuSplit = doc.getElementById('mailContext-sep-print'); // SeaMonkey
@@ -59,8 +62,13 @@ let autoArchive = {
           else if ( status == autoArchiveService.STATUS_RUN ) statusbarIcon.setAttribute('src', statusbarIconSrcRun);
           else statusbarIcon.setAttribute('src', statusbarIconSrc);
           statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + "\n": "" ) + detail);
-          if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString )
-            aWindow.MsgStatusFeedback.showStatusString(autoArchiveUtil.Name + ": " + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + ", ": "" ) + detail);
+          if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString && status != autoArchiveService.STATUS_RUN ) {
+            // when STATUS_RUN, statusText will be set by autoArchiveActivity => mailWindow.js
+            let statusText = autoArchiveUtil.Name + ": " + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + ", ": "" ) + detail;
+            aWindow._autoarchive.timer.initWithCallback( function() { // use timer to make sure I'm the last to setStatusString
+              aWindow.MsgStatusFeedback.setStatusString(statusText); // can't use showStatusString as it will reset _defaultStatusText, but stopMeteors had a 0.5s delay
+            }, 0, Ci.nsITimer.TYPE_ONE_SHOT );
+          }
           [preStatus, preDetail] = [status, detail];
           let menu = doc.getElementById(contextMenuID);
           let label = autoArchive.strBundle.GetStringFromName("mainwindow.menu." + ( status == autoArchiveService.STATUS_RUN ? 'stop' : 'run' ));
@@ -133,6 +141,7 @@ let autoArchive = {
       if ( typeof(aWindow._autoarchive) != 'undefined' ) {
         autoArchiveLog.info('unLoad for ' + aWindow.location.href);
         aWindow.removeEventListener("unload", autoArchive.onUnLoad, false);
+        aWindow._autoarchive.timer.cancel();
         aWindow._autoarchive.hookedFunctions.forEach( function(hooked) {
           hooked.unweave();
         } );
@@ -158,8 +167,6 @@ let autoArchive = {
   cleanup: function() {
     try {
       autoArchiveLog.info('autoArchive cleanup');
-      if ( this.timer ) this.timer.cancel();
-      this.timer = null;
       autoArchivePrefDialog.cleanup();
       autoArchiveActivity.cleanup();
       autoArchiveService.cleanup();

@@ -5,7 +5,7 @@
 <dialog title="&awsome_auto_archive.info.title;"
      buttons="accept"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-<script>
+<script type="application/javascript">
   <![CDATA[
     function loadList() {
       window.removeEventListener('load', loadList, false);
