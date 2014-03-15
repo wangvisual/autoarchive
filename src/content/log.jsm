@@ -193,11 +193,15 @@ let autoArchiveLog = {
       if (typeof(o) != "object" || o == null ) s += pfx + tee + " (" + typeof(o) + ") " + o + "\n";
       else {
         for ( let i of Object.getOwnPropertyNames(o) ) {
-          s += this.dumpValue(o[i], i, recurse, compress, pfx, tee, level);
+          try {
+            s += this.dumpValue(o[i], i, recurse, compress, pfx, tee, level);
+          } catch (ex) { s += pfx + tee + " (exception) " + ex + "\n"; }
         }
         if ( typeof(o.keys) == 'function' &&  typeof(o.get) == 'function' ) {
           for ( let i of o.keys() ) {
-            s += this.dumpValue(o.get(i), i, recurse, compress, pfx, tee, level);
+            try {
+              s += this.dumpValue(o.get(i), i, recurse, compress, pfx, tee, level);
+            } catch (ex) { s += pfx + tee + " (exception) " + ex + "\n"; }
           }
         }
       }
