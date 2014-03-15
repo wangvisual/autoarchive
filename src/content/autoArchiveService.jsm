@@ -496,7 +496,7 @@ let autoArchiveService = {
               autoArchiveLog.info("create folders sync: " + parent + " => " + child);
               try {
                 parentFolder.createSubfolder(child, null); // if DB is messed-up, then the folder might be invisible but there
-              } catch(err) {}
+              } catch(err) {autoArchiveLog.info("create folder '" + path + "' failed, maybe already exists");}
             } );
             this.sequenceCreateFolders = [];
           } else {
