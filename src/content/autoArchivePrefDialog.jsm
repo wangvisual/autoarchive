@@ -205,8 +205,8 @@ let autoArchivePrefDialog = {
         ["from", "10", '', perfDialogTooltipID],
         ["recipient", "10", '', perfDialogTooltipID],
         ["subject", '',  '', perfDialogTooltipID],
-        ["size", '5', ''],
-        ["tags", '10', ''],
+        ["size", '5', '', perfDialogTooltipID],
+        ["tags", '10', '', perfDialogTooltipID],
         ["age", "4", autoArchivePref.options.default_days, '', 'number', "0"] ].map( function(attributes) {
           let element = doc.createElementNS(XUL, "textbox");
           let [filter, size, defaultValue, tooltip, type, min] = attributes;
@@ -386,9 +386,9 @@ let autoArchivePrefDialog = {
       } );
       let str = function(label) { return self.strBundle.GetStringFromName("perfdialog.tooltip." + label); };
       line1.value = (triggerNode.value == "") ? str("emptyFilter") : triggerNode.value;
-      line2.value = supportRE ? str("hasRE") : str("noRE");
-      line3.value = rule != 'subject' ? str("multipleSearch") : str("subjectInfo");
-      line4.value = str("negtaiveSearch") + ( rule != 'subject' ? str("negtaiveEmailExample") : str("negtaiveSubjectExample") );
+      line2.value = supportRE ? str("hasRE") : ( ["size", "tags"].indexOf(rule) >= 0 ? str("RENotSupported") : str("noRE") );
+      line3.value = str("line3." + rule);
+      line4.value = str("negtaiveSearch") + str("negtaive." + rule + "Example");
     } catch (err) {
       autoArchiveLog.logException(err);
     }
