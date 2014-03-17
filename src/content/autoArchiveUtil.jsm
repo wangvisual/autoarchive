@@ -95,60 +95,65 @@ let autoArchiveUtil = {
     return "..unknown.."; 
   },
   addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
-    let aCustomId;
-    if ( typeof(attr) == 'object' && attr.type == Ci.nsMsgSearchAttrib.Custom ) {
-      aCustomId = attr.customId;
-      attr = Ci.nsMsgSearchAttrib.Custom;
-    }
-    let term = searchSession.createTerm();
-    term.attrib = attr;
-    let value = term.value;
-    // This is tricky - value.attrib must be set before actual values, from searchTestUtils.js 
-    value.attrib = attr;
-    if (attr == Ci.nsMsgSearchAttrib.JunkPercent)
-      value.junkPercent = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Priority)
-      value.priority = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Date)
-      value.date = str;
-    else if (attr == Ci.nsMsgSearchAttrib.MsgStatus || attr == Ci.nsMsgSearchAttrib.FolderFlag || attr == Ci.nsMsgSearchAttrib.Uint32HdrProperty)
-      value.status = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Size)
-      value.size = str;
-    else if (attr == Ci.nsMsgSearchAttrib.AgeInDays)
-      value.age = str;
-    else if (attr == Ci.nsMsgSearchAttrib.Label)
-      value.label = str;
-    else if (attr == Ci.nsMsgSearchAttrib.JunkStatus)
-      value.junkStatus = str;
-    else if (attr == Ci.nsMsgSearchAttrib.HasAttachmentStatus)
-      value.status = nsMsgMessageFlags.Attachment;
-    else
-      value.str = str;
-    if (attr == Ci.nsMsgSearchAttrib.Custom)
-      term.customId = aCustomId;
-    term.value = value;
-    term.op = op;
-    term.booleanAnd = true;
-    searchSession.appendTerm(term);
+    try {
+      let aCustomId;
+      if ( typeof(attr) == 'object' && attr.type == Ci.nsMsgSearchAttrib.Custom ) {
+        aCustomId = attr.customId;
+        attr = Ci.nsMsgSearchAttrib.Custom;
+      }
+      let term = searchSession.createTerm();
+      term.attrib = attr;
+      let value = term.value;
+      // This is tricky - value.attrib must be set before actual values, from searchTestUtils.js 
+      value.attrib = attr;
+      if (attr == Ci.nsMsgSearchAttrib.JunkPercent)
+        value.junkPercent = str;
+      else if (attr == Ci.nsMsgSearchAttrib.Priority)
+        value.priority = str;
+      else if (attr == Ci.nsMsgSearchAttrib.Date)
+        value.date = str;
+      else if (attr == Ci.nsMsgSearchAttrib.MsgStatus || attr == Ci.nsMsgSearchAttrib.FolderFlag || attr == Ci.nsMsgSearchAttrib.Uint32HdrProperty)
+        value.status = str;
+      else if (attr == Ci.nsMsgSearchAttrib.Size)
+        value.size = str;
+      else if (attr == Ci.nsMsgSearchAttrib.AgeInDays)
+        value.age = str;
+      else if (attr == Ci.nsMsgSearchAttrib.Label)
+        value.label = str;
+      else if (attr == Ci.nsMsgSearchAttrib.JunkStatus)
+        value.junkStatus = str;
+      else if (attr == Ci.nsMsgSearchAttrib.HasAttachmentStatus)
+        value.status = nsMsgMessageFlags.Attachment;
+      else
+        value.str = str;
+      if (attr == Ci.nsMsgSearchAttrib.Custom)
+        term.customId = aCustomId;
+      term.value = value;
+      term.op = op;
+      term.booleanAnd = true;
+      searchSession.appendTerm(term);
+    } catch (err) { autoArchiveLog.logException(err); }
   },
   sizeToKB: function(expression) {
-    let match = expression.match(/^([-.\d]*)(\w*)/i); // default KB, can be M,G
-    if ( match.length == 3 ) {
-      let [, size, scale] = match;
-      if ( scale == '' ) scale = 1;
-      if ( /^m/i.test(scale) ) {
-        scale = 1024;
-      } else if ( /^G/i.test(scale) ) {
-        scale = 1024 * 1024;
-      } else if ( /^K/i.test(scale) ) {
-        scale = 1;
-      } else if ( scale != 1 ) {
-        autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
-        scale = 1;
+    try {
+      let match = expression.match(/^([-.\d]*)(\w*)/i); // default KB, can be M,G
+      if ( match.length == 3 ) {
+        let [, size, scale] = match;
+        if ( scale == '' ) scale = 1;
+        if ( /^m/i.test(scale) ) {
+          scale = 1024;
+        } else if ( /^G/i.test(scale) ) {
+          scale = 1024 * 1024;
+        } else if ( /^K/i.test(scale) ) {
+          scale = 1;
+        } else if ( scale != 1 ) {
+          autoArchiveLog.log("Unknown size scale:'" + scale + "', can be K(default),M,G", 1);
+          scale = 1;
+        }
+        return size * scale; 
       }
-      return size * scale; 
-    } else return -1;
+    } catch (err) { autoArchiveLog.logException(err); }
+    return -1;
   },
   cleanup: function() {
   },

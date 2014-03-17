@@ -159,16 +159,18 @@ let autoArchiveService = {
     else autoArchiveService.doArchive(rules, dry_run);
   },
   doArchive: function(rules, dry_run) {
-    autoArchiveLog.info("autoArchiveService doArchive");
-    this.clear();
-    this.serverStatus = {}; // won't cache between runs
-    this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
-      return rule.enable;
-    } );
-    if ( dry_run ) this.dry_run = true;
-    this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)", this.ruleIndex, this.rules.length);
-    autoArchiveLog.logObject(this.rules, 'this.rules',1);
-    this.doMoveOrArchiveOne();
+    try {
+      autoArchiveLog.info("autoArchiveService doArchive");
+      this.clear();
+      this.serverStatus = {}; // won't cache between runs
+      this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
+        return rule.enable;
+      } );
+      if ( dry_run ) this.dry_run = true;
+      this.updateStatus(this.STATUS_RUN, "Total " + this.rules.length + " rule(s)", this.ruleIndex, this.rules.length);
+      autoArchiveLog.logObject(this.rules, 'this.rules',1);
+      this.doMoveOrArchiveOne();
+    } catch(err) { autoArchiveLog.logException(err); }
   },
   folderListeners: [], // may contain dynamic ones
   folderListener: {
@@ -830,7 +832,7 @@ let autoArchiveService = {
           if ( filter == 'subject' || filter == 'tags' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
           else if ( filter == 'size' ) {
             let value = autoArchiveUtil.sizeToKB(attribute);
-            if ( value != -1 ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], value, positive ? nsMsgSearchOp.IsGreaterThan : nsMsgSearchOp.IsLessThan);
+            if ( value != -1 ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], value, positive ? Ci.nsMsgSearchOp.IsGreaterThan : Ci.nsMsgSearchOp.IsLessThan);
             else autoArchiveLog.log("Can't parse size " + attribute + " , ignore!", 1);
           } else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
             attribute.split(/[\s,;]+/).forEach( function(attr) {
