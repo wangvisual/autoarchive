@@ -133,6 +133,7 @@ let autoArchivePrefDialog = {
           item = doc.createElementNS(XUL, "image");
           item.classList.add("tree-columnpicker-icon");
           item.addEventListener('click', function (event) { return doc.getElementById(ruleHeaderContextMenuID).openPopup(item, 'after_start', 0, 0, true, false, event); }, false );
+          item.setAttribute("tooltiptext", self.strBundle.GetStringFromName("perfdialog.tooltip.picker"));
         } else {
           item = doc.createElementNS(XUL, "label");
           item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
@@ -386,7 +387,7 @@ let autoArchivePrefDialog = {
       } );
       let str = function(label) { return self.strBundle.GetStringFromName("perfdialog.tooltip." + label); };
       line1.value = (triggerNode.value == "") ? str("emptyFilter") : triggerNode.value;
-      line2.value = supportRE ? str("hasRE") : ( ["size", "tags"].indexOf(rule) >= 0 ? str("RENotSupported") : str("noRE") );
+      line2.value = supportRE ? str("hasRE") : ( ["size", "tags"].indexOf(rule) >= 0 ? str("line2." + rule) : str("noRE") );
       line3.value = str("line3." + rule);
       line4.value = str("negtaiveSearch") + str("negtaive." + rule + "Example");
     } catch (err) {
