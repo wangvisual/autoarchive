@@ -9,12 +9,12 @@
   <![CDATA[
     function loadList() {
       window.removeEventListener('load', loadList, false);
-      var theList = document.getElementById('awsome_auto_archive-infolist');
+      let theList = document.getElementById('awsome_auto_archive-infolist');
       if ( theList && window.arguments && window.arguments[0]) {
         window.arguments[0].forEach( function(items) {
-          var row = document.createElement('listitem');
+          let row = document.createElement('listitem');
           items.forEach( function(item) {
-            var cell = document.createElement('listcell');
+            let cell = document.createElement('listcell');
             cell.setAttribute('label', item);
             cell.setAttribute('tooltiptext', item);
             row.appendChild(cell);
