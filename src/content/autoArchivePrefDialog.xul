@@ -3,6 +3,7 @@
 <!-- for folder selector -->
 <?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
 <?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
+<?xml-stylesheet href="chrome://global/skin/tree.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://awsomeAutoArchive/locale/awsome_auto_archive.dtd">
 <prefwindow id="awsome_auto_archive-prefs"
@@ -17,28 +18,34 @@
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <prefpane id="awsome_auto_archive-perfpane">
   <preferences id="awsome_auto_archive-preferences">
-    <preference id="pref_rules" name="extensions.awsome_auto_archive.rules" type="string"/>
-    <preference id="pref_show_folder_as" name="extensions.awsome_auto_archive.show_folder_as" type="int" onchange="autoArchivePrefDialog.changeShowFolderAs();"/>
-    <preference id="pref_update_statusbartext" name="extensions.awsome_auto_archive.update_statusbartext" type="bool"/>
-    <preference id="pref_verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
-    <preference id="pref_dry_run" name="extensions.awsome_auto_archive.dry_run" type="bool"/>
-    <preference id="pref_enable_tag" name="extensions.awsome_auto_archive.enable_tag" type="bool"/>
-    <preference id="pref_enable_flag" name="extensions.awsome_auto_archive.enable_flag" type="bool"/>
-    <preference id="pref_enable_unread" name="extensions.awsome_auto_archive.enable_unread" type="bool"/>
-    <preference id="pref_age_tag" name="extensions.awsome_auto_archive.age_tag" type="int"/>
-    <preference id="pref_age_flag" name="extensions.awsome_auto_archive.age_flag" type="int"/>
-    <preference id="pref_age_unread" name="extensions.awsome_auto_archive.age_unread" type="int"/>
-    <preference id="pref_startup_delay" name="extensions.awsome_auto_archive.startup_delay" type="int"/>
-    <preference id="pref_idle_delay" name="extensions.awsome_auto_archive.idle_delay" type="int"/>
-    <preference id="pref_start_next_delay" name="extensions.awsome_auto_archive.start_next_delay" type="int"/>
-    <preference id="pref_rule_timeout" name="extensions.awsome_auto_archive.rule_timeout" type="int"/>
-    <preference id="pref_default_days" name="extensions.awsome_auto_archive.default_days" type="int"/>
-    <preference id="pref_messages_number_limit" name="extensions.awsome_auto_archive.messages_number_limit" type="int"/>
-    <preference id="pref_messages_size_limit" name="extensions.awsome_auto_archive.messages_size_limit" type="int"/>
-    <preference id="pref_start_exceed_delay" name="extensions.awsome_auto_archive.start_exceed_delay" type="int"/>
-    <preference id="pref_disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
-    <preference id="pref_alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
-    <preference id="pref_generate_rule_use" name="extensions.awsome_auto_archive.generate_rule_use" type="int"/>
+    <preference id="pref.rules" name="extensions.awsome_auto_archive.rules" type="string"/>
+    <preference id="pref.show_folder_as" name="extensions.awsome_auto_archive.show_folder_as" type="int" onchange="autoArchivePrefDialog.changeShowFolderAs();"/>
+    <preference id="pref.update_statusbartext" name="extensions.awsome_auto_archive.update_statusbartext" type="bool"/>
+    <preference id="pref.verbose" name="extensions.awsome_auto_archive.enable_verbose_info" type="bool"/>
+    <preference id="pref.dry_run" name="extensions.awsome_auto_archive.dry_run" type="bool"/>
+    <preference id="pref.enable_tag" name="extensions.awsome_auto_archive.enable_tag" type="bool"/>
+    <preference id="pref.enable_flag" name="extensions.awsome_auto_archive.enable_flag" type="bool"/>
+    <preference id="pref.enable_unread" name="extensions.awsome_auto_archive.enable_unread" type="bool"/>
+    <preference id="pref.age_tag" name="extensions.awsome_auto_archive.age_tag" type="int"/>
+    <preference id="pref.age_flag" name="extensions.awsome_auto_archive.age_flag" type="int"/>
+    <preference id="pref.age_unread" name="extensions.awsome_auto_archive.age_unread" type="int"/>
+    <preference id="pref.startup_delay" name="extensions.awsome_auto_archive.startup_delay" type="int"/>
+    <preference id="pref.idle_delay" name="extensions.awsome_auto_archive.idle_delay" type="int"/>
+    <preference id="pref.start_next_delay" name="extensions.awsome_auto_archive.start_next_delay" type="int"/>
+    <preference id="pref.rule_timeout" name="extensions.awsome_auto_archive.rule_timeout" type="int"/>
+    <preference id="pref.default_days" name="extensions.awsome_auto_archive.default_days" type="int"/>
+    <preference id="pref.messages_number_limit" name="extensions.awsome_auto_archive.messages_number_limit" type="int"/>
+    <preference id="pref.messages_size_limit" name="extensions.awsome_auto_archive.messages_size_limit" type="int"/>
+    <preference id="pref.start_exceed_delay" name="extensions.awsome_auto_archive.start_exceed_delay" type="int"/>
+    <preference id="pref.disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
+    <preference id="pref.alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
+    <preference id="pref.generate_rule_use" name="extensions.awsome_auto_archive.generate_rule_use" type="int"/>
+    <preference id="pref.show_from" name="extensions.awsome_auto_archive.show_from" type="bool"/>
+    <preference id="pref.show_recipient" name="extensions.awsome_auto_archive.show_recipient" type="bool"/>
+    <preference id="pref.show_subject" name="extensions.awsome_auto_archive.show_subject" type="bool"/>
+    <preference id="pref.show_size" name="extensions.awsome_auto_archive.show_size" type="bool"/>
+    <preference id="pref.show_tags" name="extensions.awsome_auto_archive.show_tags" type="bool"/>
+    <preference id="pref.show_age" name="extensions.awsome_auto_archive.show_age" type="bool"/>
   </preferences>
   
   <tabbox id="awsome_auto_archive-tabbox">
@@ -59,7 +66,7 @@
               <button label="&awsome_auto_archive.perf.revert;" tooltiptext="&awsome_auto_archive.perf.revert.tooltip;" oncommand="autoArchivePrefDialog.revertRules();"/>
               <label value="" flex="1"/>
               <label value="&awsome_auto_archive.perf.folder.show_folder_as;"/>
-              <menulist preference='pref_show_folder_as'>
+              <menulist preference='pref.show_folder_as'>
                 <menupopup>
                   <menuitem label="&awsome_auto_archive.perf.folder.name;" value="0"/>
                   <menuitem label="&awsome_auto_archive.perf.folder.account_with_name;" value="1"/>
@@ -74,7 +81,7 @@
               <columns>
                 <column/><column/><column flex="1"/><column/><column flex="1"/><column flex="1"/><column flex="1"/><column/><column/><column/><column/>
               </columns> 
-              <rows id='awsome_auto_archive-rules' preference='pref_rules' preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf(window);'>
+              <rows id='awsome_auto_archive-rules' preference='pref.rules' preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf(window);'>
               </rows>
             </grid>
           </groupbox>
@@ -103,16 +110,16 @@
                 </columns> 
                 <rows>
                   <row>
-                    <checkbox preference="pref_enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
-                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_tag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                    <checkbox preference="pref.enable_tag" label="&awsome_auto_archive.perf.enable_tag;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref.age_tag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
                   </row>
                   <row>
-                    <checkbox preference="pref_enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
-                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_flag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                    <checkbox preference="pref.enable_flag" label="&awsome_auto_archive.perf.enable_flag;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref.age_flag" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
                   </row>
                   <row>
-                    <checkbox preference="pref_enable_unread" label="&awsome_auto_archive.perf.enable_unread;"/>
-                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref_age_unread" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
+                    <checkbox preference="pref.enable_unread" label="&awsome_auto_archive.perf.enable_unread;"/>
+                    <hbox><label value="&awsome_auto_archive.perf.old_than;"/><textbox size='5' preference="pref.age_unread" type='number' min='0'/><label value="&awsome_auto_archive.perf.days;"/></hbox>
                   </row>
                 </rows>
               </grid>
@@ -121,7 +128,7 @@
               <caption label="&awsome_auto_archive.perf.misc;"/>
               <hbox align="center" tooltiptext='&awsome_auto_archive.perf.generate_rule_tooltip;'>
                 <label value="&awsome_auto_archive.perf.generate_rule_before;"/>
-                <menulist preference='pref_generate_rule_use'>
+                <menulist preference='pref.generate_rule_use'>
                   <menupopup>
                     <menuitem label="&awsome_auto_archive.perf.generate_rule.display_or_id;" value="0"/>
                     <menuitem label="&awsome_auto_archive.perf.generate_rule.id;" value="1"/>
@@ -131,11 +138,11 @@
                 <label value="&awsome_auto_archive.perf.generate_rule_after;"/>
               </hbox>
               <hbox align="center" tooltiptext='&awsome_auto_archive.perf.popup_show_time_tooltip;'>
-                <checkbox preference="pref_disable_alert_animation" label="&awsome_auto_archive.perf.disable_alert_animation;" class='awsome_auto_archive-disable-checked'/>
+                <checkbox preference="pref.disable_alert_animation" label="&awsome_auto_archive.perf.disable_alert_animation;" class='awsome_auto_archive-disable-checked'/>
                 <hbox align="center">
                   <label value="        "/>
                   <label value="&awsome_auto_archive.perf.popup_show_time;"/>
-                  <textbox preference="pref_alert_show_time" type='number' size='5' min='0'/>
+                  <textbox preference="pref.alert_show_time" type='number' size='5' min='0'/>
                 </hbox>
               </hbox>
             </groupbox>
@@ -151,19 +158,19 @@
                 <rows>
                   <row tooltiptext="&awsome_auto_archive.perf.startup_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.startup_delay;"/>
-                    <hbox><textbox preference="pref_startup_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                    <hbox><textbox preference="pref.startup_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
                   <row tooltiptext="&awsome_auto_archive.perf.idle_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.idle_delay;"/>
-                    <hbox><textbox preference="pref_idle_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                    <hbox><textbox preference="pref.idle_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
                   <row tooltiptext="&awsome_auto_archive.perf.start_next_delay_tooltip;">
                     <label value="&awsome_auto_archive.perf.start_next_delay;"/>
-                    <hbox><textbox preference="pref_start_next_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                    <hbox><textbox preference="pref.start_next_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
                   <row tooltiptext="&awsome_auto_archive.perf.rule_timeout_tooltip;">
                     <label value="&awsome_auto_archive.perf.rule_timeout;"/>
-                    <hbox><textbox preference="pref_rule_timeout" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
+                    <hbox><textbox preference="pref.rule_timeout" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.seconds;"/></hbox>
                   </row>
                 </rows>
               </grid>
@@ -178,15 +185,15 @@
                 <rows>
                   <row>
                     <label value="&awsome_auto_archive.perf.messages_number_limit;"/>
-                    <hbox><textbox preference="pref_messages_number_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_number_limit_hint;"/></hbox>
+                    <hbox><textbox preference="pref.messages_number_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_number_limit_hint;"/></hbox>
                   </row>
                   <row>
                     <label value="&awsome_auto_archive.perf.messages_size_limit;"/>
-                    <hbox><textbox preference="pref_messages_size_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_size_limit_hint;"/></hbox>
+                    <hbox><textbox preference="pref.messages_size_limit" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.messages_size_limit_hint;"/></hbox>
                   </row>
                   <row>
                     <label value="&awsome_auto_archive.perf.start_exceed_delay;"/>
-                    <hbox><textbox preference="pref_start_exceed_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.start_exceed_delay_hint;"/></hbox>
+                    <hbox><textbox preference="pref.start_exceed_delay" type='number' size='5' min='0'/><label value="&awsome_auto_archive.perf.start_exceed_delay_hint;"/></hbox>
                   </row>
                 </rows>
               </grid>
@@ -204,14 +211,28 @@
           </groupbox>
           <groupbox>
             <caption label="&awsome_auto_archive.perf.debug;"/>
-            <checkbox preference="pref_update_statusbartext" label="&awsome_auto_archive.perf.update_statusbartext;"/>
-            <checkbox preference="pref_verbose" label="&awsome_auto_archive.perf.verbose;"/>
-            <checkbox preference="pref_dry_run" label="&awsome_auto_archive.perf.dry_run;"/>
+            <checkbox preference="pref.update_statusbartext" label="&awsome_auto_archive.perf.update_statusbartext;"/>
+            <checkbox preference="pref.verbose" label="&awsome_auto_archive.perf.verbose;"/>
+            <checkbox preference="pref.dry_run" label="&awsome_auto_archive.perf.dry_run;"/>
           </groupbox>
         </vbox>
       </tabpanel>
     </tabpanels>
   </tabbox>
+
+<popupset>
+  <tooltip id="awsome_auto_archive-perfDialogTooltip">
+    <vbox><label/><description/><description/><description/></vbox>
+  </tooltip>
+  <menupopup id='awsome_auto_archive-rule-header-context'>
+    <menuitem preference="pref.show_from" label="&awsome_auto_archive.perf.show_filter_column.from;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+    <menuitem preference="pref.show_recipient" label="&awsome_auto_archive.perf.show_filter_column.recipient;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+    <menuitem preference="pref.show_subject" label="&awsome_auto_archive.perf.show_filter_column.subject;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+    <menuitem preference="pref.show_size" label="&awsome_auto_archive.perf.show_filter_column.size;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+    <menuitem preference="pref.show_tags" label="&awsome_auto_archive.perf.show_filter_column.tags;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+    <menuitem preference="pref.show_age" label="&awsome_auto_archive.perf.show_filter_column.age;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
+  </menupopup>
+</popupset>
   
 </prefpane>
 <script>
@@ -220,13 +241,5 @@
     Components.utils.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
   ]]>
 </script>
-<popupset>
-  <tooltip id="awsome_auto_archive-perfDialogTooltip"><vbox><label/><description/><description/><description/></vbox>
-  </tooltip>
-    <menupopup id='awsome_auto_archive-rule-header-context'>
-      <menuitem label="&awsome_auto_archive.perf.generate_rule.display_or_id;" type="checkbox" value="0"/>
-      <menuitem label="&awsome_auto_archive.perf.generate_rule.id;" type="checkbox" value="1"/>
-      <menuitem label="&awsome_auto_archive.perf.generate_rule.email;" type="checkbox" value="2"/>
-    </menupopup>
-</popupset>
+
 </prefwindow>

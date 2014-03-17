@@ -38,7 +38,7 @@ let autoArchivePrefDialog = {
       msgFolder = MailUtils.getFolderForURI(folderPicker.value);
     } catch(err) {}
     if ( !this._doc || !setLabel ) return msgFolder;
-    let showFolderAs = this._doc.getElementById('pref_show_folder_as');
+    let showFolderAs = this._doc.getElementById('pref.show_folder_as');
     let label = "";
     switch ( showFolderAs.value ) {
       case 0:
@@ -127,9 +127,22 @@ let autoArchivePrefDialog = {
       if ( !container ) return;
       while (container.firstChild) container.removeChild(container.firstChild);
       let row = doc.createElementNS(XUL, "row");
-      ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "size", "tags", "age", "", "", ""].forEach( function(label) {
-        let item = doc.createElementNS(XUL, "label");
-        item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
+      ["", "action", "source", "scope", "dest", "from", "recipient", "subject", "size", "tags", "age", "", "", "picker"].forEach( function(label) {
+        let item;
+        if ( label == 'picker' ) {
+          item = doc.createElementNS(XUL, "image");
+          item.classList.add("tree-columnpicker-icon");
+          item.addEventListener('click', function (event) { return doc.getElementById(ruleHeaderContextMenuID).openPopup(item, 'after_start', 0, 0, true, false, event); }, false );
+        } else {
+          item = doc.createElementNS(XUL, "label");
+          item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
+          item.setAttribute('rule', label); // header does not have class ruleClass
+        }
+        let preference = doc.getElementById('pref.show_' + label);
+        if ( preference ) {
+          let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
+          item.style.display = actualValue ? '-moz-box': 'none';
+        }
         row.insertBefore(item, null);
       } );
       row.id = "awsome_auto_archive-rules-header";
@@ -203,6 +216,9 @@ let autoArchivePrefDialog = {
           if ( tooltip ) element.tooltip = tooltip;
           if ( type ) element.setAttribute("type", type);
           if ( typeof(min) != 'undefined' ) element.setAttribute("min", "0");
+          let preference = doc.getElementById('pref.show_' + filter);
+          let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
+          element.style.display = actualValue ? '-moz-box': 'none';
           return element;
         } );
       
@@ -268,7 +284,7 @@ let autoArchivePrefDialog = {
   revertRules: function() {
     if ( !this._doc ) return;
     this.syncToPerf(true);
-    let preference = this._doc.getElementById("pref_rules");
+    let preference = this._doc.getElementById("pref.rules");
     autoArchiveLog.info("Revert rules from " + preference.value + " to " + this._savedRules);
     preference.value = this._savedRules; // perfpane.userChangedValue is the same
   },
@@ -323,11 +339,11 @@ let autoArchivePrefDialog = {
   
   syncFromPerf: function(win) { // this need 0.5s for 8 rules
     //autoArchiveLog.info('syncFromPerf');
-     // if not modal, user can open 2nd pref window, we will close the old one, and close/unLoadPerfWindow seems a sync call, so we are fine
+    // if not modal, user can open 2nd pref window, we will close the old one, and close/unLoadPerfWindow seems a sync call, so we are fine
     if ( this._win && this._win != win && !this._win.closed ) this._win.close();
     this._win = win;
     this._doc = win.document;
-    let preference = this._doc.getElementById("pref_rules");
+    let preference = this._doc.getElementById("pref.rules");
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
     if ( actualValue === this.oldvalue ) return;
     this.createRuleHeader();
@@ -348,7 +364,7 @@ let autoArchivePrefDialog = {
     let value = JSON.stringify(this.getRules());
     this.oldvalue = value; // need before set preference.value, which will cause syncFromPref
     if ( store2pref ) {
-      let preference = this._doc.getElementById("pref_rules");
+      let preference = this._doc.getElementById("pref.rules");
       preference.value = value;
     }
     //autoArchiveLog.info('syncToPerf done');
@@ -377,6 +393,39 @@ let autoArchivePrefDialog = {
       autoArchiveLog.logException(err);
     }
     return true;
+  },
+  
+  syncFromPerf4Filter: function(obj) {
+    autoArchiveLog.info('syncFromPerf4Filter:' + obj.getAttribute("preference"));
+    let doc = obj.ownerDocument;
+    let perfID = obj.getAttribute("preference");
+    let preference = doc.getElementById(perfID);
+    let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
+    autoArchiveLog.info('syncFromPerf4Filter:' + actualValue);
+    let oldValue = obj.oldValue;
+    autoArchiveLog.info('xxx:' + oldValue + ":" + actualValue);
+    if ( oldValue != actualValue ) {
+      obj.setAttribute("checked", actualValue);
+      let container = doc.getElementById('awsome_auto_archive-rules');
+      if ( !container ) return;
+      for ( let row of container.childNodes ) {
+        for ( let item of row.childNodes ) {
+          let key = item.getAttribute('rule');
+          if ( "pref.show_" + key == perfID )
+            item.style.display = actualValue ? '-moz-box': 'none';
+        }
+      }
+    }
+    obj.oldValue = actualValue;
+    return actualValue;
+  },
+  
+  syncToPerf4Filter: function(obj) {
+    autoArchiveLog.info('syncToPerf4Filter:' + obj.getAttribute("preference"));
+    let preference = obj.ownerDocument.getElementById(obj.getAttribute("preference"));
+    preference.value = obj.getAttribute("checked") ? true : false;
+    autoArchiveLog.info('syncToPerf4Filter:' + preference.value);
+    return preference.value;
   },
 
   loadPerfWindow: function(win) {

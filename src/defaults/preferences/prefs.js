@@ -21,3 +21,9 @@ pref("extensions.awsome_auto_archive.show_folder_as", 0);
 pref("extensions.awsome_auto_archive.add_context_munu_rule", true);
 pref("extensions.awsome_auto_archive.alert_show_time", 4);
 pref("extensions.awsome_auto_archive.generate_rule_use", 0); // 0 for Display Name or mail@, 1 for mail@, 2 for mail@domain.com
+pref("extensions.awsome_auto_archive.show_from", true);
+pref("extensions.awsome_auto_archive.show_recipient", true);
+pref("extensions.awsome_auto_archive.show_subject", true);
+pref("extensions.awsome_auto_archive.show_size", false);
+pref("extensions.awsome_auto_archive.show_tags", false);
+pref("extensions.awsome_auto_archive.show_age", true);

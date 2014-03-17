@@ -28,6 +28,13 @@
 <!ENTITY awsome_auto_archive.perf.update_statusbartext "Show information in status bar">
 <!ENTITY awsome_auto_archive.perf.dry_run "Dry run">
 
+<!ENTITY awsome_auto_archive.perf.show_filter_column.from "From">
+<!ENTITY awsome_auto_archive.perf.show_filter_column.recipient "Recipient">
+<!ENTITY awsome_auto_archive.perf.show_filter_column.subject "Subject">
+<!ENTITY awsome_auto_archive.perf.show_filter_column.size "Size">
+<!ENTITY awsome_auto_archive.perf.show_filter_column.tags "Tags">
+<!ENTITY awsome_auto_archive.perf.show_filter_column.age "Age">
+
 <!ENTITY awsome_auto_archive.perf.enable_special "When doing Archive/Delete/Move, Including">
 <!ENTITY awsome_auto_archive.perf.enable_tag "Tagged mails">
 <!ENTITY awsome_auto_archive.perf.enable_flag "Stared mails">

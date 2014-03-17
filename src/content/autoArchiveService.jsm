@@ -463,7 +463,7 @@ let autoArchiveService = {
         // create missing folders first
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
           // rule.dest: imap://a@b.com/1/2
-          // additonal:                   /3/4/5
+          // additional:                  /3/4/5
           //                              /3/4/6
           //                              /7/8
           // => 
