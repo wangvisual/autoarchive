@@ -175,9 +175,30 @@ let autoArchiveService = {
   folderListeners: [], // may contain dynamic ones
   folderListener: {
     OnItemEvent: function(folder, event) {
-      if ( event.toString() != "FolderLoaded" || !folder || !folder.URI ) return;
-      autoArchiveLog.info("FolderLoaded " + folder.URI);
-      if ( self.wait4Folders[folder.URI] ) delete self.wait4Folders[folder.URI];
+      if ( event.toString() != "FolderLoaded" || !folder || ! 'URI' in folder ) return;
+      let updateNext = false;
+      if ( folder.URI ) autoArchiveLog.info("FolderLoaded " + folder.URI);
+      else updateNext = true; // the kick off one
+      if ( self.wait4Folders[folder.URI] ) { // might not be the one we request to update
+        delete self.wait4Folders[folder.URI];
+        updateNext = true;
+      }
+      if ( updateNext ) {
+        for ( let uri in self.wait4Folders ) {
+          let success = false;
+          try {
+            autoArchiveLog.info("updateFolder " + uri);
+            let folder = MailUtils.getFolderForURI(uri);
+            if ( folder ) {
+              folder.updateFolder(null);
+              success = true;
+            }
+          } catch(err) { autoArchiveLog.logException(err); }
+          if ( !success ) delete self.wait4Folders[uri]; // and try update next folder
+          else break; // wait for OnItemEvent called again
+        }
+      }
+
       if ( Object.keys(self.wait4Folders).length == 0 ) {
         self.removeFolderListener(self.folderListener);
         autoArchiveLog.info("All FolderLoaded");
@@ -329,32 +350,11 @@ let autoArchiveService = {
   // or get called after we doing one group of Move/Delete/Copy, or one Archive ( when _searchSession was null )
   // any case we will chain doMoveOrArchiveOne here or in folderListener, and let it to decide either start process a new rule, or continue to search
   updateFolders: function() {
-    let folders = this.getFoldersFromWait4Folders();
-    if ( folders.length ) {
-      MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
-      self.folderListeners.push(self.folderListener);
-      let failCount = 0;
-      folders.forEach( function(folder) {
-        try {
-          autoArchiveLog.info("updateFolder " + folder.URI);
-          folder.updateFolder(null);
-        } catch(err) {
-          autoArchiveLog.info("update folder fail for " + folder.URI);
-          autoArchiveLog.logException(err);
-          failCount ++;
-          delete self.wait4Folders[folder.URI];
-        }
-      } );
-      if ( folders.length == failCount ) { // updateFolder fail
-        autoArchiveLog.info("updateFolder fail all");
-        self.removeFolderListener(self.folderListener);
-        self.doMoveOrArchiveOne();
-      }
-    } else {
-      autoArchiveLog.info("no folder to update");
-      self.doMoveOrArchiveOne();
-    }
+    MailServices.mailSession.AddFolderListener(self.folderListener, Ci.nsIFolderListener.event);
+    self.folderListeners.push(self.folderListener);
+    self.folderListener.OnItemEvent({URI:''}, 'FolderLoaded'); // we fake one to kicks off the update sequence
   },
+
   copyGroups: [], // [ {src: src, dest: dest, action: move, messages[]}, ...]
   hookedFunctions: [],
   searchListener: function(rule, srcFolder, destFolder) {
