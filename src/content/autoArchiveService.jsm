@@ -423,6 +423,7 @@ let autoArchiveService = {
         autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
         if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
+        if ( realDestFolder.locked ) return;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
         // CopyFolders using createSubfolder
         // https://github.com/gark87/SmartFilters/blob/master/src/chrome/content/backend/imapfolders.jsm using createSubfolder
@@ -431,21 +432,20 @@ let autoArchiveService = {
         // http://mxr.mozilla.org/comm-central/source/mailnews/imap/src/nsImapMailFolder.cpp
         // http://mxr.mozilla.org/comm-central/source/mailnews/local/src/nsLocalMailFolder.cpp
         // If target folder already exists but not subscribed, sometimes createStorageIfMissing will not trigger OnStopRunningUrl
-        if ( !realDestFolder.parent ) {
+        
+        // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
+        let destHdr;
+        try {
+          destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
+          self.accessedFolders[realDest] = 1;
+        } catch(err) { autoArchiveLog.logException(err); }
+        if ( destHdr ) {
+          //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
+          duplicateHit.push(destHdr);
+          return;
+        } else if ( !realDestFolder.parent ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[additonal] = true;
-        } else {
-          if ( realDestFolder.locked ) return;
-          try {
-            // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
-            let destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
-            self.accessedFolders[realDest] = 1;
-            if ( destHdr ) {
-              //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
-              duplicateHit.push(destHdr);
-              return;
-            }
-          } catch(err) { autoArchiveLog.logException(err); }
         }
         this.messagesDest[msgHdr.messageId] = realDest;
       }
