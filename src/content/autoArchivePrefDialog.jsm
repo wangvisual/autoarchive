@@ -194,6 +194,7 @@ let autoArchivePrefDialog = {
       menulistSub.insertBefore(menupopupSub, null);
       menulistSub.setAttribute("value", rule.sub || 0);
       menulistSub.setAttribute("rule", 'sub');
+      menulistSub.setAttribute("tooltiptext", self.strBundle.GetStringFromName('perfdialog.tooltip.scope'));
       
       let menulistDest = doc.createElementNS(XUL, "menulist");
       let menupopupDest = doc.createElementNS(XUL, "menupopup");

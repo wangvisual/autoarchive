@@ -828,19 +828,21 @@ let autoArchiveService = {
         }
         if ( customId ) autoArchiveUtil.addSearchTerm(searchSession, {type: Ci.nsMsgSearchAttrib.Custom, customId: customId}, attribute, positive ? Ci.nsMsgSearchOp.Matches : Ci.nsMsgSearchOp.DoesntMatch);
         else {
-          if ( filter == 'tags' ) attribute = autoArchiveUtil.getKeyFromTag(attribute);
-          if ( filter == 'subject' || filter == 'tags' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
+          if ( filter == 'subject' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attribute, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
           else if ( filter == 'size' ) {
             let value = autoArchiveUtil.sizeToKB(attribute);
             if ( value != -1 ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], value, positive ? Ci.nsMsgSearchOp.IsGreaterThan : Ci.nsMsgSearchOp.IsLessThan);
             else autoArchiveLog.log("Can't parse size " + attribute + " , ignore!", 1);
-          } else { // from / recipient normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com'
-            attribute.split(/[\s,;]+/).forEach( function(attr) {
+          } else { // from / recipient /tags normal patterns support multiple patterns like '!foo@bar.com, !bar@foo.com' or 'to do, work, !important'
+            attribute.split(/[,;]+/).forEach( function(attr) {
+              // first remove the leading & trailing blanks
+              attr = attr.trim();
               positive = true;
               if ( attr[0] == '!' ) {
                 positive = false;
                 attr = attr.substr(1);
               }
+              if ( filter == 'tags' ) attr = autoArchiveUtil.getKeyFromTag(attr);
               if ( attr != '' ) autoArchiveUtil.addSearchTerm(searchSession, normal[filter], attr, positive ? Ci.nsMsgSearchOp.Contains : Ci.nsMsgSearchOp.DoesntContain);
             } );
           }
