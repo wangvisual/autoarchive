@@ -82,7 +82,7 @@ let autoArchivePref = {
 
   prefPath: "extensions.awsome_auto_archive.",
   allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'generate_rule_use',
-             'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age',
+             'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age', 'delete_duplicate_in_src',
              'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
   rules: [],
   observe: function(subject, topic, data) {
@@ -102,6 +102,7 @@ let autoArchivePref = {
         case 'show_size':
         case 'show_tags':
         case 'show_age':
+        case 'delete_duplicate_in_src':
           this.options[data] = this.prefs.getBoolPref(data);
           break;
         case "rules":

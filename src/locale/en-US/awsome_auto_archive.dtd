@@ -54,6 +54,11 @@
 <!ENTITY awsome_auto_archive.perf.generate_rule.email "mail@domain.com">
 <!ENTITY awsome_auto_archive.perf.generate_rule_tooltip "This is control how 'From'/'Recipient' get filled when you click the conext menu. If choose 'Display Nmae or mail@', then 'Display Name' will be used if it can be found in the full email adderss, else mail@ is used.">
 
+<!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.pre "When doing 'move' and the same email already exists in destination folder, ">
+<!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.keep "Keep">
+<!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.delete "Delete">
+<!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.post " email in source folder.">
+
 <!ENTITY awsome_auto_archive.perf.active_time "Time Settings">
 <!ENTITY awsome_auto_archive.perf.startup_delay "First run after">
 <!ENTITY awsome_auto_archive.perf.idle_delay "Wait for computer becomes idle for">

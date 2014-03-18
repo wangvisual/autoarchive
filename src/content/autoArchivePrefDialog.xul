@@ -39,6 +39,7 @@
     <preference id="pref.start_exceed_delay" name="extensions.awsome_auto_archive.start_exceed_delay" type="int"/>
     <preference id="pref.disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
     <preference id="pref.alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
+    <preference id="pref.delete_duplicate_in_src" name="extensions.awsome_auto_archive.delete_duplicate_in_src" type="bool"/>
     <preference id="pref.generate_rule_use" name="extensions.awsome_auto_archive.generate_rule_use" type="int"/>
     <preference id="pref.show_from" name="extensions.awsome_auto_archive.show_from" type="bool"/>
     <preference id="pref.show_recipient" name="extensions.awsome_auto_archive.show_recipient" type="bool"/>
@@ -144,6 +145,16 @@
                   <label value="&awsome_auto_archive.perf.popup_show_time;"/>
                   <textbox preference="pref.alert_show_time" type='number' size='5' min='0'/>
                 </hbox>
+              </hbox>
+              <hbox align="center">
+                <label value="&awsome_auto_archive.perf.delete_duplicate_in_src.pre;"/>
+                <menulist preference='pref.delete_duplicate_in_src'>
+                  <menupopup>
+                    <menuitem label="&awsome_auto_archive.perf.delete_duplicate_in_src.delete;" value="true"/>
+                    <menuitem label="&awsome_auto_archive.perf.delete_duplicate_in_src.keep;" value="false"/>
+                  </menupopup>
+                </menulist>
+                <label value="&awsome_auto_archive.perf.delete_duplicate_in_src.post;"/>
               </hbox>
             </groupbox>
           </hbox>

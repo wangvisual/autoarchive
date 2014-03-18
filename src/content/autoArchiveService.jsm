@@ -367,7 +367,7 @@ let autoArchiveService = {
     this.messagesDest = {};
     let allTags = {};
     let searchHit = 0;
-    let duplicateHit = 0;
+    let duplicateHit = [];
     let actionSize = 0;
     let listener = this;
     for ( let tag of MailServices.tags.getAllTags({}) ) {
@@ -442,7 +442,7 @@ let autoArchiveService = {
             self.accessedFolders[realDest] = 1;
             if ( destHdr ) {
               //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
-              duplicateHit ++;
+              duplicateHit.push(destHdr);
               return;
             }
           } catch(err) { autoArchiveLog.logException(err); }
@@ -459,8 +459,8 @@ let autoArchiveService = {
         self._searchSession = null;
         autoArchiveLog.info("Total " + searchHit + " messages hit");
         let isMove = (rule.action == 'move');
-        if ( duplicateHit ) autoArchiveLog.info(duplicateHit + " messages already exists in target folder", isMove, isMove);
-        if ( !this.messages.length ) return self.doMoveOrArchiveOne();
+        if ( duplicateHit.length ) autoArchiveLog.info(duplicateHit.length + " messages already exists in target folder", isMove, isMove);
+        if ( !this.messages.length && !( isMove && autoArchivePref.options.delete_duplicate_in_src ) ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages, total " + autoArchiveUtil.readablizeBytes(actionSize) + " bytes");
         // create missing folders first
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
@@ -545,17 +545,25 @@ let autoArchiveService = {
           // group messages according to there src and dest
           self.copyGroups = [];
           let groups = {}; // { src => dest : 0, src2 => dest2: 1 }
-          this.messages.forEach( function(msgHdr) {
-            let dest = listener.messagesDest[msgHdr.messageId] || rule.dest || '';
+          let removingDuplicate = ( rule.action == 'move' && autoArchivePref.options.delete_duplicate_in_src && duplicateHit.length ), actions = {};
+          let messages = this.messages;
+          if ( removingDuplicate ) messages.push.apply(messages, duplicateHit);
+          messages.forEach( function(msgHdr) {
+            let dest = listener.messagesDest[msgHdr.messageId] || rule.dest || '', action = rule.action;
+            if ( removingDuplicate && duplicateHit.indexOf(msgHdr) >= 0 ) {
+              dest = '';
+              action = 'delete';
+            }
             if ( dest.length ) self.accessedFolders[dest] = true;
-            let key = msgHdr.folder.URI + ( ["copy", "move"].indexOf(rule.action) >= 0 ? " => " + dest : '' );
+            let key = msgHdr.folder.URI + ( ["copy", "move"].indexOf(action) >= 0 ? " => " + dest : '' );
             if ( typeof(groups[key]) == 'undefined'  ) {
               groups[key] = self.copyGroups.length;
-              self.copyGroups.push({src: msgHdr.folder.URI, dest: dest, action: rule.action, messages: []});
+              self.copyGroups.push({src: msgHdr.folder.URI, dest: dest, action: action, messages: []});
             }
             self.copyGroups[groups[key]].messages.push(msgHdr);
+            actions[action] = true;
           } );
-          autoArchiveLog.info("will do " + rule.action + " in " + self.copyGroups.length + " steps");
+          autoArchiveLog.info("will do " + Object.keys(actions).join(' and ') + " in " + self.copyGroups.length + " steps");
           autoArchiveLog.logObject(groups, 'groups', 0);
           self.doCopyDeleteMoveOne(self.copyGroups.shift());
         } else {

@@ -20,6 +20,7 @@ pref("extensions.awsome_auto_archive.default_days", 180);
 pref("extensions.awsome_auto_archive.show_folder_as", 0);
 pref("extensions.awsome_auto_archive.add_context_munu_rule", true);
 pref("extensions.awsome_auto_archive.alert_show_time", 4);
+pref("extensions.awsome_auto_archive.delete_duplicate_in_src", false);
 pref("extensions.awsome_auto_archive.generate_rule_use", 0); // 0 for Display Name or mail@, 1 for mail@, 2 for mail@domain.com
 pref("extensions.awsome_auto_archive.show_from", true);
 pref("extensions.awsome_auto_archive.show_recipient", true);
