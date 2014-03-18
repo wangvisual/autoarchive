@@ -398,14 +398,12 @@ let autoArchivePrefDialog = {
   },
   
   syncFromPerf4Filter: function(obj) {
-    autoArchiveLog.info('syncFromPerf4Filter:' + obj.getAttribute("preference"));
+    //autoArchiveLog.info('syncFromPerf4Filter:' + obj.getAttribute("preference"));
     let doc = obj.ownerDocument;
     let perfID = obj.getAttribute("preference");
     let preference = doc.getElementById(perfID);
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
-    autoArchiveLog.info('syncFromPerf4Filter:' + actualValue);
     let oldValue = obj.oldValue;
-    autoArchiveLog.info('xxx:' + oldValue + ":" + actualValue);
     if ( oldValue != actualValue ) {
       obj.setAttribute("checked", actualValue);
       let container = doc.getElementById('awsome_auto_archive-rules');
@@ -423,10 +421,9 @@ let autoArchivePrefDialog = {
   },
   
   syncToPerf4Filter: function(obj) {
-    autoArchiveLog.info('syncToPerf4Filter:' + obj.getAttribute("preference"));
+    //autoArchiveLog.info('syncToPerf4Filter:' + obj.getAttribute("preference"));
     let preference = obj.ownerDocument.getElementById(obj.getAttribute("preference"));
     preference.value = obj.getAttribute("checked") ? true : false;
-    autoArchiveLog.info('syncToPerf4Filter:' + preference.value);
     return preference.value;
   },
 
