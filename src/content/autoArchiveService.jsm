@@ -15,7 +15,7 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 
 let autoArchiveService = {
-  timer: null,
+  timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer), // used to schedule the action, preStart => waitIdle => kicksOff => watchDog, can't use this timer during watchDog(running rule)
   statusListeners: [],
   STATUS_INIT: 0,
   STATUS_HIBERNATE: 1,
@@ -31,7 +31,6 @@ let autoArchiveService = {
   dry_run: false, // set by 'Dry Run' button, there's another one autoArchivePref.options.dry_run is set by perf
   showStatusText: 0, // only show once for STATUS_HIBERNATE on status bar after change, as we use timer
   preStart: function(time) {
-    if ( !this.timer ) this.timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     this.timer.cancel();
     this.cleanupIdleObserver();
     let hibernate = autoArchivePref.options.hibernate;
@@ -98,12 +97,12 @@ let autoArchiveService = {
     MailServices.mailSession.RemoveFolderListener(listener);
     let index = self.folderListeners.indexOf(listener);
     if ( index >= 0 ) self.folderListeners.splice(index, 1);
-    else autoArchiveLog.info("Can't remvoe FolderListener", 1);
+    else autoArchiveLog.info("Can't remove FolderListener", 1);
   },
   clear: function() {
     try {
       this.cleanupIdleObserver();
-      if ( this.timer ) this.timer.cancel();
+      this.timer.cancel();
       this.folderListeners.forEach( function(listener) {
         self.removeFolderListener(listener);
       } );
@@ -174,11 +173,15 @@ let autoArchiveService = {
   },
   folderListeners: [], // may contain dynamic ones
   folderListener: {
+    called: false, // to prevent call doMoveOrArchiveOne etc more than once
     OnItemEvent: function(folder, event) {
       if ( event.toString() != "FolderLoaded" || !folder || ! 'URI' in folder ) return;
       let updateNext = false;
       if ( folder.URI ) autoArchiveLog.info("FolderLoaded " + folder.URI);
-      else updateNext = true; // the kick off one
+      else {
+        updateNext = true; // the kick off one
+        this.called = false;
+      }
       if ( self.wait4Folders[folder.URI] ) { // might not be the one we request to update
         delete self.wait4Folders[folder.URI];
         updateNext = true;
@@ -190,7 +193,7 @@ let autoArchiveService = {
             autoArchiveLog.info("updateFolder " + uri);
             let folder = MailUtils.getFolderForURI(uri);
             if ( folder ) {
-              folder.updateFolder(null);
+              folder.updateFolder(null); // this might call folderLIstener.OnItemEvent sync!
               success = true;
             }
           } catch(err) { autoArchiveLog.logException(err); }
@@ -199,7 +202,8 @@ let autoArchiveService = {
         }
       }
 
-      if ( Object.keys(self.wait4Folders).length == 0 ) {
+      if ( Object.keys(self.wait4Folders).length == 0 && !this.called ) {
+        this.called = true;
         self.removeFolderListener(self.folderListener);
         autoArchiveLog.info("All FolderLoaded");
         self.doMoveOrArchiveOne();
@@ -436,7 +440,9 @@ let autoArchiveService = {
         // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
         let destHdr;
         try {
+          autoArchiveLog.logObject(realDestFolder,'realDestFolder',0);
           destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
+          autoArchiveLog.logObject(destHdr,'destHdr',0);
           self.accessedFolders[realDest] = 1;
         } catch(err) { autoArchiveLog.logException(err); }
         if ( destHdr ) {
@@ -713,7 +719,14 @@ let autoArchiveService = {
     this.clear();
     return this.preStart(delay);
   },
+  
   doMoveOrArchiveOne: function() {
+    this.timer.initWithCallback( function() { //
+      return self._doMoveOrArchiveOne();
+    }, 0, Ci.nsITimer.TYPE_ONE_SHOT );
+  },
+  
+  _doMoveOrArchiveOne: function() {
     if ( this._searchSession ) { // updateFolder done, continue to search now
       this._searchSession.search(null);
       return this._searchSession = null;
@@ -759,7 +772,7 @@ let autoArchiveService = {
       autoArchiveLog.logException(err);
     }
     if ( !srcFolder || !srcFolder.parent || ( ["move", "copy"].indexOf(rule.action) >= 0 && ( !destFolder || !destFolder.parent ) ) ) {
-      autoArchiveLog.log("Error: Wrong rule becase folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 'Error!');
+      autoArchiveLog.log("Error: Wrong rule because folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 'Error!');
       return this.doMoveOrArchiveOne();
     }
     //srcFolder.server.closeCachedConnections();
