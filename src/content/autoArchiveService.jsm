@@ -415,14 +415,16 @@ let autoArchiveService = {
         let supportHierarchy = ( rule.sub == 2 ) && !srcFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && !destFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && destFolder.canCreateSubfolders;
         if ( supportHierarchy && (destFolder.server instanceof Ci.nsIImapIncomingServer)) supportHierarchy = !destFolder.server.isGMailServer;
         if ( supportHierarchy ) {
-          let pos = msgHdr.folder.URI.indexOf(rule.src);
-          if ( pos != 0 ) {
-            autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " not from src folder?");
-            return;
+          // for local folder like URI (string) 'mailbox://nobody@Local%20Folders/test/hello%20world', the name of leaf level will be 'hello world'
+          // but IMAP folders don't use %20,
+          // when we create folders, we can only use 'hello world', never use 'hello%20world'
+          let tmpFolder = msgHdr.folder, names = [];
+          while ( tmpFolder && tmpFolder != srcFolder ) {
+            names.push(tmpFolder.name);
+            tmpFolder = folder.parent;
           }
-          //additonal = encodeURI(msgHdr.folder.URI.substr(rule.src.length));
-          additonal = msgHdr.folder.URI.substr(rule.src.length);
-          realDest = rule.dest + additonal;
+          if ( names.length ) additonal = '/' + names.join('/');
+          realDest = rule.dest + encodeURI(additonal);
         }
         autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
@@ -501,10 +503,12 @@ let autoArchiveService = {
             this.sequenceCreateFolders.forEach( function(path) {
               let [, parent, child] = path.match(/(.*)\/([^\/]+)$/);
               let parentFolder = MailUtils.getFolderForURI(parent);
-              autoArchiveLog.info("create folders sync: " + parent + " => " + child);
+              autoArchiveLog.info("create folders sync: '" + parentFolder.URI + "' => '" + child + "'");
               try {
                 parentFolder.createSubfolder(child, null); // if DB is messed-up, then the folder might be invisible but there
-              } catch(err) {autoArchiveLog.info("create folder '" + path + "' failed, maybe already exists");}
+                //MailUtils.getFolderForURI(path).createStorageIfMissing(null);
+                parentFolder.updateFolder(null);
+              } catch(err) {autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString());}
             } );
             this.sequenceCreateFolders = [];
           } else {
