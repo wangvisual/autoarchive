@@ -442,9 +442,9 @@ let autoArchiveService = {
         // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
         let destHdr;
         try {
-          autoArchiveLog.logObject(realDestFolder,'realDestFolder',0);
+          // autoArchiveLog.logObject(realDestFolder,'realDestFolder',0); Don't do this, access some property will automatically create wrong type of mail folder
           destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
-          autoArchiveLog.logObject(destHdr,'destHdr',0);
+          //autoArchiveLog.logObject(destHdr,'destHdr',0);
           self.accessedFolders[realDest] = 1;
         } catch(err) { autoArchiveLog.logException(err); }
         if ( destHdr ) {
@@ -505,8 +505,8 @@ let autoArchiveService = {
               let parentFolder = MailUtils.getFolderForURI(parent);
               autoArchiveLog.info("create folders sync: '" + parentFolder.URI + "' => '" + child + "'");
               try {
-                parentFolder.createSubfolder(child, null); // if DB is messed-up, then the folder might be invisible but there
-                //MailUtils.getFolderForURI(path).createStorageIfMissing(null);
+                // if DB is messed-up, then the (wrong) folder might be invisible but there
+                parentFolder.createSubfolder(child, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
                 parentFolder.updateFolder(null);
               } catch(err) {autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString());}
             } );

@@ -223,6 +223,7 @@ let autoArchiveLog = {
   },
   
   logObject: function(obj, name, maxDepth, curDepth) {
+    if (!this.verbose) return;
     this._checked = [];
     this.info(name + ":\n" + this.objectTreeAsString(obj,maxDepth,true));
     this._checked = [];
