@@ -411,19 +411,19 @@ let autoArchiveService = {
       if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         // check if dest folder has already has the message
-        let realDest = rule.dest, additonal = '';
+        let realDest = rule.dest, additonal = '', additonalNames = [];
         let supportHierarchy = ( rule.sub == 2 ) && !srcFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && !destFolder.getFlag(Ci.nsMsgFolderFlags.Virtual) && destFolder.canCreateSubfolders;
         if ( supportHierarchy && (destFolder.server instanceof Ci.nsIImapIncomingServer)) supportHierarchy = !destFolder.server.isGMailServer;
         if ( supportHierarchy ) {
           // for local folder like URI (string) 'mailbox://nobody@Local%20Folders/test/hello%20world', the name of leaf level will be 'hello world'
           // but IMAP folders don't use %20,
           // when we create folders, we can only use 'hello world', never use 'hello%20world'
-          let tmpFolder = msgHdr.folder, names = [];
-          while ( tmpFolder && tmpFolder != srcFolder ) {
-            names.push(tmpFolder.name);
-            tmpFolder = folder.parent;
+          let tmpFolder = msgHdr.folder, rootFolder = tmpFolder.server.rootFolder;
+          while ( tmpFolder && tmpFolder != srcFolder && tmpFolder != rootFolder ) {
+            additonalNames.unshift(tmpFolder.name); // [ 'test', 'hello world' ]
+            tmpFolder = tmpFolder.parent;
           }
-          if ( names.length ) additonal = '/' + names.join('/');
+          if ( additonalNames.length ) additonal = '/' + additonalNames.join('/');
           realDest = rule.dest + encodeURI(additonal);
         }
         autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
@@ -439,21 +439,28 @@ let autoArchiveService = {
         // http://mxr.mozilla.org/comm-central/source/mailnews/local/src/nsLocalMailFolder.cpp
         // If target folder already exists but not subscribed, sometimes createStorageIfMissing will not trigger OnStopRunningUrl
         
-        // msgDatabase is a getter that will always try and load the message database! so null it if not use if anymore
-        let destHdr;
+        // msgDatabase is a getter that will always try and load the message database! so null it if not use if any more
+        let destHdr, msgDatabase;
         try {
           // autoArchiveLog.logObject(realDestFolder,'realDestFolder',0); Don't do this, access some property will automatically create wrong type of mail folder
-          destHdr = realDestFolder.msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
-          //autoArchiveLog.logObject(destHdr,'destHdr',0);
+          msgDatabase = realDestFolder.msgDatabase; // exception when folder not exists
           self.accessedFolders[realDest] = 1;
-        } catch(err) { autoArchiveLog.logException(err); }
+          destHdr = msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
+        } catch(err) {
+          if ( err.result != 0x80550006 ) autoArchiveLog.logException(err);
+        }
+        if ( msgDatabase && !realDestFolder.parent && destFolder.msgStore ) {
+          autoArchiveLog.info("Found hidden folder, update folder tree");
+          destFolder.msgStore.discoverSubFolders(destFolder, true);
+          if ( mail3PaneWindow.gFolderTreeView && mail3PaneWindow.gFolderTreeView._rebuild ) mail3PaneWindow.gFolderTreeView._rebuild();
+        }
         if ( destHdr ) {
           //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
           return;
-        } else if ( !realDestFolder.parent ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
+        } else if ( !realDestFolder.parent && !msgDatabase && ! (additonal in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
-          this.missingFolders[additonal] = true;
+          this.missingFolders[additonal] = additonalNames;
         }
         this.messagesDest[msgHdr.messageId] = realDest;
       }
@@ -471,6 +478,7 @@ let autoArchiveService = {
         if ( !this.messages.length && !( isMove && autoArchivePref.options.delete_duplicate_in_src ) ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages, total " + autoArchiveUtil.readablizeBytes(actionSize) + " bytes");
         // create missing folders first
+        autoArchiveLog.logObject(this.missingFolders,'missing',1);
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
           // rule.dest: imap://a@b.com/1/2
           // additional:                  /3/4/5
@@ -478,6 +486,12 @@ let autoArchiveService = {
           //                              /7/8
           // => 
           // /3, /3/4, /3/4/5, /3/4/6, /7, /7/8
+          // additionalNames:            [3,4,5]
+          //                             [3,4,6]
+          //                             [7,8]
+          // =>
+          // /3, /4, /5
+          // (/3, /4), /6
           let needCreateFolders = {};
           let isAsync = destFolder.server.protocolInfo.foldersCreatedAsync;
           Object.keys(this.missingFolders).forEach( function(path) {
@@ -500,24 +514,14 @@ let autoArchiveService = {
             } );
             this.sequenceCreateFolders = [];
           } else if ( !isAsync ) {
-            this.sequenceCreateFolders.forEach( function(path) {
-              let [, parent, child] = path.match(/(.*)\/([^\/]+)$/);
-              let parentFolder = MailUtils.getFolderForURI(parent);
-              autoArchiveLog.info("create folders sync: '" + parentFolder.URI + "' => '" + child + "'");
-              try {
-                // if DB is messed-up, then the (wrong) folder might be invisible but there
-                parentFolder.createSubfolder(child, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
-                parentFolder.updateFolder(null);
-              } catch(err) {autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString());}
-            } );
-            this.sequenceCreateFolders = [];
+            autoArchiveLog.info("create folders sync");
+            return this.OnItemAdded();
           } else {
             autoArchiveLog.info("create folders async");
             MailServices.mailSession.AddFolderListener(this, Ci.nsIFolderListener.added);
             self.folderListeners.push(this);
-            return this.OnItemAdded(); // OnItemAdded will chain to create next folder
+            return this.OnItemAdded(); // OnItemAdded will chain to create next folder, CopyMessages can create the folder on the fly, but won't show it, and sometimes failed
           }
-          this.missingFolders = {};
         }
         this.processHeaders();
       } catch(err) {
@@ -529,25 +533,35 @@ let autoArchiveService = {
     this.OnItemAdded = function(parentFolder, childFolder) {
       if ( childFolder && childFolder.URI ) {
         autoArchiveLog.info("Folder " + childFolder.URI + " created");
-        let index = this.sequenceCreateFolders.indexOf(childFolder.URI);
-        if ( index >= 0 ) this.sequenceCreateFolders.splice(index, 1);
+        parentFolder.updateFolder(null);
       }
-      if ( this.sequenceCreateFolders.length ) {
-        autoArchiveLog.info("Creating folder " + this.sequenceCreateFolders[0]);
-        let destFolder = MailUtils.getFolderForURI(this.sequenceCreateFolders[0]);
-        if ( destFolder.parent ) {
-          autoArchiveLog.info("Folder " + destFolder.URI + " already exists");
-          this.sequenceCreateFolders.splice(0, 1);
-          return this.OnItemAdded();
-        }
-        let [, parent, child] = this.sequenceCreateFolders[0].match(/(.*)\/([^\/]+)$/);
-        let parentFolder = MailUtils.getFolderForURI(parent);
-        parentFolder.createSubfolder(child, null);
-      } else {
+      for ( let uri in this.missingFolders ) {
+        let folder = destFolder, names = this.missingFolders[uri];
+        let asyncCreating = names.some( function(folderName) {
+          try {
+            if ( !folder.containsChildNamed(folderName) ) {
+              // if DB is messed-up, then the (wrong) folder might be invisible but there
+              autoArchiveLog.info("Creating folder '" + folder.URI + "' => '" + folderName + "'");
+              folder.createSubfolder(folderName, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
+              autoArchiveLog.info("Called Creating folder '" + folder.URI + "' => '" + folderName + "'");
+              return destFolder.server.protocolInfo.foldersCreatedAsync; // if async, break 'some'
+            }
+          } catch(err) { autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString()); }
+          folder = folder.getChildNamed(folderName);
+          return false; // folder exists, try next level
+        } );
+        if ( asyncCreating ) return; // waiting for OnItemAdded
+        else delete this.missingFolders[uri];
+        autoArchiveLog.info("end of for loop");
+      }
+      
+      autoArchiveLog.info("after for loop");
+      if ( Object.keys(this.missingFolders).length == 0 ) {
         autoArchiveLog.info("All folders created");
         self.removeFolderListener(this);
         return this.processHeaders();
       }
+      autoArchiveLog.info("end of OnItemAdded");
     };
     this.processHeaders = function() {
       try {
