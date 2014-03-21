@@ -442,23 +442,18 @@ let autoArchiveService = {
         let destHdr, msgDatabase, offlineStream;
         try {
           //autoArchiveLog.logObject(realDestFolder,'realDestFolder',0); // Don't do this, access some property will automatically create wrong type of mail folder
-          //offlineStream = realDestFolder.offlineStoreInputStream;
-          /*"QueryInterface","EqualsNode","Value","ValueUTF8","Init","EqualsString","GetDelegate","ReleaseDelegate","messages","startFolderLoading","endFolderLoading","updateFolder","isServer","canSubscribe","canFileMessages","noSelect","imapShared","canDeleteMessages","canCreateSubfolders","canRename","canCompact","rootFolder","getFilterList","setFilterList","getEditableFilterList","setEditableFilterList","ForceDBClosed","closeAndBackupFolderDB","Delete","deleteSubFolders","propagateDelete","recursiveDelete","createSubfolder","addSubfolder","createStorageIfMissing","folderURL","showDeletedMessages","server","compact","compactAll","compactAllOfflineStores","emptyTrash","rename","renameSubFolders","generateUniqueSubfolderName","updateSummaryTotals","summaryChanged","getNumUnread","getTotalMessages","hasNewMessages","clearNewMessages","firstNewMessage","deletable","displayRecipients","manyHeadersToDownload","relativePathName","sizeOnDisk","username","hostname","setFlag","clearFlag","getFlag","toggleFlag","onFlagChange","getFolderWithFlags","getFoldersWithFlags","listFoldersWithFlags","isSpecialFolder","getUriForMsg","deleteMessages","copyMessages","copyFolder","copyFileMessage","acquireSemaphore","releaseSemaphore","testSemaphore","locked","getNewMessages","writeToFolderCache","charset","charsetOverride","biffState","getNumNewMessages","setNumNewMessages","gettingNewMessages","generateMessageURI","addMessageDispositionState","markMessagesRead","markAllMessagesRead","markMessagesFlagged","markThreadRead","setLabelForMessages","msgDatabase","getBackupMsgDatabase","removeBackupMsgDatabase","openBackupMsgDatabase","getDBFolderInfoAndDB","GetMessageHeader","getOfflineFileStream","GetOfflineMsgFolder","getOfflineStoreOutputStream","getMsgInputStream","offlineStoreInputStream","DownloadMessagesForOffline","getChildWithURI","downloadAllForOffline","enableNotifications","isCommandEnabled","matchOrChangeFilterDestination","confirmFolderDeletionForFilter",*/
-          [/*"flags","filePath","baseMessageURI","supportsOffline","hasMsgOffline","shouldStoreMsgOffline",*//*"alertFilterChanged","throwAlertMsg","getStringWithFolderNameFromBundle","notifyCompactCompleted","compareSortKeys","getSortKey","retentionSettings","downloadSettings","callFilterPlugins","sortOrder","dBTransferInfo","getStringProperty","setStringProperty","lastMessageLoaded","URI","name","prettyName","abbreviatedName","parent","subFolders","hasSubFolders","numSubFolders","isAncestorOf","containsChildNamed","getChildNamed","findSubFolder","AddFolderListener","RemoveFolderListener","NotifyPropertyChanged","NotifyIntPropertyChanged","NotifyBoolPropertyChanged","NotifyPropertyFlagChanged","NotifyUnicharPropertyChanged","NotifyItemAdded","NotifyItemRemoved","NotifyFolderEvent","descendants","ListDescendants","Shutdown","inVFEditSearchScope","setInVFEditSearchScope","copyDataToOutputStreamForAppend","copyDataDone","setJunkScoreForMessages","applyRetentionSettings","fetchMsgPreviewText","addKeywordsToMessages","removeKeywordsFromMessages","getMsgTextFromStream","convertMsgSnippetToPlainText","customIdentity","getProcessingFlags","orProcessingFlags","andProcessingFlags","getInheritedStringProperty","setForcePropertyEmpty","getForcePropertyEmpty","msgStore","nsMsgBiffState_NewMail","nsMsgBiffState_NoMail","nsMsgBiffState_Unknown","nsMsgDispositionState_None","nsMsgDispositionState_Replied","nsMsgDispositionState_Forwarded","allMessageCountNotifications"*/].forEach( function(name) {
-            try {
-              let xx = realDestFolder[name];
-              autoArchiveLog.info(name + ":" + xx);
-            } catch(err) {}
-          } );
-          /*"prettiestName","expungedBytes",*/
+          // access to the following properties will create local mail folder
+          // "expungedBytes","flags","sortOrder","name","prettyName","prettiestName","abbreviatedName","subFolders","descendants"
           msgDatabase = realDestFolder.msgDatabase; // exception when folder not exists
-          autoArchiveLog.info('msgDatabase:' + msgDatabase);
           self.accessedFolders[realDest] = 1;
           destHdr = msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
+          offlineStream = realDestFolder.offlineStoreInputStream;
         } catch(err) {
-          if ( [0x80550006, 0x80004005].indexOf(err.result) < 0  ) autoArchiveLog.logException(err);
+          // 0x80004005 (NS_ERROR_FAILURE)
+          // 0x80520012 (NS_ERROR_FILE_NOT_FOUND) [nsIMsgFolder.offlineStoreInputStream]
+          if ( [0x80550006, 0x80004005, 0x80520012].indexOf(err.result) < 0  ) autoArchiveLog.logException(err);
         }
-        if ( 0 && msgDatabase && !realDestFolder.parent && destFolder.msgStore ) {
+        if ( offlineStream && msgDatabase && !realDestFolder.parent && destFolder.msgStore ) {
           autoArchiveLog.info("Found hidden folder '" + realDestFolder.URI + "', update folder tree");
           destFolder.msgStore.discoverSubFolders(destFolder, true);
           if ( mail3PaneWindow.gFolderTreeView && mail3PaneWindow.gFolderTreeView._rebuild ) mail3PaneWindow.gFolderTreeView._rebuild();
@@ -467,7 +462,7 @@ let autoArchiveService = {
           autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
           return;
-        } else if ( !realDestFolder.parent && /*!msgDatabase &&*/ ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
+        } else if ( !realDestFolder.parent && !offlineStream && ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[realDestFolder.URI] = additonalNames;
         }
@@ -486,7 +481,6 @@ let autoArchiveService = {
         if ( duplicateHit.length ) autoArchiveLog.info(duplicateHit.length + " messages already exists in target folder", isMove, isMove);
         if ( !this.messages.length && !( isMove && autoArchivePref.options.delete_duplicate_in_src ) ) return self.doMoveOrArchiveOne();
         autoArchiveLog.info("will " + rule.action + " " + this.messages.length + " messages, total " + autoArchiveUtil.readablizeBytes(actionSize) + " bytes");
-        return; // TODO, FIXME
         // create missing folders first
         autoArchiveLog.logObject(this.missingFolders,'Need create these folders',0);
         if ( Object.keys(this.missingFolders).length ) { // for copy/move
@@ -532,34 +526,27 @@ let autoArchiveService = {
       for ( let uri in this.missingFolders ) {
         let folder = destFolder, names = this.missingFolders[uri];
         let asyncCreating = names.some( function(folderName) {
-          autoArchiveLog.info("name:" + folder.URI + " => " + folderName);
           try {
             if ( !folder.containsChildNamed(folderName) ) {
               // if DB is messed-up, then the (wrong) folder might be invisible but there
               autoArchiveLog.info("Creating folder '" + folder.URI + "' => '" + folderName + "'");
               folder.createSubfolder(folderName, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
-              autoArchiveLog.info("Called Creating folder '" + folder.URI + "' => '" + folderName + "'");
               if ( destFolder.server.protocolInfo.foldersCreatedAsync ) return true; // if async, break 'some'
-              autoArchiveLog.info("not return true:" + destFolder.server.protocolInfo.foldersCreatedAsync);
             }
           } catch(err) { autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString()); }
           folder = folder.getChildNamed(folderName); // if folder exists, or sync creation
           return false; // try next level
         } );
-        autoArchiveLog.info("asyncCreating:" + asyncCreating);
         if ( asyncCreating ) return; // waiting for OnItemAdded
         else delete this.missingFolders[uri];
-        autoArchiveLog.info("end of for loop");
       }
       
-      autoArchiveLog.info("after for loop");
       if ( ( 'missingFolders' in this ) && Object.keys(this.missingFolders).length == 0 ) {
         autoArchiveLog.info("All folders created");
         if ( destFolder.server.protocolInfo.foldersCreatedAsync ) self.removeFolderListener(this);
         delete this.missingFolders;
         return this.processHeaders();
       }
-      autoArchiveLog.info("end of OnItemAdded");
     };
     this.processHeaders = function() {
       try {
