@@ -390,7 +390,7 @@ let autoArchivePrefDialog = {
       line1.value = (triggerNode.value == "") ? str("emptyFilter") : triggerNode.value;
       line2.value = supportRE ? str("hasRE") : ( ["size", "tags"].indexOf(rule) >= 0 ? str("line2." + rule) : str("noRE") );
       line3.value = str("line3." + rule);
-      line4.value = str("negtaiveSearch") + str("negtaive." + rule + "Example");
+      line4.value = str("negativeSearch") + str("negative." + rule + "Example");
     } catch (err) {
       autoArchiveLog.logException(err);
     }

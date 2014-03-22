@@ -441,8 +441,7 @@ let autoArchiveService = {
         // msgDatabase is a getter that will always try and load the message database! so null it if not use if any more
         let destHdr, msgDatabase, offlineStream;
         try {
-          //autoArchiveLog.logObject(realDestFolder,'realDestFolder',0); // Don't do this, access some property will automatically create wrong type of mail folder
-          // access to the following properties will create local mail folder
+          //autoArchiveLog.logObject(realDestFolder,'realDestFolder',0); // Don't do this, access some property may automatically create wrong type of local mail folder, eg
           // "expungedBytes","flags","sortOrder","name","prettyName","prettiestName","abbreviatedName","subFolders","descendants"
           msgDatabase = realDestFolder.msgDatabase; // exception when folder not exists
           self.accessedFolders[realDest] = 1;
