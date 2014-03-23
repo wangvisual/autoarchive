@@ -425,7 +425,7 @@ let autoArchiveService = {
           if ( additonalNames.length ) additonal = '/' + additonalNames.join('/');
           realDest = rule.dest + additonal;
         }
-        autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
+        // autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
         if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
         if ( realDestFolder.locked ) return;
@@ -458,11 +458,11 @@ let autoArchiveService = {
           if ( mail3PaneWindow.gFolderTreeView && mail3PaneWindow.gFolderTreeView._rebuild ) mail3PaneWindow.gFolderTreeView._rebuild();
         }
         if ( destHdr ) {
-          autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
+          //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
           return;
         } else if ( !realDestFolder.parent && !offlineStream && ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
-          autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
+          //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[realDestFolder.URI] = additonalNames;
         }
         this.messagesDest[msgHdr.messageId] = realDest;

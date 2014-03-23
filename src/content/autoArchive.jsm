@@ -62,11 +62,13 @@ let autoArchive = {
           else if ( status == autoArchiveService.STATUS_RUN ) statusbarIcon.setAttribute('src', statusbarIconSrcRun);
           else statusbarIcon.setAttribute('src', statusbarIconSrc);
           statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version + "\n" + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + "\n": "" ) + detail);
-          if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && aWindow.MsgStatusFeedback.showStatusString && status != autoArchiveService.STATUS_RUN ) {
+          if ( autoArchivePref.options.update_statusbartext && aWindow.MsgStatusFeedback && ( status != autoArchiveService.STATUS_RUN || !Cc["@mozilla.org/activity-manager;1"] ) ) {
             // when STATUS_RUN, statusText will be set by autoArchiveActivity => mailWindow.js
             let statusText = autoArchiveUtil.Name + ": " + ( preStatus == autoArchiveService.STATUS_FINISH ? preDetail + ", ": "" ) + detail;
             aWindow._autoarchive.timer.initWithCallback( function() { // use timer to make sure I'm the last to setStatusString
-              aWindow.MsgStatusFeedback.setStatusString(statusText); // can't use showStatusString as it will reset _defaultStatusText, but stopMeteors had a 0.5s delay
+              // can't use showStatusString as it will reset _defaultStatusText, but stopMeteors had a 0.5s delay
+              let func = aWindow.MsgStatusFeedback.setStatusString || aWindow.MsgStatusFeedback.setJSDefaultStatus;
+              if ( func ) func.call(aWindow.MsgStatusFeedback, statusText);
             }, 0, Ci.nsITimer.TYPE_ONE_SHOT );
           }
           [preStatus, preDetail] = [status, detail];

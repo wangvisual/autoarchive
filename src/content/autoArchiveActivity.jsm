@@ -8,11 +8,14 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 
-let gActivityManager = Cc["@mozilla.org/activity-manager;1"].getService(Ci.nsIActivityManager);
+// SeaMonkey has no activity-manager
+let gActivityManager = Cc["@mozilla.org/activity-manager;1"] ? Cc["@mozilla.org/activity-manager;1"].getService(Ci.nsIActivityManager) : null;
 let autoArchiveActivity = {
   cleanup: function() {
-    autoArchiveService.removeStatusListener(this.statusCallback);
+    autoArchiveLog.info('autoArchiveActivity cleanup');
+    if ( gActivityManager ) autoArchiveService.removeStatusListener(this.statusCallback);
     self.process = null;
+    autoArchiveLog.info('autoArchiveActivity cleanup done');
   },
   process: null,
   statusCallback: function(status, detail, index, total) {
@@ -38,4 +41,4 @@ let autoArchiveActivity = {
   },
 }
 let self = autoArchiveActivity;
-autoArchiveService.addStatusListener(self.statusCallback);
+if ( gActivityManager ) autoArchiveService.addStatusListener(self.statusCallback);
