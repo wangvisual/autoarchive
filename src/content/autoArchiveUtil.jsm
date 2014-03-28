@@ -157,7 +157,7 @@ let autoArchiveUtil = {
     return -1;
   },
   folderExists: function(folder) {
-    return folder && ( folder.parent || folder == folder.rootFolder );
+    return folder && ( folder.parent || folder.isServer );
   },
   getSearchSessionString: function(session) {
     let folders = [], condition = "", scopes = session.countSearchScopes();

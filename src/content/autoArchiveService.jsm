@@ -2,7 +2,7 @@
 // GPL V3 / MPL
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchiveService"];
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
+const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/MailUtils.js");
@@ -611,7 +611,7 @@ let autoArchiveService = {
                   // before https://bugzilla.mozilla.org/show_bug.cgi?id=975795, batchMover._batches = { key: [folder, URI, ..., monthFolderName, msghdr1, msghdr2,...], ... }
                   // after, batchMover._batches = { key: srcFolder: msgHdr.folder, ...,  monthFolderName: monthFolderName, messages: [...] }, ... }
                   let { srcFolder: srcFolder, archiveFolderURI: archiveFolderURI, granularity: granularity, keepFolderStructure: keepFolderStructure, yearFolderName: msgYear, monthFolderName: msgMonth } = batchMover._batches[key];
-                  if ( batchMover._batches[key] instanceof Array )
+                  if ( !('srcFolder' in batchMover._batches[key]) )
                     [srcFolder, archiveFolderURI, granularity, keepFolderStructure, msgYear, msgMonth] = batchMover._batches[key];
                   let archiveFolder = MailUtils.getFolderForURI(archiveFolderURI, false);
                   let forceSingle = !archiveFolder.canCreateSubfolders;
