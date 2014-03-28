@@ -6,6 +6,7 @@ var EXPORTED_SYMBOLS = ["autoArchiveUtil"];
 const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
+Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
@@ -154,6 +155,37 @@ let autoArchiveUtil = {
       }
     } catch (err) { autoArchiveLog.logException(err); }
     return -1;
+  },
+  folderExists: function(folder) {
+    return folder && ( folder.parent || folder == folder.rootFolder );
+  },
+  getSearchSessionString: function(session) {
+    let folders = [], condition = "", scopes = session.countSearchScopes();
+    for ( let count = 0; count < scopes; count ++ ) {
+      let folder = {};
+      session.getNthSearchScope(count, {}, folder);
+      if ( folder && folder.value && folder.value.QueryInterface ) {
+        folder.value.QueryInterface(Ci.nsIMsgFolder);
+        folders.push(folder.value.URI);
+      }
+    }
+    
+    for ( let searchTerm in fixIterator(session.searchTerms, Ci.nsIMsgSearchTerm) ) {
+      if (condition.length > 0) condition += " ";
+      if (searchTerm.matchAll)
+        condition += "ALL";
+      else {
+        condition += searchTerm.booleanAnd ? "AND" : "OR";
+        condition += searchTerm.beginsGrouping && !searchTerm.endsGrouping ? " {" : "";
+      }
+      let converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Ci.nsIScriptableUnicodeConverter);
+      converter.charset = 'UTF-8';
+      let termString = converter.ConvertToUnicode(searchTerm.termAsString); // termAsString is ACString
+      condition += " (" + termString + ")"; 
+      // "}" may not balanced with "{", but who cares
+      condition += searchTerm.endsGrouping && !searchTerm.beginsGrouping ? " }" : "";
+    }
+    return "Searching\n" + folders.join('\n') + "\nwith\n" + condition;
   },
   cleanup: function() {
   },

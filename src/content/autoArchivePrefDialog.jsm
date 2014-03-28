@@ -13,6 +13,7 @@ Cu.import("resource:///modules/folderUtils.jsm");
 Cu.import("resource:///modules/MailUtils.js");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
+Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const perfDialogTooltipID = "awsome_auto_archive-perfDialogTooltip";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
@@ -45,7 +46,7 @@ let autoArchivePrefDialog = {
         label = msgFolder.prettyName;
         break;
       case 1:
-        label = "[" + msgFolder.server.prettyName + "] " + msgFolder.prettyName;
+        label = "[" + msgFolder.server.prettyName + "] " + ( msgFolder == msgFolder.rootFolder ? "/" : msgFolder.prettyName );
         break;
       case 2:
       default:
@@ -73,7 +74,7 @@ let autoArchivePrefDialog = {
   updateFolderStyle: function(folderPicker, folderPopup, init) {
     let msgFolder = this.getFolderAndSetLabel(folderPicker, false);
     let updateStyle = function() {
-      let hasError = !msgFolder.parent;
+      let hasError = !autoArchiveUtil.folderExists(msgFolder);
       try {
         if ( typeof(folderPopup.selectFolder) != 'undefined' ) folderPopup.selectFolder(msgFolder); // false alarm by addon validator
         else return;

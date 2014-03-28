@@ -192,7 +192,7 @@ let autoArchiveService = {
           try {
             autoArchiveLog.info("updateFolder " + uri);
             let folder = MailUtils.getFolderForURI(uri);
-            if ( folder ) {
+            if ( folder && folder.parent && folder != folder.rootFolder ) {
               folder.updateFolder(null); // this might call folderLIstener.OnItemEvent sync!
               success = true;
             }
@@ -452,7 +452,7 @@ let autoArchiveService = {
           // 0x80520012 (NS_ERROR_FILE_NOT_FOUND) [nsIMsgFolder.offlineStoreInputStream]
           if ( [0x80550006, 0x80004005, 0x80520012].indexOf(err.result) < 0  ) autoArchiveLog.logException(err);
         }
-        if ( offlineStream && msgDatabase && !realDestFolder.parent && destFolder.msgStore ) {
+        if ( offlineStream && msgDatabase && !autoArchiveUtil.folderExists(realDestFolder) && destFolder.msgStore ) {
           autoArchiveLog.info("Found hidden folder '" + realDestFolder.URI + "', update folder tree");
           destFolder.msgStore.discoverSubFolders(destFolder, true);
           if ( mail3PaneWindow.gFolderTreeView && mail3PaneWindow.gFolderTreeView._rebuild ) mail3PaneWindow.gFolderTreeView._rebuild();
@@ -461,7 +461,7 @@ let autoArchiveService = {
           //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
           return;
-        } else if ( !realDestFolder.parent && !offlineStream && ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
+        } else if ( !autoArchiveUtil.folderExists(realDestFolder) && !offlineStream && ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[realDestFolder.URI] = additonalNames;
         }
@@ -731,6 +731,7 @@ let autoArchiveService = {
   
   _doMoveOrArchiveOne: function() {
     if ( this._searchSession ) { // updateFolder done, continue to search now
+      autoArchiveLog.info(autoArchiveUtil.getSearchSessionString(this._searchSession));
       this._searchSession.search(null);
       return this._searchSession = null;
     }
@@ -774,7 +775,7 @@ let autoArchiveService = {
     } catch (err) {
       autoArchiveLog.logException(err);
     }
-    if ( !srcFolder || !srcFolder.parent || ( ["move", "copy"].indexOf(rule.action) >= 0 && ( !destFolder || !destFolder.parent ) ) ) {
+    if ( !autoArchiveUtil.folderExists(srcFolder) || ( ["move", "copy"].indexOf(rule.action) >= 0 && !autoArchiveUtil.folderExists(destFolder) ) ) {
       autoArchiveLog.log("Error: Wrong rule because folder does not exist: " + rule.src + ( ["move", "copy"].indexOf(rule.action) >= 0 ? ' or ' + rule.dest : '' ), 'Error!');
       return this.doMoveOrArchiveOne();
     }
