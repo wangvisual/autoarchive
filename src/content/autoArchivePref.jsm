@@ -69,7 +69,11 @@ let autoArchivePref = {
         this.prefs.setIntPref(key, value);
         break;
       default:
-        if ( key in this.complexPrefs ) this.prefs.setComplexValue(key, this.complexPrefs[key], value);
+        if ( key in this.complexPrefs ) {
+          let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
+          str.data = value;
+          this.prefs.setComplexValue(key, this.complexPrefs[key], str);
+        }
         else this.prefs.setCharPref(key, value);
     }
   },

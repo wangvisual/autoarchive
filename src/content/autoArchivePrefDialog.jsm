@@ -519,8 +519,11 @@ let autoArchivePrefDialog = {
     return rules;
   },
   acceptPerfWindow: function() {
-    autoArchiveLog.info("acceptPerfWindow");
-    if ( !this.instantApply ) autoArchivePref.setPerf('rules', this.syncToPerf());
+    try {
+      autoArchiveLog.info("acceptPerfWindow");
+      if ( !this.instantApply ) autoArchivePref.setPerf('rules', this.syncToPerf());
+    } catch (err) { autoArchiveLog.logException(err); }
+    return true;
   },
   unLoadPerfWindow: function() {
     if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog ) return true;

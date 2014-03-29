@@ -17,6 +17,7 @@
   }
   
   #awsome_auto_archive-rules-header {
+    background-image: -moz-linear-gradient(to bottom right, grey, rgba(0,255,0,0)); /* -moz is needed for TB < 16 */
     background-image: linear-gradient(to bottom right, grey, rgba(0,255,0,0));
     margin: 4px 2px 2px 2px;
   }
@@ -31,6 +32,7 @@
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule[awsome_auto_archive-focused=true] {
+    background-image: -moz-linear-gradient(to bottom right, grey, rgba(0,0,255,0));
     background-image: linear-gradient(to bottom right, grey, rgba(0,0,255,0));
   }
   
