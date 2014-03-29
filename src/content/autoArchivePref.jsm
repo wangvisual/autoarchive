@@ -69,7 +69,8 @@ let autoArchivePref = {
         this.prefs.setIntPref(key, value);
         break;
       default:
-        this.prefs.setCharPref(key, value);
+        if ( key in this.complexPrefs ) this.prefs.setComplexValue(key, this.complexPrefs[key], value);
+        else this.prefs.setCharPref(key, value);
     }
   },
   addPrefListener: function(listener) {
@@ -84,11 +85,12 @@ let autoArchivePref = {
   allPrefs: ['enable_verbose_info', 'rules', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'start_next_delay', 'rule_timeout', 'generate_rule_use',
              'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age', 'delete_duplicate_in_src',
              'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
+  complexPrefs: {'rules': Ci.nsISupportsString },
   rules: [],
-  observe: function(subject, topic, data) {
+  observe: function(subject, topic, key) {
     try {
       if (topic != "nsPref:changed") return;
-      switch(data) {
+      switch(key) {
         case "enable_verbose_info":
         case "enable_flag":
         case "enable_tag":
@@ -103,24 +105,22 @@ let autoArchivePref = {
         case 'show_tags':
         case 'show_age':
         case 'delete_duplicate_in_src':
-          this.options[data] = this.prefs.getBoolPref(data);
-          break;
-        case "rules":
-          this.options[data] = this.prefs.getCharPref(data);
+          this.options[key] = this.prefs.getBoolPref(key);
           break;
         default:
-          this.options[data] = this.prefs.getIntPref(data);
+          if ( key in this.complexPrefs ) this.options[key] = this.prefs.getComplexValue(key, this.complexPrefs[key]).data;
+          else this.options[key] = this.prefs.getIntPref(key);
           break;
       }
-      if ( data == 'enable_verbose_info' ) {
+      if ( key == 'enable_verbose_info' ) {
         autoArchiveLog.setVerbose(this.options.enable_verbose_info);
-      } else if ( data == 'alert_show_time' ) {
+      } else if ( key == 'alert_show_time' ) {
         autoArchiveLog.setPopupDelay(this.options.alert_show_time);
-      } else if ( data == 'rules' ) {
+      } else if ( key == 'rules' ) {
         if ( !this.InstantApply ) this.validateRules();
       }
       this.prefListeners.forEach( function(listener) {
-        listener.call(null, data);
+        listener.call(null, key);
       } );
     } catch (err) {
       autoArchiveLog.logException(err);
