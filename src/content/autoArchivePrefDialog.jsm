@@ -91,6 +91,11 @@ let autoArchivePrefDialog = {
         folderPicker.classList.remove("awsome_auto_archive-folderError");
         folderPicker.classList.add("folderMenuItem");
       }
+      if ( msgFolder.noSelect ) {
+        folderPicker.setAttribute("NoSelect", "true");
+        autoArchiveLog.info(msgFolder.URI + " NoSelect");
+      }
+      else folderPicker.removeAttribute("NoSelect");
       self.getFolderAndSetLabel(folderPicker, true);
     };
     if ( msgFolder.rootFolder ) {
@@ -108,6 +113,20 @@ let autoArchivePrefDialog = {
   },
   initFolderPick: function(folderPicker, folderPopup, isSrc) {
     folderPicker.addEventListener('command', function(aEvent) { return self.onFolderPick(folderPicker, aEvent, folderPopup); }, false);
+    /* Folders like [Gmail] are disabled by default, enable them, also true for IMAP servers like mercury/32, http://kb.mozillazine.org/Grey_italic_folders */
+    let nsResolver = function(prefix) {
+      let ns = { 'xul': "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" };
+      return ns[prefix] || null;
+    }
+    folderPicker.addEventListener('popupshown', function(aEvent) {
+      try {
+        let menuitems = self._doc.evaluate(".//xul:menuitem[@disabled='true' and @generated='true']", folderPicker, nsResolver, Ci.nsIDOMXPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        for ( let i=0 ; i < menuitems.snapshotLength; i++ ) {
+          menuitems.snapshotItem(i).removeAttribute('disabled');
+          menuitems.snapshotItem(i).setAttribute("NoSelect", "true"); // so it will show as in folder pane
+        }
+      } catch (err) { autoArchiveLog.logException(err); }
+    }, false);
     folderPicker.classList.add("folderMenuItem");
     folderPicker.setAttribute("sizetopopup", "none");
     folderPicker.setAttribute("crop", "center");
