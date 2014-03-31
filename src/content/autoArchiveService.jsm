@@ -571,10 +571,13 @@ let autoArchiveService = {
             self.copyGroups[groups[key]].messages.push(msgHdr);
             actions[action] = true;
           } );
-          autoArchiveLog.info("will do " + Object.keys(actions).join(' and ') + " in " + self.copyGroups.length + " steps");
-          autoArchiveLog.logObject(groups, 'groups', 0);
-          autoArchiveLog.logObject(self.copyGroups, 'self.copyGroups', 1);
-          self.doCopyDeleteMoveOne(self.copyGroups.shift());
+          if ( self.copyGroups.length == 0 ) self.doMoveOrArchiveOne();
+          else {
+            autoArchiveLog.info("will do " + Object.keys(actions).join(' and ') + " in " + self.copyGroups.length + " steps");
+            autoArchiveLog.logObject(groups, 'groups', 0);
+            autoArchiveLog.logObject(self.copyGroups, 'self.copyGroups', 1);
+            self.doCopyDeleteMoveOne(self.copyGroups.shift());
+          }
         } else {
           if ( autoArchivePref.options.dry_run || self.dry_run ) {
             this.messages.forEach( function(msgHdr) {
