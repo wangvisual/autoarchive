@@ -159,6 +159,9 @@ let autoArchiveUtil = {
   folderExists: function(folder) {
     return folder && ( folder.parent || folder.isServer );
   },
+  createFolderAsync: function(folder) {
+    return folder.server && folder.server.type != 'none' && folder.server.protocolInfo && folder.server.protocolInfo.foldersCreatedAsync;
+  },
   getSearchSessionString: function(session) {
     let folders = [], condition = "", scopes = session.countSearchScopes();
     for ( let count = 0; count < scopes; count ++ ) {

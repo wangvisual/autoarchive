@@ -175,7 +175,7 @@ let autoArchiveService = {
   folderListener: {
     called: false, // to prevent call doMoveOrArchiveOne etc more than once
     OnItemEvent: function(folder, event) {
-      if ( event.toString() != "FolderLoaded" || !folder || ! 'URI' in folder ) return;
+      if ( event.toString() != "FolderLoaded" || !folder || !('URI' in folder) ) return;
       let updateNext = false;
       if ( folder.URI ) autoArchiveLog.info("FolderLoaded " + folder.URI);
       else {
@@ -418,14 +418,14 @@ let autoArchiveService = {
           // but IMAP folders don't use %20,
           // when we create folders, we can only use 'hello world', never use 'hello%20world'
           let tmpFolder = msgHdr.folder, rootFolder = tmpFolder.server.rootFolder;
-          while ( tmpFolder && tmpFolder != srcFolder && tmpFolder != rootFolder ) {
+          while ( tmpFolder && tmpFolder != srcFolder && tmpFolder != rootFolder ) { // this loop might run each time for every messages hit
             additonalNames.unshift(tmpFolder.name); // [ 'test', 'hello world' ]
             tmpFolder = tmpFolder.parent;
           }
           if ( additonalNames.length ) additonal = '/' + additonalNames.join('/');
           realDest = rule.dest + additonal;
         }
-        // autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
+        //autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
         if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
         if ( realDestFolder.locked ) return;
@@ -461,11 +461,11 @@ let autoArchiveService = {
           //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
           return;
-        } else if ( !autoArchiveUtil.folderExists(realDestFolder) && !offlineStream && ! (realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
+        } else if ( !autoArchiveUtil.folderExists(realDestFolder) && !offlineStream && !(realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[realDestFolder.URI] = additonalNames;
         }
-        this.messagesDest[msgHdr.messageId] = realDest;
+        this.messagesDest[msgHdr.folder.URI + " _ " + msgHdr.messageId] = realDest;
       }
       //autoArchiveLog.info("add message:" + msgHdr.mime2DecodedSubject);
       self.totalSize += msgHdr.messageSize; actionSize += msgHdr.messageSize;
@@ -496,14 +496,12 @@ let autoArchiveService = {
             } );
             delete this.missingFolders;
           } else {
-            if ( !destFolder.server.protocolInfo.foldersCreatedAsync )
-              autoArchiveLog.info("create folders sync");
-            else {
+            if ( autoArchiveUtil.createFolderAsync(destFolder) ) {
               autoArchiveLog.info("create folders async");
               //MailServices.mfn.addListener(this, MailServices.mfn.folderAdded);
               MailServices.mailSession.AddFolderListener(this, Ci.nsIFolderListener.added);
               self.folderListeners.push(this);
-            }
+            } else autoArchiveLog.info("create folders sync");
             return this.OnItemAdded(); // OnItemAdded will chain to create next folder, CopyMessages can create the folder on the fly, but won't show it, and sometimes failed
           }
         }
@@ -530,7 +528,7 @@ let autoArchiveService = {
               // if DB is messed-up, then the (wrong) folder might be invisible but there
               autoArchiveLog.info("Creating folder '" + folder.URI + "' => '" + folderName + "'");
               folder.createSubfolder(folderName, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
-              if ( destFolder.server.protocolInfo.foldersCreatedAsync ) return true; // if async, break 'some'
+              if ( autoArchiveUtil.createFolderAsync(destFolder) ) return true; // if async, break 'some'
             }
           } catch(err) { autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString()); }
           folder = folder.getChildNamed(folderName); // if folder exists, or sync creation
@@ -542,7 +540,7 @@ let autoArchiveService = {
       
       if ( ( 'missingFolders' in this ) && Object.keys(this.missingFolders).length == 0 ) {
         autoArchiveLog.info("All folders created");
-        if ( destFolder.server.protocolInfo.foldersCreatedAsync ) self.removeFolderListener(this);
+        if ( autoArchiveUtil.createFolderAsync(destFolder) ) self.removeFolderListener(this);
         delete this.missingFolders;
         return this.processHeaders();
       }
@@ -557,7 +555,7 @@ let autoArchiveService = {
           let messages = this.messages;
           if ( removingDuplicate ) messages.push.apply(messages, duplicateHit);
           messages.forEach( function(msgHdr) {
-            let dest = listener.messagesDest[msgHdr.messageId] || rule.dest || '', action = rule.action;
+            let dest = listener.messagesDest[msgHdr.folder.URI + " _ " + msgHdr.messageId] || rule.dest || '', action = rule.action;
             if ( removingDuplicate && duplicateHit.indexOf(msgHdr) >= 0 ) {
               dest = '';
               action = 'delete';
@@ -614,7 +612,7 @@ let autoArchiveService = {
                   // before https://bugzilla.mozilla.org/show_bug.cgi?id=975795, batchMover._batches = { key: [folder, URI, ..., monthFolderName, msghdr1, msghdr2,...], ... }
                   // after, batchMover._batches = { key: srcFolder: msgHdr.folder, ...,  monthFolderName: monthFolderName, messages: [...] }, ... }
                   let { srcFolder: srcFolder, archiveFolderURI: archiveFolderURI, granularity: granularity, keepFolderStructure: keepFolderStructure, yearFolderName: msgYear, monthFolderName: msgMonth } = batchMover._batches[key];
-                  if ( !('srcFolder' in batchMover._batches[key]) )
+                  if ( !('srcFolder' in batchMover._batches[key]) ) // instanceof Array won't work, Array.isArray() should, see http://web.mit.edu/jwalden/www/isArray.html 
                     [srcFolder, archiveFolderURI, granularity, keepFolderStructure, msgYear, msgMonth] = batchMover._batches[key];
                   let archiveFolder = MailUtils.getFolderForURI(archiveFolderURI, false);
                   let forceSingle = !archiveFolder.canCreateSubfolders;
@@ -766,11 +764,14 @@ let autoArchiveService = {
         self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
         if ( rule.sub == 2 ) {
           let folders = destFolder.descendants /* >=TB21 */;
-          if ( ! 'descendants' in destFolder ) {
-            folders = toXPCOMArray([destFolder], Ci.nsIMutableArray);
-            destFolder.ListDescendants(folders); 
+          if ( !('descendants' in destFolder) ) {
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=436089
+            // ListDescendents(nsISupportsArray) V.S.
+            // ListDescendants(nsIMutableArray) && .descendants
+            folders = toXPCOMArray([destFolder], Ci.nsISupportsArray);
+            destFolder.ListDescendents(folders); 
           }
-          for (let folder in fixIterator(folders, Ci.nsIMsgFolder)) {
+          for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
             self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
           }
         }
@@ -817,11 +818,11 @@ let autoArchiveService = {
       self.wait4Folders[rule.src] = self.accessedFolders[rule.src] = true;
       if ( rule.sub ) {
         let folders = srcFolder.descendants /* >=TB21 */;
-        if ( ! 'descendants' in srcFolder ) {
-          folders = toXPCOMArray([srcFolder], Ci.nsIMutableArray);
-          srcFolder.ListDescendants(folders); 
+        if ( !('descendants' in srcFolder) ) {
+          folders = toXPCOMArray([srcFolder], Ci.nsISupportsArray);
+          srcFolder.ListDescendents(folders);
         }
-        for (let folder in fixIterator(folders, Ci.nsIMsgFolder)) {
+        for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
