@@ -173,6 +173,9 @@ let autoArchiveLog = {
     if (!compress)  s += pfx + "|\n";
     return s;
   },
+  ignoreArray: new Array(),
+  ignoreMap: new Map(),
+  ignoreString: new String(),
   objectTreeAsString: function(o, recurse, compress, level) {
     let s = "";
     let pfx = "";
@@ -198,18 +201,18 @@ let autoArchiveLog = {
           properties = properties.concat(Object.getOwnPropertyNames(objectToInspect));
         for ( let i of properties ) {
           try {
-            if ( i in _listed ) continue;
+            if ( i in _listed || i in this.ignoreArray || i in this.ignoreMap || i in this.ignoreString ) continue;
             _listed[i] = true;
-            s += this.dumpValue(o[i], i, recurse, compress, pfx, tee, level);
+            s += this.dumpValue(o[i], i, recurse, compress, pfx, tee, level, '');
           } catch (ex) { s += pfx + tee + " (exception) " + ex + "\n"; }
         }
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map, Map is not Object        
         if ( typeof(o.keys) == 'function' && typeof(o.get) == 'function' ) {
           for ( let i of o.keys() ) {
             try {
-              if ( i in _listed ) continue;
+              if ( i in _listed || i in this.ignoreArray || i in this.ignoreMap || i in this.ignoreString ) continue;
               _listed[i] = true;
-              s += this.dumpValue(o.get(i), i, recurse, compress, pfx, tee, level);
+              s += this.dumpValue(o.get(i), i, recurse, compress, pfx, tee, level, ' => ');
             } catch (ex) { s += pfx + tee + " (exception) " + ex + "\n"; }
           }
         }
@@ -225,7 +228,7 @@ let autoArchiveLog = {
   logObject: function(obj, name, maxDepth, curDepth) {
     if (!this.verbose) return;
     this._checked = [];
-    this.info(name + ":\n" + this.objectTreeAsString(obj,maxDepth,true));
+    this.info(name + ": " + ( typeof(obj) == 'object' ? obj : '' ) + "\n" + this.objectTreeAsString(obj,maxDepth,true));
     this._checked = [];
   },
   
