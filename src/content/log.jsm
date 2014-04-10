@@ -139,36 +139,36 @@ let autoArchiveLog = {
   },
   
   // from errorUtils.js
-  dumpValue: function(value, i, recurse, compress, pfx, tee, level) {
+  dumpValue: function(value, i, recurse, compress, pfx, tee, level, map) {
     let t = "", s= "";
     try { t = typeof(value); }
     catch (err) { s += pfx + tee + " (exception) " + err + "\n"; }
     switch (t) {
       case "function":
         let sfunc = String(value).split("\n");
-        if ( typeof(sfunc[2]) != 'undefined' && sfunc[2] == "    [native code]" )
+        if ( String(value).match(/^\s+\[native code\]$/m) )
           sfunc = "[native code]";
         else
           sfunc = sfunc.length + " lines";
-        s += pfx + tee + i + " (function) " + sfunc + "\n";
+        s += pfx + tee + i + " (function) " + map + sfunc + "\n";
         break;
       case "object":
-        s += pfx + tee + i + " (object) " + value + "\n";
+        s += pfx + tee + i + " (object) " + map + value + "\n";
         if (!compress)
           s += pfx + "|\n";
         if ((i != "parent") && (recurse) && value != null)
           s += this.objectTreeAsString(value, recurse - 1, compress, level + 1);
         break;
       case "string":
-        if (value.length > 8192)
-          s += pfx + tee + i + " (" + t + ") " + value.length + " chars\n";
+        if (value.length > 8192 + 5)
+          s += pfx + tee + i + " (" + t + ")" + map + "'" + value.substr(0, 8192) + "' ... (" + value.length + " chars)\n";
         else
-          s += pfx + tee + i + " (" + t + ") '" + value + "'\n";
+          s += pfx + tee + i + " (" + t + ")" + map + "'" + value + "'\n";
         break;
       case "":
         break;
       default:
-        s += pfx + tee + i + " (" + t + ") " + value + "\n";
+        s += pfx + tee + i + " (" + t + ") " + map + value + "\n";
     }
     if (!compress)  s += pfx + "|\n";
     return s;
@@ -216,6 +216,14 @@ let autoArchiveLog = {
             } catch (ex) { s += pfx + tee + " (exception) " + ex + "\n"; }
           }
         }
+        // nsIMsgDBHdr
+        if ( typeof(o.propertyEnumerator) == 'object' && typeof(o.getStringProperty) == 'function' ) {
+          let e = o.propertyEnumerator;
+          while ( e.hasMore() ) {
+            let i = e.getNext();
+            s += this.dumpValue(o.getStringProperty(i), i, recurse, compress, pfx, tee, level, ' -> ');
+          }
+        }
       }
     } catch (ex) {
       s += pfx + tee + " (exception) " + ex + "\n";
@@ -228,7 +236,7 @@ let autoArchiveLog = {
   logObject: function(obj, name, maxDepth, curDepth) {
     if (!this.verbose) return;
     this._checked = [];
-    this.info(name + ": " + ( typeof(obj) == 'object' ? obj : '' ) + "\n" + this.objectTreeAsString(obj,maxDepth,true));
+    this.info(name + ": " + ( typeof(obj) == 'object' ? ( Array.isArray(obj) ? 'Array' : obj ) : '' ) + "\n" + this.objectTreeAsString(obj,maxDepth,true));
     this._checked = [];
   },
   
