@@ -92,7 +92,7 @@
               <hbox>
                 <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('mozilla');" />
                 <label value="               " flex="100"/>
-                <image style="cursor:pointer;" src="donate-with-alipay.png" onclick="autoArchiveUtil.loadDonate('alipay');" />
+                <image style="cursor:pointer;" src="donate-with-alipay.png" tooltip='awsome_auto_archive-perfDialogAlipayDonate' onclick="autoArchiveUtil.loadDonate('alipay');" />
               </hbox>
               <label/>
             </vbox>
@@ -234,6 +234,9 @@
 <popupset>
   <tooltip id="awsome_auto_archive-perfDialogTooltip">
     <vbox><label/><description/><description/><description/></vbox>
+  </tooltip>
+  <tooltip id="awsome_auto_archive-perfDialogAlipayDonate">
+    <image src="qr-alipay.png"/>
   </tooltip>
   <menupopup id='awsome_auto_archive-rule-header-context'>
     <menuitem preference="pref.show_from" label="&awsome_auto_archive.perf.show_filter_column.from;" preference-editable="true" onsyncfrompreference='return autoArchivePrefDialog.syncFromPerf4Filter(this);' onsynctopreference='return autoArchivePrefDialog.syncToPerf4Filter(this);' type="checkbox"/>
