@@ -447,11 +447,7 @@ let autoArchiveService = {
           self.accessedFolders[realDest] = 1;
           destHdr = msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
           offlineStream = realDestFolder.offlineStoreInputStream;
-        } catch(err) {
-          // 0x80004005 (NS_ERROR_FAILURE)
-          // 0x80520012 (NS_ERROR_FILE_NOT_FOUND) [nsIMsgFolder.offlineStoreInputStream]
-          if ( [0x80550006, 0x80004005, 0x80520012].indexOf(err.result) < 0  ) autoArchiveLog.logException(err);
-        }
+        } catch(err) autoArchiveLog.logException(err, 0);
         if ( offlineStream && msgDatabase && !autoArchiveUtil.folderExists(realDestFolder) && destFolder.msgStore ) {
           autoArchiveLog.info("Found hidden folder '" + realDestFolder.URI + "', update folder tree");
           destFolder.msgStore.discoverSubFolders(destFolder, true);
