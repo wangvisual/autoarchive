@@ -198,30 +198,30 @@ let autoArchiveUtil = {
       let encoder = new TextEncoder();
       let dirName = OS.Path.join(OS.Constants.Path.profileDir, "awsomeautoarchive");
       let fileName = OS.Path.join(dirName, "rules." + new Date().toISOString().replace(/\W/g, '_'));
-      OS.File.makeDir(dirName, {ignoreExisting: true}).then( function() {
-        return OS.File.writeAtomic(fileName, encoder.encode(rules), {tmpPath: fileName + ".tmp"}).then( function() {
+      OS.File.makeDir(dirName, {ignoreExisting: true}).then( () => {
+        return OS.File.writeAtomic(fileName, encoder.encode(rules), {tmpPath: fileName + ".tmp"}).then( () => {
           Services.console.logStringMessage("success backup rule to " + fileName);
           let entries = [];
           let iterator = new OS.File.DirectoryIterator(dirName);
-          iterator.forEach(function(entry) {
+          iterator.forEach( entry => {
             if ("winLastWriteDate" in entry)
               entries.push({entry: entry, creationDate: entry.winCreationDate});
-            else return OS.File.stat(entry.path).then( function onSuccess(info) {
+            else return OS.File.stat(entry.path).then( info => {
               entries.push({entry:entry, creationDate: info.creationDate});
             });
-          }).then(function() {
+          }).then( () => {
             iterator.close();
             return Promise.all(
-              entries.sort(function(a, b) {
+              entries.sort( (a, b) => {
                 return b.creationDate - a.creationDate;
-              }).filter(function(element, index){
+              }).filter( (element, index) => {
                 return index >= KEEPS_BACKUP_RULES_COUNT;
-              }).map( function(entry) {
-                Services.console.logStringMessage("remove old backup rule file:" + entry.entry.path);
+              }).map( entry => {
+                Services.console.logStringMessage("remove old backup rule file " + entry.entry.path);
                 return OS.File.remove(entry.entry.path);
               })
             );
-          }, function(reason) {
+          }, reason => {
             iterator.close();
             throw reason;
           });
