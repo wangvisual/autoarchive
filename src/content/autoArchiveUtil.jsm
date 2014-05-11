@@ -8,9 +8,12 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
+Cu.import("resource://gre/modules/osfile.jsm");
+Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const KEEPS_BACKUP_RULES_COUNT = 10;
 
 let autoArchiveUtil = {
   Name: "Awesome Auto Archive", // might get changed by getAddonByID function call
@@ -189,6 +192,42 @@ let autoArchiveUtil = {
       condition += searchTerm.endsGrouping && !searchTerm.beginsGrouping ? " }" : "";
     }
     return "Searching\n" + folders.join('\n') + "\nwith\n" + condition;
+  },
+  backupRules: function(rules) {
+    try {
+      let encoder = new TextEncoder();
+      let dirName = OS.Path.join(OS.Constants.Path.profileDir, "awsomeautoarchive");
+      let fileName = OS.Path.join(dirName, "rules." + new Date().toISOString().replace(/\W/g, '_'));
+      OS.File.makeDir(dirName, {ignoreExisting: true}).then( function() {
+        return OS.File.writeAtomic(fileName, encoder.encode(rules), {tmpPath: fileName + ".tmp"}).then( function() {
+          Services.console.logStringMessage("success backup rule to " + fileName);
+          let entries = [];
+          let iterator = new OS.File.DirectoryIterator(dirName);
+          iterator.forEach(function(entry) {
+            if ("winLastWriteDate" in entry)
+              entries.push({entry: entry, creationDate: entry.winCreationDate});
+            else return OS.File.stat(entry.path).then( function onSuccess(info) {
+              entries.push({entry:entry, creationDate: info.creationDate});
+            });
+          }).then(function() {
+            iterator.close();
+            return Promise.all(
+              entries.sort(function(a, b) {
+                return b.creationDate - a.creationDate;
+              }).filter(function(element, index){
+                return index >= KEEPS_BACKUP_RULES_COUNT;
+              }).map( function(entry) {
+                Services.console.logStringMessage("remove old backup rule file:" + entry.entry.path);
+                return OS.File.remove(entry.entry.path);
+              })
+            );
+          }, function(reason) {
+            iterator.close();
+            throw reason;
+          });
+        });
+      }).then(null, Cu.reportError);
+    } catch (err) { autoArchiveLog.logException(err); }
   },
   cleanup: function() {
   },

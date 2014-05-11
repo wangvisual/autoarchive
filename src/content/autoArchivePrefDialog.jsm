@@ -545,7 +545,8 @@ let autoArchivePrefDialog = {
     return true;
   },
   unLoadPerfWindow: function() {
-    if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog ) return true;
+    if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog || !autoArchiveUtil ) return true;
+    if ( this._savedRules != autoArchivePref.options.rules ) autoArchiveUtil.backupRules(autoArchivePref.options.rules);
     autoArchiveService.removeStatusListener(this.statusCallback);
     let tooltip = this._doc.getElementById(perfDialogTooltipID);
     if ( tooltip ) tooltip.removeEventListener("popupshowing", this.PopupShowing, true);

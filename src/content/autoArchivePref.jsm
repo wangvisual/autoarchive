@@ -90,7 +90,6 @@ let autoArchivePref = {
              'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age', 'delete_duplicate_in_src',
              'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
   complexPrefs: {'rules': Ci.nsISupportsString },
-  rules: [],
   observe: function(subject, topic, key) {
     try {
       if (topic != "nsPref:changed") return;
