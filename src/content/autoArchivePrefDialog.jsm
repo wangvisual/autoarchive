@@ -534,7 +534,7 @@ let autoArchivePrefDialog = {
         }
       }
       // autoArchiveLog.logObject(rules,'got rules',1);
-    } catch (err) { autoArchiveLog.logException(err); }
+    } catch (err) { autoArchiveLog.logException(err); throw err; } // throw the error out so syncToPerf won't get an empty rules
     return rules;
   },
   acceptPerfWindow: function() {
