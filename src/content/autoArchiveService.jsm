@@ -216,7 +216,10 @@ let autoArchiveService = {
       autoArchiveLog.info("OnStart " + group.action);
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
       try {
-        if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay && mail3PaneWindow.gFolderDisplay.view && mail3PaneWindow.gFolderDisplay.view.dbView ) mail3PaneWindow.gFolderDisplay.hintMassMoveStarting();
+        if ( mail3PaneWindow && mail3PaneWindow.gFolderDisplay && mail3PaneWindow.gFolderDisplay.view && mail3PaneWindow.gFolderDisplay.view.dbView ) {
+          mail3PaneWindow.gFolderDisplay.hintMassMoveStarting();
+          mail3PaneWindow.gFolderDisplay._nextViewIndexAfterDelete = null; // then when call hintMassMoveCompleted, no selection change
+        }
       } catch(err) { autoArchiveLog.logException(err); }
     };
     this.OnProgress = function(aProgress, aProgressMax) {
@@ -637,6 +640,10 @@ let autoArchiveService = {
             let result = invocation.proceed();
             myFunc(result);
             autoArchiveLog.info("BatchMessageMover processNextBatch exit");
+            return result;
+          } )[0] );
+          if ( mail3PaneWindow.gFolderDisplay ) self.hookedFunctions.push( autoArchiveaop.after( {target: mail3PaneWindow.gFolderDisplay, method: 'hintMassMoveStarting'}, function(result) {
+            mail3PaneWindow.gFolderDisplay._nextViewIndexAfterDelete = null; // prevent selection change
             return result;
           } )[0] );
           autoArchiveLog.info("Start doing archive");
