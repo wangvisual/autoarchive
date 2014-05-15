@@ -342,8 +342,12 @@ let autoArchiveService = {
     let count = 0;
     for ( let key in servers ) {
       try {
-        let listener = new self.serverListener(key);
-        let URI = servers[key].verifyLogon(listener, null);
+        let server = servers[key], listener = new self.serverListener(key), URI;
+        // verifyLogon will zero popstate.dat and cause duplicate mails for POP3
+        if ( server instanceof Ci.nsIPop3IncomingServer ) {
+          let inbox = server.rootMsgFolder.getFolderWithFlags(Ci.nsMsgFolderFlags.Inbox);
+          URI = MailServices.pop3.CheckForNewMail(null, listener, inbox, server);
+        } else URI = server.verifyLogon(listener, null);
         self.serverStatus['_listeners_'].push(listener); // the listener can be unregistered if clear / stop
         listener.URI = URI;
         autoArchiveLog.info("Checking if server " + key + " on line using " + URI.spec);
