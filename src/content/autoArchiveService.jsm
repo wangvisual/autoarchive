@@ -267,7 +267,7 @@ let autoArchiveService = {
       try {
         folder = MailUtils.getFolderForURI(uri);
       } catch(err) { autoArchiveLog.logException(err); }
-      if ( folder ) folders.push(folder);
+      if ( folder && self.wait4Folders[uri] != 2 ) folders.push(folder);
       else delete self.wait4Folders[uri];
     } );
     return folders;
@@ -326,9 +326,9 @@ let autoArchiveService = {
         } else needCheck = true;
       }
       if ( needCheck ) {
-        // serverBusy means we already getting new Messages
-        // performingBiff: are we running a url as a result of biff going off
+        if ( !Services.logins.isLoggedIn || server.passwordPromptRequired ) return ( hasBad = true );
         autoArchiveLog.info("needCheck mail server: " + server.prettyName);
+        // serverBusy means we already getting new Messages
         if ( server.serverBusy || ( server instanceof Ci.nsIPop3IncomingServer && server.runningProtocol ) )
           self.serverStatus[server.key] = { OK: true, time: Date.now() };
         else servers[server.key] = server;
@@ -346,7 +346,16 @@ let autoArchiveService = {
         // verifyLogon will zero popstate.dat and cause duplicate mails for POP3
         if ( server instanceof Ci.nsIPop3IncomingServer ) {
           let inbox = server.rootMsgFolder.getFolderWithFlags(Ci.nsMsgFolderFlags.Inbox);
-          URI = MailServices.pop3.CheckForNewMail(null, listener, inbox, server);
+          // server.loginAtStartUp: check for new mail @ startup
+          // server.doBiff: check for new mail every n minutes
+          // server.downloadOnBiff: automatically download new messages
+          let headers_only = false;
+          try {
+            headers_only = Services.prefs.getBoolPref("mail.server." + key + ".headers_only");
+          } catch(err) {}
+          let download = ( server.loginAtStartUp || server.doBiff ) && server.downloadOnBiff && !headers_only;
+          autoArchiveLog.info( ( download ? "downloading" : "checking" ) + " emails for server " + server.prettyName);
+          URI = download ? MailServices.pop3.GetNewMail(null, listener, inbox, server) : MailServices.pop3.CheckForNewMail(null, listener, inbox, server);
         } else URI = server.verifyLogon(listener, null);
         self.serverStatus['_listeners_'].push(listener); // the listener can be unregistered if clear / stop
         listener.URI = URI;
@@ -771,13 +780,6 @@ let autoArchiveService = {
         self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
         if ( rule.sub == 2 ) {
           let folders = destFolder.descendants /* >=TB21 */;
-          if ( !('descendants' in destFolder) ) {
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=436089
-            // ListDescendents(nsISupportsArray) V.S.
-            // ListDescendants(nsIMutableArray) && .descendants
-            folders = toXPCOMArray([destFolder], Ci.nsISupportsArray);
-            destFolder.ListDescendents(folders); 
-          }
           for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
             self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
           }
@@ -807,7 +809,8 @@ let autoArchiveService = {
         if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) return;
         autoArchiveLog.info("Add src folder " + folder.URI);
         searchSession.addScopeTerm(scope, folder);
-        self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
+        self.accessedFolders[folder.URI] = true;
+        self.wait4Folders[folder.URI] = (rule.action == 'copy' ? 2 : true); // when copy, don't check if server is online or not
       } );
       let terms = virtFolder.searchTerms;
       //for (let term in fixIterator(terms, Ci.nsIMsgSearchTerm)) {
@@ -822,13 +825,10 @@ let autoArchiveService = {
       }
     } else {
       searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, srcFolder);
-      self.wait4Folders[rule.src] = self.accessedFolders[rule.src] = true;
+      self.accessedFolders[rule.src] = true;
+      self.wait4Folders[rule.src] = (rule.action == 'copy' ? 2 : true);
       if ( rule.sub ) {
         let folders = srcFolder.descendants /* >=TB21 */;
-        if ( !('descendants' in srcFolder) ) {
-          folders = toXPCOMArray([srcFolder], Ci.nsISupportsArray);
-          srcFolder.ListDescendents(folders);
-        }
         for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
@@ -836,7 +836,8 @@ let autoArchiveService = {
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
           if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
-          self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
+          self.accessedFolders[folder.URI] = true;
+          self.wait4Folders[folder.URI] = (rule.action == 'copy' ? 2 : true);
         }
       }
     }
@@ -923,6 +924,7 @@ let autoArchiveService = {
 
 };
 
-// MailUtils.discoverFolders(); // https://bugzilla.mozilla.org/show_bug.cgi?id=502900
+// avoid error like 'Wrong rule because folder does not exist' if doArchive called very early
+MailUtils.discoverFolders(); // https://bugzilla.mozilla.org/show_bug.cgi?id=502900
 let self = autoArchiveService;
 self.preStart(autoArchivePref.options.startup_delay);
