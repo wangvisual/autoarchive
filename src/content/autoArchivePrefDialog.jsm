@@ -33,6 +33,11 @@ let autoArchivePrefDialog = {
   showPrettyTooltip: function(URI,pretty) {
     return decodeURIComponent(URI).replace(/(.*\/)[^/]*/, '$1') + pretty;
   },
+  getPrettyName: function(msgFolder) {
+    // access msgFolder.prettyName for non-existing local folder may cause creating wrong folder
+    if ( !( msgFolder instanceof Ci.nsIMsgFolder ) || msgFolder.server.type != 'none' || autoArchiveUtil.folderExists(msgFolder) ) return msgFolder.prettyName;
+    return msgFolder.URI.replace(/^.*\/([^\/]+)/,'$1');
+  },
   getFolderAndSetLabel: function(folderPicker, setLabel) {
     let msgFolder = {value: '', prettyName: 'N/A', server: {}};
     try {
@@ -43,14 +48,14 @@ let autoArchivePrefDialog = {
     let label = "";
     switch ( showFolderAs.value ) {
       case 0:
-        label = msgFolder.prettyName;
+        label = self.getPrettyName(msgFolder);
         break;
       case 1:
-        label = "[" + msgFolder.server.prettyName + "] " + ( msgFolder == msgFolder.rootFolder ? "/" : msgFolder.prettyName );
+        label = "[" + msgFolder.server.prettyName + "] " + ( msgFolder == msgFolder.rootFolder ? "/" : self.getPrettyName(msgFolder) );
         break;
       case 2:
       default:
-        label = self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName);
+        label = self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, self.getPrettyName(msgFolder));
         break;
     }
     folderPicker.setAttribute("label", label);
@@ -78,13 +83,13 @@ let autoArchivePrefDialog = {
       try {
         if ( typeof(folderPopup.selectFolder) != 'undefined' ) folderPopup.selectFolder(msgFolder); // false alarm by addon validator
         else return;
-        folderPopup._setCssSelectors(msgFolder, folderPicker);
+        if ( !hasError ) folderPopup._setCssSelectors(msgFolder, folderPicker); // _setCssSelectors may also create wrong local folders
       } catch(err) {
         hasError = true;
         //autoArchiveLog.logException(err);
       }
       if ( hasError ) {
-        autoArchiveLog.info("Error: folder '" + msgFolder.prettyName + "' can't be selected");
+        autoArchiveLog.info("Error: folder '" + self.getPrettyName(msgFolder) + "' can't be selected");
         folderPicker.classList.add("awsome_auto_archive-folderError");
         folderPicker.classList.remove("folderMenuItem");
       } else {
@@ -99,7 +104,7 @@ let autoArchivePrefDialog = {
       if ( init ) this._win.setTimeout( updateStyle, 0 ); // use timer to wait for the XBL bindings add SelectFolder / _setCssSelectors to popup
       else updateStyle();
     }
-    folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, msgFolder.prettyName));
+    folderPicker.setAttribute('tooltiptext', self.showPrettyTooltip(msgFolder.ValueUTF8||msgFolder.value, self.getPrettyName(msgFolder)));
   },
   onFolderPick: function(folderPicker, aEvent, folderPopup) {
     let folder = aEvent.target._folder;
@@ -487,7 +492,7 @@ let autoArchivePrefDialog = {
               let addressBook = allAddressBooks.getNext().QueryInterface(Ci.nsIAbDirectory);
               if ( addressBook instanceof Ci.nsIAbDirectory /*&& !addressBook.isRemote*/ ) {
                 try {
-                  card = addressBook.cardForEmailAddress(email); // case-insensitive && sync, only retrun 1st one if multiple match, but it search on all email addresses
+                  card = addressBook.cardForEmailAddress(email); // case-insensitive && sync, only return 1st one if multiple match, but it search on all email addresses
                 } catch (err) {}
                 if ( card ) {
                   let PreferDisplayName = Number(card.getProperty('PreferDisplayName', 1));
