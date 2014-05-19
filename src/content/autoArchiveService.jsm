@@ -388,6 +388,7 @@ let autoArchiveService = {
     let allTags = {};
     let searchHit = 0;
     let duplicateHit = [];
+    let skipReason = { duplicate: 0, exceed: 0, cantDelete: 0, deleted: 0, srcLocked: 0, destLocked: 0, flaged: 0, unread: 0, tags: 0, cantArchive: 0, offline: 0 };
     let actionSize = 0;
     let listener = this;
     for ( let tag of MailServices.tags.getAllTags({}) ) {
@@ -402,29 +403,30 @@ let autoArchiveService = {
       //autoArchiveLog.info("search hit message:" + msgHdr.mime2DecodedSubject);
       //let str = ''; let e = msgHdr.propertyEnumerator; let str = "property:\n"; while ( e.hasMore() ) { let k = e.getNext(); str += k + ":" + msgHdr.getStringProperty(k) + "\n"; }; autoArchiveLog.info(str);
       searchHit ++;
-      if ( self.isExceed ) return;
+      if ( self.isExceed ) return skipReason.exceed++;
       if ( self.numOfMessages > 0 // if only one big message exceed the size limit, we still accept it
         && ( ( autoArchivePref.options.messages_number_limit > 0 && self.numOfMessages >= autoArchivePref.options.messages_number_limit )
           || ( autoArchivePref.options.messages_size_limit > 0 && self.totalSize + msgHdr.messageSize > autoArchivePref.options.messages_size_limit * 1024 * 1024 ) ) ) {
         self.isExceed = true;
-        return;
+        return skipReason.exceed++;
       }
       if ( !msgHdr.messageId || !msgHdr.folder || !msgHdr.folder.URI || msgHdr.folder.URI == rule.dest ) return;
-      if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return;
-      if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return;
+      if ( ['delete', 'move'].indexOf(rule.action) >= 0 && !msgHdr.folder.canDeleteMessages ) return skipReason.cantDelete++;
+      if ( msgHdr.flags & (Ci.nsMsgMessageFlags.Expunged|Ci.nsMsgMessageFlags.IMAPDeleted) ) return skipReason.deleted++;
       let age = ( Date.now() / 1000 - msgHdr.dateInSeconds ) / 3600 / 24;
-      if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 && 
-        ( msgHdr.folder.locked ||
-          ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) ||
-          ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) ||
-          ( typeof(rule.tags) == 'undefined' && this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) ) ) return;
+      if ( ["move", "delete", "archive"].indexOf(rule.action) >= 0 ) {
+        if ( msgHdr.folder.locked ) return skipReason.srcLocked++;
+        if ( msgHdr.isFlagged && ( !autoArchivePref.options.enable_flag || age < autoArchivePref.options.age_flag ) ) return skipReason.flaged++;
+        if ( !msgHdr.isRead && ( !autoArchivePref.options.enable_unread || age < autoArchivePref.options.age_unread ) ) return skipReason.unread++;
+        if ( typeof(rule.tags) == 'undefined' && this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) return skipReason.tags++;
+      }
       if ( rule.action == 'archive' ) {
-        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return;
+        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return skipReason.cantArchive++;
         let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
-        if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return;
+        if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return skipReason.cantArchive++;
       }
       
-      if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
+      if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return skipReason.offline++; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
       if ( ["copy", "move"].indexOf(rule.action) >= 0 ) {
         // check if dest folder has already has the message
         let realDest = rule.dest, additonal = '', additonalNames = [];
@@ -444,8 +446,8 @@ let autoArchiveService = {
         }
         //autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
         let realDestFolder = MailUtils.getFolderForURI(realDest);
-        if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return;
-        if ( realDestFolder.locked ) return;
+        if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return skipReason.offline++;
+        if ( realDestFolder.locked ) return skipReason.destLocked++;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
         // CopyFolders using createSubfolder
         // https://github.com/gark87/SmartFilters/blob/master/src/chrome/content/backend/imapfolders.jsm using createSubfolder
@@ -479,7 +481,7 @@ let autoArchiveService = {
         if ( destHdr ) {
           //autoArchiveLog.info("Message:" + msgHdr.mime2DecodedSubject + " already exists in dest folder");
           duplicateHit.push(destHdr);
-          return;
+          return skipReason.duplicate++;
         } else if ( !autoArchiveUtil.folderExists(realDestFolder) && !offlineStream && !(realDestFolder.URI in this.missingFolders) ) { // sometime when TB has issue, folder.parent is null but getMsgHdrForMessageID can return hdr
           //autoArchiveLog.info("dest folder " + realDest + " not exists, need create");
           this.missingFolders[realDestFolder.URI] = additonalNames;
@@ -495,6 +497,7 @@ let autoArchiveService = {
       try {
         self._searchSession = null;
         autoArchiveLog.info("Total " + searchHit + " messages hit");
+        autoArchiveLog.logObject(skipReason, 'skipReason', 0);
         let isMove = (rule.action == 'move');
         if ( duplicateHit.length ) autoArchiveLog.info(duplicateHit.length + " messages already exists in target folder", isMove, isMove);
         if ( !this.messages.length && !( isMove && autoArchivePref.options.delete_duplicate_in_src ) ) return self.doMoveOrArchiveOne();
