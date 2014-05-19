@@ -267,8 +267,9 @@ let autoArchiveService = {
       try {
         folder = MailUtils.getFolderForURI(uri);
       } catch(err) { autoArchiveLog.logException(err); }
-      if ( folder && self.wait4Folders[uri] != 2 ) folders.push(folder);
-      else delete self.wait4Folders[uri];
+      if ( folder ) {
+        if ( self.wait4Folders[uri] != 2 ) folders.push(folder); // if action is copy, do NOT check if server is online or not
+      } else delete self.wait4Folders[uri];
     } );
     return folders;
   },
@@ -463,7 +464,13 @@ let autoArchiveService = {
           self.accessedFolders[realDest] = 1;
           destHdr = msgDatabase.getMsgHdrForMessageID(msgHdr.messageId);
           offlineStream = realDestFolder.offlineStoreInputStream;
-        } catch(err) { autoArchiveLog.logException(err, 0); }
+        } catch(err) {
+          // 0x80004005 (NS_ERROR_FAILURE)
+          // 0x80520012 (NS_ERROR_FILE_NOT_FOUND) [nsIMsgFolder.offlineStoreInputStream]
+          // 0x80550006 [nsIMsgFolder.msgDatabase]
+          // 0X80520015 (NS_ERROR_FILE_ACCESS_DENIED) [nsIMsgFolder.offlineStoreInputStream]
+          if ( [0x80004005, 0x80520012, 0x80550006, 0X80520015].indexOf(err.result) < 0  ) autoArchiveLog.logException(err, 0);
+        }
         if ( offlineStream && msgDatabase && !autoArchiveUtil.folderExists(realDestFolder) && destFolder.msgStore ) {
           autoArchiveLog.info("Found hidden folder '" + realDestFolder.URI + "', update folder tree");
           destFolder.msgStore.discoverSubFolders(destFolder, true);
@@ -542,7 +549,7 @@ let autoArchiveService = {
               folder.createSubfolder(folderName, null); // 2nd parameter can be mail3PaneWindow.msgWindow to get alert when folder create failed
               if ( autoArchiveUtil.createFolderAsync(destFolder) ) return true; // if async, break 'some'
             }
-          } catch(err) { autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString()); }
+          } catch(err) { autoArchiveLog.info("create folder '" + path + "' failed, " + err.toString(), "Error!", 1); }
           folder = folder.getChildNamed(folderName); // if folder exists, or sync creation
           return false; // try next level
         } );
@@ -777,11 +784,13 @@ let autoArchiveService = {
       srcFolder = MailUtils.getFolderForURI(rule.src);
       if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
         destFolder = MailUtils.getFolderForURI(rule.dest);
-        self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
-        if ( rule.sub == 2 ) {
-          let folders = destFolder.descendants /* >=TB21 */;
-          for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
-            self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
+        if ( autoArchiveUtil.folderExists(destFolder) ) {
+          self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
+          if ( rule.sub == 2 ) {
+            let folders = destFolder.descendants /* >=TB21 */;
+            for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
+              self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
+            }
           }
         }
       } else rule.dest = '';
