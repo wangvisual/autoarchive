@@ -16,6 +16,7 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const perfDialogTooltipID = "awsome_auto_archive-perfDialogTooltip";
+const perfDialogAgeTooltipID = "awsome_auto_archive-perfDialogAgeTooltip";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const ruleClass = 'awsome_auto_archive-rule';
 const ruleHeaderContextMenuID = 'awsome_auto_archive-rule-header-context';
@@ -234,7 +235,7 @@ let autoArchivePrefDialog = {
         ["subject", '',  '', perfDialogTooltipID],
         ["size", '5', '', perfDialogTooltipID],
         ["tags", '10', '', perfDialogTooltipID],
-        ["age", "4", autoArchivePref.options.default_days, '', 'number', "0"] ].map( function(attributes) {
+        ["age", "4", autoArchivePref.options.default_days, perfDialogAgeTooltipID, 'number', "0"] ].map( function(attributes) {
           let element = doc.createElementNS(XUL, "textbox");
           let [filter, size, defaultValue, tooltip, type, min] = attributes;
           element.setAttribute("rule", filter);

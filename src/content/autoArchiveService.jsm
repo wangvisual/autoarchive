@@ -474,6 +474,7 @@ let autoArchiveService = {
           if ( [0x80004005, 0x80520012, 0x80550006, 0X80520015].indexOf(err.result) < 0  ) autoArchiveLog.logException(err, 0);
         }
         if ( offlineStream && msgDatabase && !autoArchiveUtil.folderExists(realDestFolder) && destFolder.msgStore ) {
+          // may false alarm, but just keep here
           autoArchiveLog.info("Found hidden folder '" + realDestFolder.URI + "', update folder tree");
           destFolder.msgStore.discoverSubFolders(destFolder, true);
           if ( mail3PaneWindow.gFolderTreeView && mail3PaneWindow.gFolderTreeView._rebuild ) mail3PaneWindow.gFolderTreeView._rebuild();
@@ -844,7 +845,7 @@ let autoArchiveService = {
         for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
-          if ( ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
+          if ( autoArchivePref.options.ignore_spam_folders && ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
           if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);

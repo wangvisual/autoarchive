@@ -28,3 +28,4 @@ pref("extensions.awsome_auto_archive.show_subject", true);
 pref("extensions.awsome_auto_archive.show_size", false);
 pref("extensions.awsome_auto_archive.show_tags", false);
 pref("extensions.awsome_auto_archive.show_age", true);
+pref("extensions.awsome_auto_archive.ignore_spam_folders", true);

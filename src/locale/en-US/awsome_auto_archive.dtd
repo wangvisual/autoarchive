@@ -58,6 +58,7 @@
 <!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.keep "Keep">
 <!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.delete "Delete">
 <!ENTITY awsome_auto_archive.perf.delete_duplicate_in_src.post " email in source folder.">
+<!ENTITY awsome_auto_archive.perf.ignore_spam_folders " When Archive/Copy/Move emails, Ignore special folders like Trash/Junk/Queue/Drafts/Templates.">
 
 <!ENTITY awsome_auto_archive.perf.active_time "Time Settings">
 <!ENTITY awsome_auto_archive.perf.startup_delay "First run after">

@@ -40,6 +40,7 @@
     <preference id="pref.disable_alert_animation" name="alerts.disableSlidingEffect" type="bool"/>
     <preference id="pref.alert_show_time" name="extensions.awsome_auto_archive.alert_show_time" type="int"/>
     <preference id="pref.delete_duplicate_in_src" name="extensions.awsome_auto_archive.delete_duplicate_in_src" type="bool"/>
+    <preference id="pref.ignore_spam_folders" name="extensions.awsome_auto_archive.ignore_spam_folders" type="bool"/>
     <preference id="pref.generate_rule_use" name="extensions.awsome_auto_archive.generate_rule_use" type="int"/>
     <preference id="pref.show_from" name="extensions.awsome_auto_archive.show_from" type="bool"/>
     <preference id="pref.show_recipient" name="extensions.awsome_auto_archive.show_recipient" type="bool"/>
@@ -156,6 +157,7 @@
                 </menulist>
                 <label value="&awsome_auto_archive.perf.delete_duplicate_in_src.post;"/>
               </hbox>
+              <checkbox preference="pref.ignore_spam_folders" label="&awsome_auto_archive.perf.ignore_spam_folders;"/>
             </groupbox>
           </hbox>
           <hbox>
@@ -235,6 +237,7 @@
   <tooltip id="awsome_auto_archive-perfDialogTooltip">
     <vbox><label/><description/><description/><description/></vbox>
   </tooltip>
+  <tooltip id="awsome_auto_archive-perfDialogAgeTooltip"><label value='Set to the number of days that message must be old than, "0" to disable the "Age" filter'/></tooltip>
   <tooltip id="awsome_auto_archive-perfDialogAlipayDonate">
     <image src="qr-alipay.png"/>
   </tooltip>
