@@ -601,11 +601,13 @@ let autoArchivePrefDialog = {
       let perfDialog = self._doc.getElementById('awsome_auto_archive-prefs');
       let buttonBox = self._doc.getAnonymousElementByAttribute(perfDialog, "anonid", "dlg-buttons");
       let targetWinHeight = buttonBox.scrollHeight + pane.contentHeight;
+      if ( targetWinHeight > this._win.screen.availHeight ) targetWinHeight = this._win.screen.availHeight;
       let currentWinHeight = perfDialog.height;
       if ( currentWinHeight < targetWinHeight+62 ) perfDialog.setAttribute('height', targetWinHeight+62);
-      perfDialog.style.minHeight = targetWinHeight + "px";
+      //perfDialog.style.minHeight = targetWinHeight + "px";
+      //pane.style.minHeight = pane.contentHeight + "px";
       let width = Number(perfDialog.width || perfDialog.getAttribute("width"));
-      let targetWidth = Number(tabbox.clientWidth  || tabbox.scrollWidth) + 36;
+      let targetWidth = Number(tabbox.clientWidth || tabbox.scrollWidth) + 36;
       if ( width < targetWidth ) perfDialog.setAttribute("width", targetWidth);
     } catch (err) {autoArchiveLog.logException(err);}
   },
