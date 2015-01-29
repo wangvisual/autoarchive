@@ -3,23 +3,18 @@
   /* awsome_auto_archive-prefs -> .paneDeckContainer -> deck -> awsome_auto_archive-perfpane -> .content-box -> awsome_auto_archive-tabbox */
   #awsome_auto_archive-prefs {
     min-width: 600px;
-    min-height: 500px; /* might be changed by fillIdentities */
+    min-height: 500px;
   }
 
   #awsome_auto_archive-prefs .paneDeckContainer {
     overflow: auto;
   }
 
-  #XXawsome_auto_archive-perfpane .content-box {
-    flex: 1;
-  }
-  
   #awsome_auto_archive-rules {
     min-height: 200px;
   }
   
   #awsome_auto_archive-rules-header {
-    background-image: -moz-linear-gradient(to bottom right, grey, rgba(0,255,0,0)); /* -moz is needed for TB < 16 */
     background-image: linear-gradient(to bottom right, grey, rgba(0,255,0,0));
     margin: 4px 2px 2px 2px;
   }
@@ -34,7 +29,6 @@
   }
   
   #awsome_auto_archive-rules >.awsome_auto_archive-rule[awsome_auto_archive-focused=true] {
-    background-image: -moz-linear-gradient(to bottom right, grey, rgba(0,0,255,0));
     background-image: linear-gradient(to bottom right, grey, rgba(0,0,255,0));
   }
   
@@ -100,6 +94,10 @@
   .folderMenuItem[NoSelect="true"] {
     color: grey !important;
     font-style: italic !important;
+  }
+  
+  #awsome_auto_archive-perfDialogTooltip {
+    max-width: none !important;
   }
 
 }

@@ -262,6 +262,7 @@ let autoArchivePrefDialog = {
         } );
       
       row.classList.add(ruleClass);
+      row.tooltip = perfDialogTooltipID;
       [enable, menulistAction, menulistSrc, menulistSub, menulistDest, from, recipient, subject, size, tags, age, up, down, remove].forEach( function(item) {
         row.insertBefore(item, null);
       } );
@@ -365,7 +366,7 @@ let autoArchivePrefDialog = {
     else if ( how == 'remove' ) this.removeRule(this.focusRow);
   },
 
-  createRulesBasedOnString(value, emptyRule) {
+  createRulesBasedOnString: function(value, emptyRule) {
     if ( value === self.oldvalue ) return;
     self.createRuleHeader();
     let rules = JSON.parse(value);
@@ -410,6 +411,23 @@ let autoArchivePrefDialog = {
       let line4 = line3.nextSibling;
       let triggerNode = event.target.triggerNode;
       let rule = triggerNode.getAttribute('rule');
+      if ( rule == '' || !autoArchiveService.advancedTerms[rule] ) { // tooltip for row
+        let container = doc.getElementById('awsome_auto_archive-rules');
+        if ( !container ) return;
+        let i = 0;
+        for ( let row of container.childNodes ) {
+          if ( row.contains(triggerNode) ) {
+            triggerNode = row;
+            break;
+          }
+          i++;
+        }
+        line1.value = "Rule " + i;
+        line3.value = JSON.stringify(self.getOneRule(triggerNode));
+        line2.value = line4.value = '';
+        return true;
+      }
+      // tooltip for From/To etc
       let supportRE = autoArchiveService.advancedTerms[rule].some( function(term) {
         return MailServices.filters.getCustomTerm(term);
       } );
@@ -605,8 +623,6 @@ let autoArchivePrefDialog = {
       if ( targetWinHeight > this._win.screen.availHeight ) targetWinHeight = this._win.screen.availHeight;
       let currentWinHeight = perfDialog.height;
       if ( currentWinHeight < targetWinHeight+62 ) perfDialog.setAttribute('height', targetWinHeight+62);
-      //perfDialog.style.minHeight = targetWinHeight + "px";
-      //pane.style.minHeight = pane.contentHeight + "px";
       let width = Number(perfDialog.width || perfDialog.getAttribute("width"));
       let targetWidth = Number(tabbox.clientWidth || tabbox.scrollWidth) + 36;
       if ( width < targetWidth ) perfDialog.setAttribute("width", targetWidth);
