@@ -364,7 +364,18 @@ let autoArchivePrefDialog = {
     else if ( how == 'down' ) this.upDownRule(this.focusRow, false);
     else if ( how == 'remove' ) this.removeRule(this.focusRow);
   },
-  
+
+  createRulesBasedOnString(value, emptyRule) {
+    if ( value === self.oldvalue ) return;
+    self.createRuleHeader();
+    let rules = JSON.parse(value);
+    if ( rules.length ) {
+      rules.forEach( function(rule) {
+        self.creatOneRule(rule, null);
+      } );
+      self.oldvalue = value;
+    } else if ( typeof(emptyRule) == 'undefined' || emptyRule ) self.creatNewRule();
+  },
   syncFromPerf: function(win) { // this need 0.5s for 8 rules
     //autoArchiveLog.info('syncFromPerf');
     // if not modal, user can open 2nd pref window, we will close the old one, and close/unLoadPerfWindow seems a sync call, so we are fine
@@ -373,17 +384,7 @@ let autoArchivePrefDialog = {
     this._doc = win.document;
     let preference = this._doc.getElementById("pref.rules");
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
-    if ( actualValue === this.oldvalue ) return;
-    this.createRuleHeader();
-    let rules = JSON.parse(actualValue);
-    if ( rules.length ) {
-      rules.forEach( function(rule) {
-        self.creatOneRule(rule, null);
-      } );
-      this.oldvalue = actualValue;
-    } else if ( !win.arguments || !win.arguments[0] ) { // don't create empty rule if loadPerfWindow will create new rule based on selected email
-      this.creatNewRule();
-    }
+    this.createRulesBasedOnString(actualValue, !win.arguments || !win.arguments[0]); // don't create empty rule if loadPerfWindow will create new rule based on selected email
     //autoArchiveLog.info('syncFromPerf done');
   },
   
@@ -552,7 +553,7 @@ let autoArchivePrefDialog = {
   },
   unLoadPerfWindow: function() {
     if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog || !autoArchiveUtil ) return true;
-    if ( this._savedRules != autoArchivePref.options.rules ) autoArchiveUtil.backupRules(autoArchivePref.options.rules);
+    if ( this._savedRules != autoArchivePref.options.rules ) autoArchiveUtil.backupRules(autoArchivePref.options.rules, autoArchivePref.options.rules_to_keep);
     autoArchiveService.removeStatusListener(this.statusCallback);
     let tooltip = this._doc.getElementById(perfDialogTooltipID);
     if ( tooltip ) tooltip.removeEventListener("popupshowing", this.PopupShowing, true);

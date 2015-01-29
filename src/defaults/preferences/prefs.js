@@ -1,5 +1,6 @@
 pref("extensions.awsome_auto_archive.enable_verbose_info", false);
 pref("extensions.awsome_auto_archive.rules", '[]');
+pref("extensions.awsome_auto_archive.rules_to_keep", 20); /* hidden config, how may old backup rules will be kept */
 pref("extensions.awsome_auto_archive.enable_flag", false);
 pref("extensions.awsome_auto_archive.enable_tag", false);
 pref("extensions.awsome_auto_archive.enable_unread", true);

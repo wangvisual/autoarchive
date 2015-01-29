@@ -66,7 +66,7 @@
               <button label="&awsome_auto_archive.perf.down;" oncommand="autoArchivePrefDialog.changeRule('down');"/>
               <!--button label="&awsome_auto_archive.perf.remove;" class='awsome_auto_archive-delete-rule' oncommand="autoArchivePrefDialog.changeRule('remove');"/-->
               <button label="&awsome_auto_archive.perf.revert;" tooltiptext="&awsome_auto_archive.perf.revert.tooltip;" oncommand="autoArchivePrefDialog.revertRules();"/>
-              <button label="&awsome_auto_archive.perf.load;" type='menu'/>
+              <button label="&awsome_auto_archive.perf.load;" oncommand="autoArchiveUtil.loadSavedRules(window, autoArchivePrefDialog.createRulesBasedOnString);"/>
               <label value="" flex="1"/>
               <label value="&awsome_auto_archive.perf.folder.show_folder_as;"/>
               <menulist preference='pref.show_folder_as'>
