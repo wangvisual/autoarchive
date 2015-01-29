@@ -310,7 +310,7 @@ let autoArchiveService = {
     self.serverStatus['_listeners_'] = [];
     this.getFoldersFromWait4Folders().some( function(folder) {
       let server = folder.server, needCheck = false;
-      if ( ['none', 'nntp', 'rss'].indexOf(server.type) < 0 && !servers[server.key] ) {
+      if ( ['none', 'nntp', 'rss', 'exquilla'].indexOf(server.type) < 0 && !servers[server.key] ) {
         if ( Services.io.offline ) {
           autoArchiveLog.log("Skip rule due to offline now");
           return ( hasBad = true ); // break 'some'
