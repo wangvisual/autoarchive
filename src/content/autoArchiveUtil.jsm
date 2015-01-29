@@ -80,6 +80,7 @@ let autoArchiveUtil = {
     return (bytes / Math.pow(1024, e)).toFixed(2) + s[e];
   },
   getKeyFromTag: function(myTag) {
+    myTag = myTag.toLowerCase();
     if ( myTag == 'na' ) return myTag;
     var tagArray = MailServices.tags.getAllTags({});
     // consider two tags, one is "ABC", the other is "ABCD", when searching for "AB", perfect is return both.
@@ -96,7 +97,8 @@ let autoArchiveUtil = {
       }
     }
     if (uniqueKey != '') return uniqueKey;
-    return "..unknown.."; 
+    autoArchiveLog.log( "Can't find tag '" + myTag + "' in '" + tagArray.map((element) => { return element.tag; }).join(', ') + "'", 'Error');
+    return "..unknown.."; // to prevent tags not in use and search hit more messages than expected
   },
   addSearchTerm: function(searchSession, attr, str, op) { // simple version of the one in expression search
     try {
