@@ -162,6 +162,7 @@ let autoArchiveService = {
       autoArchiveLog.info("autoArchiveService doArchive");
       this.clear();
       this.serverStatus = {}; // won't cache between runs
+      if ( !rules ) rules = JSON.parse(autoArchivePref.options.rules); // so validateRules will be sync call
       this.rules = autoArchivePref.validateRules(rules).filter( function(rule) {
         return rule.enable;
       } );
@@ -190,12 +191,12 @@ let autoArchiveService = {
         for ( let uri in self.wait4Folders ) {
           let success = false;
           try {
-            autoArchiveLog.info("updateFolder " + uri);
             let folder = MailUtils.getFolderForURI(uri);
-            if ( folder && folder.parent && folder != folder.rootFolder ) {
+            if ( autoArchivePref.options.update_folders && folder && folder.parent && folder != folder.rootFolder && !folder.noSelect ) {
+              autoArchiveLog.info("updateFolder " + uri);
               folder.updateFolder(null); // this might call folderLIstener.OnItemEvent sync!
               success = true;
-            }
+            } else autoArchiveLog.info("No need to updateFolder " + uri);
           } catch(err) { autoArchiveLog.logException(err); }
           if ( !success ) delete self.wait4Folders[uri]; // and try update next folder
           else break; // wait for OnItemEvent called again
@@ -343,6 +344,7 @@ let autoArchiveService = {
     let count = 0;
     for ( let key in servers ) {
       try {
+        if ( !autoArchivePref.options.check_servers ) break;
         let server = servers[key], listener = new self.serverListener(key), URI;
         // verifyLogon will zero popstate.dat and cause duplicate mails for POP3
         if ( server instanceof Ci.nsIPop3IncomingServer ) {
@@ -610,9 +612,10 @@ let autoArchiveService = {
           self.summary[rule.action] = ( self.summary[rule.action] || 0 ) + this.messages.length;
           // from mailWindowOverlay.js
           let batchMover = new mail3PaneWindow.BatchMessageMover();
-          let myFunc = function(result) {
-            autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl");
-            if ( !batchMover.awsome_auto_archive_done && ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) ) {
+          let callCounter = 0;
+          let myFunc = function(result, where) {
+            autoArchiveLog.info("BatchMessageMover " + where);
+            if ( !batchMover.awsome_auto_archive_done && callCounter <= 1 && ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) ) {
               autoArchiveLog.info("BatchMessageMover Done");
               batchMover.awsome_auto_archive_done = true; // prevent call doMoveOrArchiveOne twice
               self.hookedFunctions.forEach( function(hooked) {
@@ -622,12 +625,13 @@ let autoArchiveService = {
               self.updateFolders(); // updateFolders will chain next doMoveOrArchiveOne
               //self.doMoveOrArchiveOne();
             }
-            autoArchiveLog.info("BatchMessageMover OnStopCopy/OnStopRunningUrl exit");
+            autoArchiveLog.info("BatchMessageMover " + where + " exit");
             return result;
           }
-          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, myFunc )[0] );
-          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, myFunc )[0] );
+          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, aStatus => { myFunc(aStatus, 'OnStopCopy'); } )[0] );
+          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, (url, exitCode) => { myFunc(exitCode, 'OnStopRunningUrl'); } )[0] );
           self.hookedFunctions.push( autoArchiveaop.around( {target: batchMover, method: 'processNextBatch'}, function(invocation) {
+            callCounter++;
             autoArchiveLog.info("BatchMessageMover processNextBatch");
             try {
               if ( !batchMover.awsome_auto_archive_getFolders ) {
@@ -661,9 +665,13 @@ let autoArchiveService = {
                 batchMover.awsome_auto_archive_getFolders = true;
               }
             } catch(err) { autoArchiveLog.logException(err); }
-            let result = invocation.proceed();
-            myFunc(result);
+            let result;
+            try {
+              result = invocation.proceed();
+            } catch(err) { autoArchiveLog.logException(err); }
+            myFunc(result, 'processNextBatch check');
             autoArchiveLog.info("BatchMessageMover processNextBatch exit");
+            callCounter--;
             return result;
           } )[0] );
           if ( mail3PaneWindow.gFolderDisplay ) self.hookedFunctions.push( autoArchiveaop.after( {target: mail3PaneWindow.gFolderDisplay, method: 'hintMassMoveStarting'}, function(result) {

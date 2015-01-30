@@ -9,6 +9,7 @@ const mozIJSSubScriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getSer
 
 let autoArchivePref = {
   path: null,
+  timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer),
   // https://bugzilla.mozilla.org/show_bug.cgi?id=469673
   // https://groups.google.com/forum/#!topic/mozilla.dev.extensions/SBGIogdIiwE
   InstantApply: false,
@@ -46,6 +47,7 @@ let autoArchivePref = {
   prefListeners: [],
   cleanup: function() {
     this.prefs.removeObserver("", this, false);
+    this.timer.cancel();
     delete this.prefListeners;
     delete this.options;
   },
@@ -86,7 +88,7 @@ let autoArchivePref = {
   },
 
   prefPath: "extensions.awsome_auto_archive.",
-  allPrefs: ['enable_verbose_info', 'rules', 'rules_to_keep', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay',
+  allPrefs: ['enable_verbose_info', 'rules', 'rules_to_keep', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'check_servers', 'update_folders',
              'start_next_delay', 'rule_timeout', 'generate_rule_use', 'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age', 'delete_duplicate_in_src', 'ignore_spam_folders',
              'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
   complexPrefs: {'rules': Ci.nsISupportsString },
@@ -109,6 +111,8 @@ let autoArchivePref = {
         case 'show_age':
         case 'delete_duplicate_in_src':
         case 'ignore_spam_folders':
+        case 'update_folders':
+        case 'check_servers':
           this.options[key] = this.prefs.getBoolPref(key);
           break;
         default:
@@ -130,34 +134,48 @@ let autoArchivePref = {
       autoArchiveLog.logException(err);
     };
   },
-  validateRules: function(rules) {
-    if ( !rules ) rules = JSON.parse(this.options.rules);
-    rules.forEach( function(rule) {
+  realValidate: function(rules) {
+    if ( !autoArchiveLog || !rules ) return;
+    let count = 1;
+    rules.forEach( rule => {
       let error = false;
       ["src", "action", "age", "sub", "enable"].forEach( function(att) {
         if ( typeof(rule[att]) == 'undefined' ) {
-          autoArchiveLog.log("Error: rule lacks of property " + att, 1);
+          autoArchiveLog.log("Error: rule " + count + " lacks of property " + att, 1);
           error = true;
         }
       } );
       if ( ["move", "archive", "copy", "delete"].indexOf(rule.action) < 0 ) {
-        autoArchiveLog.log("Error: rule action must be one of move or archive", 1);
+        autoArchiveLog.log("Error: rule " + count + " action must be one of move or archive", 1);
         error = true;
       }
       if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
         if ( typeof(rule.dest) == 'undefined' ) {
-          autoArchiveLog.log("Error: dest folder must be defined for copy/move action", 1);
+          autoArchiveLog.log("Error: rule " + count + " dest folder must be defined for copy/move action", 1);
           error = true;
         } else if ( rule.src == rule.dest ) {
-          autoArchiveLog.log("Error: dest folder must be different from src folder", 1);
+          autoArchiveLog.log("Error: rule " + count + " dest folder must be different from src folder", 1);
           error = true;
         }
       }
       if ( error ) rule.enable = false;
       // fix old config that save rule.sub as string, can be delete later
       if ( typeof(rule.sub) == 'string' ) rule.sub = Number(rule.sub);
+      count++;
     } );
     autoArchiveLog.logObject(rules,'rules',1);
     return rules;
+  },
+  validateRules: function(rules) {
+    let aSync = false;
+    if ( !rules ) {
+      rules = JSON.parse(this.options.rules);
+      aSync = true;
+    }
+    if ( aSync ) {
+      return this.timer.initWithCallback( () => {
+        if ( autoArchivePref ) autoArchivePref.realValidate(rules);
+      }, 0, Ci.nsITimer.TYPE_ONE_SHOT );
+    } else return this.realValidate(rules);
   },
 };
