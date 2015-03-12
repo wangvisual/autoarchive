@@ -827,7 +827,7 @@ let autoArchiveService = {
       let virtFolder = VirtualFolderHelper.wrapVirtualFolder(srcFolder);
       let scope = virtFolder.onlineSearch ? Ci.nsMsgSearchScope.onlineMail : Ci.nsMsgSearchScope.offlineMail;
       virtFolder.searchFolders.forEach( function(folder) {
-        if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) return;
+        if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) return;
         autoArchiveLog.info("Add src folder " + folder.URI);
         searchSession.addScopeTerm(scope, folder);
         self.accessedFolders[folder.URI] = true;
