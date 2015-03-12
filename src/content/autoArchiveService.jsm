@@ -855,7 +855,7 @@ let autoArchiveService = {
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( autoArchivePref.options.ignore_spam_folders && ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
-          if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) continue;
+          if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
           self.accessedFolders[folder.URI] = true;
           self.wait4Folders[folder.URI] = (rule.action == 'copy' ? 2 : true);
