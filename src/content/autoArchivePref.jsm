@@ -90,7 +90,7 @@ let autoArchivePref = {
   prefPath: "extensions.awsome_auto_archive.",
   allPrefs: ['enable_verbose_info', 'rules', 'rules_to_keep', 'enable_flag', 'enable_tag', 'enable_unread', 'age_flag', 'age_tag', 'age_unread', 'startup_delay', 'idle_delay', 'check_servers', 'update_folders',
              'start_next_delay', 'rule_timeout', 'generate_rule_use', 'show_from', 'show_recipient', 'show_subject', 'show_size', 'show_tags', 'show_age', 'delete_duplicate_in_src', 'ignore_spam_folders',
-             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate'],
+             'update_statusbartext', 'default_days', 'dry_run', 'messages_number_limit', 'messages_size_limit', 'start_exceed_delay', 'show_folder_as', 'add_context_munu_rule', 'alert_show_time', 'hibernate', 'archive_archive_folders'],
   complexPrefs: {'rules': Ci.nsISupportsString },
   observe: function(subject, topic, key) {
     try {
@@ -111,6 +111,7 @@ let autoArchivePref = {
         case 'show_age':
         case 'delete_duplicate_in_src':
         case 'ignore_spam_folders':
+        case 'archive_archive_folders':
         case 'update_folders':
         case 'check_servers':
           this.options[key] = this.prefs.getBoolPref(key);
