@@ -30,5 +30,6 @@ pref("extensions.awsome_auto_archive.show_size", false);
 pref("extensions.awsome_auto_archive.show_tags", false);
 pref("extensions.awsome_auto_archive.show_age", true);
 pref("extensions.awsome_auto_archive.ignore_spam_folders", true);
+pref("extensions.awsome_auto_archive.archive_archive_folders", false); // hidden config, allow 'Archive' action on archive-type folders
 pref("extensions.awsome_auto_archive.check_servers", true); // hidden config, check if server online before move/delete
 pref("extensions.awsome_auto_archive.update_folders", true); // hidden config, update folder before/after move/copy etc
