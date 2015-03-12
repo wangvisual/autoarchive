@@ -423,7 +423,7 @@ let autoArchiveService = {
         if ( typeof(rule.tags) == 'undefined' && this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) return skipReason.tags++;
       }
       if ( rule.action == 'archive' ) {
-        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return skipReason.cantArchive++;
+        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) return skipReason.cantArchive++;
         let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
         if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return skipReason.cantArchive++;
       }
