@@ -6,10 +6,16 @@ const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, ma
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
+
+// Console.jsm in Gecko < 23 calls dump(), not to Error Console
+const {console} = Cu.import("resource://gre/modules/Console.jsm", {});
+
 const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
-  oldAPI: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
+  oldAPI_22: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
+  oldAPI_23: Services.vc.compare(Services.appinfo.platformVersion, '23') < 0,
+  oldAPI_52: Services.vc.compare(Services.appinfo.platformVersion, '52') < 0,
   popupDelay: Services.prefs.getIntPref("alerts.totalOpenTime") / 1000,
   setPopupDelay: function(delay) {
     this.popupDelay = delay;
@@ -41,8 +47,22 @@ let autoArchiveLog = {
     alertsService.showAlertNotification(popupImage, title, msg, true, cookie, this.popupListener, name);
     */
     let cookie = Date.now();
-    let args = [popupImage, title, msg, true, cookie, 0, '', '', null, this.popupListener];
-    if ( this.oldAPI ) args.splice(6,3); // remove '', '', null
+    // arguments[0] --> the image src url
+    // arguments[1] --> the alert title
+    // arguments[2] --> the alert text
+    // arguments[3] --> is the text clickable?
+    // arguments[4] --> the alert cookie to be passed back to the listener
+    // arguments[5] --> the alert origin reported by the look and feel
+    // arguments[6] --> bidi
+    // arguments[7] --> lang
+    // arguments[8] --> requires interaction
+    // arguments[9] --> replaced alert window (nsIDOMWindow)
+    // arguments[10] --> an optional callback listener (nsIObserver)
+    // arguments[11] -> the nsIURI.hostPort of the origin, optional
+    // arguments[12] -> the alert icon URL, optional
+    let args = [popupImage, title, msg, true, cookie, 0, '', '', null, false, this.popupListener];
+    if ( this.oldAPI_52 ) args.splice(9,1); // remove alert window (false)
+    if ( this.oldAPI_22 ) args.splice(6,3); // remove '', '', null
     // win is nsIDOMJSWindow, nsIDOMWindow
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', "_blank", 'chrome,titlebar=no,popup=yes',
       // https://alexvincent.us/blog/?p=451
@@ -119,12 +139,13 @@ let autoArchiveLog = {
     this.verbose = verbose;
   },
 
-  info: function(msg,popup,force) {
+  info: function(msg, popup, force) {
     if (!force && !this.verbose) return;
-    this.log(this.now() + msg,popup,true);
+    this.log(this.now() + msg, popup, true);
   },
 
-  log: function(msg,popup,info) {
+  log: function(msg, popup, info) {
+    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Custom_output
     if ( ( typeof(info) != 'undefined' && info ) || !Components || !Cs || !Cs.caller ) {
       Services.console.logStringMessage(msg);
     } else {
@@ -235,6 +256,7 @@ let autoArchiveLog = {
   
   logObject: function(obj, name, maxDepth, curDepth) {
     if (!this.verbose) return;
+    console.dir(obj);
     this._checked = [];
     this.info(name + ": " + ( typeof(obj) == 'object' ? ( Array.isArray(obj) ? 'Array' : obj ) : '' ) + "\n" + this.objectTreeAsString(obj,maxDepth,true));
     this._checked = [];
@@ -242,9 +264,11 @@ let autoArchiveLog = {
   
   logException: function(e, popup) {
     let msg = "";
-    if ( 'name' in e && 'message' in e ) msg += e.name + ": " + e.message + "\n";
-    if ( 'stack' in e ) msg += e.stack;
-    if ( 'location' in e ) msg += e.location + "\n";
+    if ( typeof(e) != 'string' ) {
+      if ( 'name' in e && 'message' in e ) msg += e.name + ": " + e.message + "\n";
+      if ( 'stack' in e ) msg += e.stack;
+      if ( 'location' in e ) msg += e.location + "\n";
+    }
     if ( msg == '' ) msg += " " + e + "\n";
     msg = 'Caught Exception ' + msg;
     let fileName= e.fileName || e.filename || ( Cs.caller && Cs.caller.filename );
