@@ -16,7 +16,7 @@ let autoArchiveLog = {
   oldAPI_22: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
   oldAPI_23: Services.vc.compare(Services.appinfo.platformVersion, '23') < 0,
   oldAPI_52: Services.vc.compare(Services.appinfo.platformVersion, '52') < 0,
-  popupDelay: Services.prefs.getIntPref("alerts.totalOpenTime") / 1000,
+    popupDelay: 0, //Services.prefs.getIntPref("alerts.totalOpenTime") / 1000,
   setPopupDelay: function(delay) {
     this.popupDelay = delay;
   },
