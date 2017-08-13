@@ -423,7 +423,7 @@ let autoArchiveService = {
         if ( typeof(rule.tags) == 'undefined' && this.hasTag(msgHdr) && ( !autoArchivePref.options.enable_tag || age < autoArchivePref.options.age_tag ) ) return skipReason.tags++;
       }
       if ( rule.action == 'archive' ) {
-        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) ) return skipReason.cantArchive++;
+        if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) return skipReason.cantArchive++;
         let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
         if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return skipReason.cantArchive++;
       }
@@ -827,7 +827,7 @@ let autoArchiveService = {
       let virtFolder = VirtualFolderHelper.wrapVirtualFolder(srcFolder);
       let scope = virtFolder.onlineSearch ? Ci.nsMsgSearchScope.onlineMail : Ci.nsMsgSearchScope.offlineMail;
       virtFolder.searchFolders.forEach( function(folder) {
-        if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) return;
+        if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) return;
         autoArchiveLog.info("Add src folder " + folder.URI);
         searchSession.addScopeTerm(scope, folder);
         self.accessedFolders[folder.URI] = true;
@@ -855,7 +855,7 @@ let autoArchiveService = {
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( autoArchivePref.options.ignore_spam_folders && ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
             folder.getFlag(Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Junk| Ci.nsMsgFolderFlags.Queue | Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates ) ) continue;
-          if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) ) continue;
+          if ( rule.action == 'archive' && self.folderIsOf(folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) continue;
           searchSession.addScopeTerm(Ci.nsMsgSearchScope.offlineMail, folder);
           self.accessedFolders[folder.URI] = true;
           self.wait4Folders[folder.URI] = (rule.action == 'copy' ? 2 : true);
