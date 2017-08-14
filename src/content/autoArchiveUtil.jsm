@@ -70,6 +70,7 @@ let autoArchiveUtil = {
           if ( Cr[p] == pStatus ) return p;
       }
     }
+    if ( pstatus == 0x80550021 ) return 'NS_MSG_ERROR_IMAP_COMMAND_FAILED';
     return 'Unknown Error';
   },
   // http://stackoverflow.com/questions/4498866/actual-numbers-to-the-human-readable-values
