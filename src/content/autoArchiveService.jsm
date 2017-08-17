@@ -228,7 +228,7 @@ let autoArchiveService = {
     };
     this.OnStopCopy = function(aStatus) {
       autoArchiveLog.info("OnStop " + group.action + " 0x" + aStatus.toString(16));
-      if ( aStatus ) autoArchiveLog.log(autoArchiveUtil.Name + ": " + group.action + " failed with " + autoArchiveUtil.getErrorMsg(aStatus), "Error!");
+      if ( aStatus && aStatus != autoArchiveUtil.NS_MSG_ERROR_IMAP_COMMAND_FAILED ) autoArchiveLog.log(autoArchiveUtil.Name + ": " + group.action + " failed with " + autoArchiveUtil.getErrorMsg(aStatus), "Error!");
       else self.summary[group.action] = ( self.summary[group.action] || 0 ) + group.messages.length;
       if ( group.action == 'delete' || group.action == 'move' ) self.wait4Folders[group.src] = true;
       if ( group.action == 'copy' || group.action == 'move' ) self.wait4Folders[group.dest] = true;
