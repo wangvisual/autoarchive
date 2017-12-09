@@ -47,15 +47,16 @@ let autoArchive = {
       if ( !contextMenuSplit ) contextMenuSplit = doc.getElementById('mailContext-sep-print'); // SeaMonkey
       if ( status_bar ) { // add status bar icon
         this.createPopup(aWindow); // simple menu popup may can be in statusbarpanel by set that to 'statusbarpanel-menu-iconic', but better not
-        let statusbarIcon = doc.createElementNS(XULNS, "statusbarpanel");
+        let statusbarPanel = doc.createElementNS(XULNS, "statusbarpanel");
+        let statusbarIcon = doc.createElementNS(XULNS, "image");
         statusbarIcon.id = statusbarIconID;
-        statusbarIcon.setAttribute('class', 'statusbarpanel-iconic');
         statusbarIcon.setAttribute('src', statusbarIconSrc);
         statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version);
         statusbarIcon.setAttribute('popup', contextMenuID);
         statusbarIcon.setAttribute('context', contextMenuID);
-        status_bar.insertBefore(statusbarIcon, null);
-        aWindow._autoarchive.createdElements.push(statusbarIconID);
+        statusbarPanel.insertBefore(statusbarIcon, null);
+        status_bar.insertBefore(statusbarPanel, null);
+        aWindow._autoarchive.createdElements.push(statusbarPanel);
         let [preStatus, preDetail] = [autoArchiveService.STATUS_INIT, ""];
         aWindow._autoarchive.statusCallback = function(status, detail) {
           if ( status == autoArchiveService.STATUS_WAITIDLE ) statusbarIcon.setAttribute('src', statusbarIconSrcWait);
