@@ -12,12 +12,16 @@ let autoArchivePref = {
   timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer),
   // https://bugzilla.mozilla.org/show_bug.cgi?id=469673
   // https://groups.google.com/forum/#!topic/mozilla.dev.extensions/SBGIogdIiwE
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1415567 Remove {get,set}ComplexValue use of nsISupportsString in Thunderbird
+  oldAPI_58: Services.vc.compare(Services.appinfo.platformVersion, '58') < 0,
   InstantApply: false,
   setInstantApply: function(instant) {
     this.InstantApply = instant;
     autoArchiveLog.info("autoArchivePref: set InstantApply to " + instant);
   },
-  // TODO: When bug 564675 is implemented this will no longer be needed
+  // bootstrapped add-ons was obsoleted, Mozilla won't support read default any more
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=564675 Allow bootstrapped add-ons to have default preferences
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1413413 Remove support for extensions having their own prefs file
   // Always set the default prefs, because they disappear on restart
   setDefaultPrefs: function () {
     let branch = Services.prefs.getDefaultBranch("");
@@ -36,7 +40,7 @@ let autoArchivePref = {
         }
       }
     };
-    let uri = Services.io.newURI("defaults/preferences/prefs.js", null, Services.io.newURI(this.path, null, null));
+    let uri = Services.io.newURI("content/defaults_prefs.js", null, Services.io.newURI(this.path, null, null));
     try {
       mozIJSSubScriptLoader.loadSubScript(uri.spec, prefLoaderScope);
     } catch (err) {
@@ -72,9 +76,13 @@ let autoArchivePref = {
         break;
       default:
         if ( key in this.complexPrefs ) {
-          let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
-          str.data = value;
-          this.prefs.setComplexValue(key, this.complexPrefs[key], str);
+          if ( this.oldAPI_58) {
+            let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
+            str.data = value;
+            this.prefs.setComplexValue(key, this.complexPrefs[key], str);
+          } else {
+            this.prefs.setStringPref(key, str);
+          }
         }
         else this.prefs.setCharPref(key, value);
     }
@@ -117,7 +125,7 @@ let autoArchivePref = {
           this.options[key] = this.prefs.getBoolPref(key);
           break;
         default:
-          if ( key in this.complexPrefs ) this.options[key] = this.prefs.getComplexValue(key, this.complexPrefs[key]).data;
+          if ( key in this.complexPrefs ) this.options[key] = this.oldAPI_58 ? this.prefs.getComplexValue(key, this.complexPrefs[key]).data : this.prefs.getStringPref(key);
           else this.options[key] = this.prefs.getIntPref(key);
           break;
       }
