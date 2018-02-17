@@ -4,6 +4,7 @@
 <?xml-stylesheet href="chrome://messenger/skin/dialogs.css" type="text/css"?>
 <?xml-stylesheet href="chrome://messenger/skin/folderMenus.css" type="text/css"?>
 <?xml-stylesheet href="chrome://global/skin/tree.css" type="text/css"?>
+<?xml-stylesheet href="chrome://messenger/skin/preferences/preferences.css" type="text/css"?>
 
 <!DOCTYPE window SYSTEM "chrome://awsomeAutoArchive/locale/awsome_auto_archive.dtd">
 <prefwindow id="awsome_auto_archive-prefs"
