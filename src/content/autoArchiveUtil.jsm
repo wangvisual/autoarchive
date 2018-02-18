@@ -10,7 +10,6 @@ Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
-Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const SEAMONKEY_ID = "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}";
 const XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
