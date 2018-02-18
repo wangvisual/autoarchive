@@ -123,7 +123,8 @@ let autoArchivePrefDialog = {
     }
     folderPicker.addEventListener('popupshown', function(aEvent) {
       try {
-        let menuitems = self._doc.evaluate(".//xul:menuitem[@disabled='true' and @generated='true']", folderPicker, nsResolver, Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+        // nsIDOMXPathResult was removed in TB60, so have to use self._doc.defaultView.XPathResult
+        let menuitems = self._doc.evaluate(".//xul:menuitem[@disabled='true' and @generated='true']", folderPicker, nsResolver, self._doc.defaultView.XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
         for ( let i=0 ; i < menuitems.snapshotLength; i++ ) {
           let menuitem = menuitems.snapshotItem(i);
           if ( menuitem._folder && menuitem._folder.noSelect ) {
