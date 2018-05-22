@@ -47,7 +47,7 @@ function startup(aData, aReason) {
     Services.console.logStringMessage("Awesome Auto Archive startup...");
     Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
     Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
-    autoArchivePref.initPerf(__SCRIPT_URI_SPEC__);
+    autoArchivePref.initPerf();
     Cu.import("chrome://awsomeAutoArchive/content/autoArchive.jsm");
     Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
     //autoArchiveUtil.setChangeCallback( function(clean) { autoArchive.clearCache(clean); } );

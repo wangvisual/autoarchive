@@ -8,7 +8,6 @@ Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const mozIJSSubScriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 
 let autoArchivePref = {
-  path: null,
   timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer),
   // https://bugzilla.mozilla.org/show_bug.cgi?id=469673
   // https://groups.google.com/forum/#!topic/mozilla.dev.extensions/SBGIogdIiwE
@@ -40,7 +39,8 @@ let autoArchivePref = {
         }
       }
     };
-    let uri = Services.io.newURI("content/defaults_prefs.js", null, Services.io.newURI(this.path, null, null));
+
+    let uri = Services.io.newURI("chrome://awsomeAutoArchive/content/defaults_prefs.js");
     try {
       mozIJSSubScriptLoader.loadSubScript(uri.spec, prefLoaderScope);
     } catch (err) {
@@ -55,8 +55,7 @@ let autoArchivePref = {
     delete this.prefListeners;
     delete this.options;
   },
-  initPerf: function(spec) {
-    this.path = spec.replace(/bootstrap\.js$/, '');
+  initPerf: function() {
     this.setDefaultPrefs();
     this.prefs = Services.prefs.getBranch(this.prefPath);
     this.prefs.addObserver("", this, false);
