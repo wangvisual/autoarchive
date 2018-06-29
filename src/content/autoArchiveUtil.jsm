@@ -30,10 +30,6 @@ let autoArchiveUtil = {
       autoArchiveLog.info(self.Name + " " + self.Version);
     });
   },
-  loadInTopWindow: function(win, url) {
-    win.openDialog("chrome://messenger/content/", "_blank", "chrome,dialog=no,all", null,
-      { tabType: "contentTab", tabParams: {contentPage: Services.io.newURI(url, null, null) } });
-  },
   loadUseProtocol: function(url) {
     try {
       Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(Ci.nsIExternalProtocolService).loadURI(Services.io.newURI(url, null, null), null);
