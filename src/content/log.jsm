@@ -2,32 +2,28 @@
 // GPL V3 / MPL
 // debug utils
 "use strict";
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
+const { stack: Cs } = Components;
+const { loader, require } = Cu.import("resource://devtools/shared/Loader.jsm", {});
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
 
 // Console.jsm in Gecko < 23 calls dump(), not to Error Console
 const {console} = Cu.import("resource://gre/modules/Console.jsm", {});
 
+// for Error Console in Gecko > 44
+let {HUDService} = require("devtools/client/webconsole/hudservice");
+
 const popupImage = "chrome://awsomeAutoArchive/content/icon_popup.png";
 var EXPORTED_SYMBOLS = ["autoArchiveLog"];
 let autoArchiveLog = {
-  oldAPI_22: Services.vc.compare(Services.appinfo.platformVersion, '22') < 0,
-  oldAPI_23: Services.vc.compare(Services.appinfo.platformVersion, '23') < 0,
-  oldAPI_52: Services.vc.compare(Services.appinfo.platformVersion, '52') < 0,
   popupDelay: null,
   setPopupDelay: function(delay) {
     this.popupDelay = delay * 1000; // input unit is seconds, internal using ms
   },
   popupListener: {
-    QueryInterface: XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIObserver]), // not needed, just be safe
     observe: function(subject, topic, cookie) {
       if ( topic == 'alertclickcallback' ) { // or alertfinished / alertshow(Gecko22)
-        let type = 'global:console';
-        let logWindow = Services.wm.getMostRecentWindow(type);
-        if ( logWindow ) return logWindow.focus();
-        Services.ww.openWindow(null, 'chrome://global/content/console.xul', type, 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes', null);
+        HUDService.openBrowserConsoleOrFocus();
       } else if ( topic == 'alertfinished' ) {
         delete popupWins[cookie];
       }
@@ -70,8 +66,6 @@ let autoArchiveLog = {
     // arguments[11] -> the nsIURI.hostPort of the origin, optional
     // arguments[12] -> the alert icon URL, optional
     let args = [popupImage, title, msg, true, cookie, 0, '', '', null, false, this.popupListener];
-    if ( this.oldAPI_52 ) args.splice(9,1); // remove alert window (false)
-    if ( this.oldAPI_22 ) args.splice(6,3); // remove '', '', null
     // win is nsIDOMJSWindow, nsIDOMWindow
     let win = Services.ww.openWindow(null, 'chrome://global/content/alerts/alert.xul', "_blank", 'chrome,titlebar=no,popup=yes',
       // https://alexvincent.us/blog/?p=451
