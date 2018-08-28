@@ -2,7 +2,7 @@
 
 A Thunderbird extension that can automatically do Archive/Copy/Delete/Move actions based on user defined rules
 
-Install @ https://addons.mozilla.org/en-US/thunderbird/addon/awesome-auto-archive/
+Install @ https://addons.thunderbird.net/thunderbird/addon/awesome-auto-archive/
 
 ## You can define rules like
 
