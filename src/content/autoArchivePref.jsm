@@ -80,7 +80,7 @@ let autoArchivePref = {
             str.data = value;
             this.prefs.setComplexValue(key, this.complexPrefs[key], str);
           } else {
-            this.prefs.setStringPref(key, str);
+            this.prefs.setStringPref(key, value);
           }
         }
         else this.prefs.setCharPref(key, value);
