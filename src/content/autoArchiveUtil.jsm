@@ -40,7 +40,7 @@ let autoArchiveUtil = {
     let url = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=893LVBYFXCUP4&lc=US&item_name=" + this.Name + "&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest";
     if ( typeof(pay) != 'undefined' ) {
       if ( pay == 'alipay' ) return this.loadTab( {type: 'contentTab', contentPage: "chrome://awsomeAutoArchive/content/qr-alipay.png"});
-      if ( pay == 'mozilla' ) url =  "https://www.paypal.me/operawang/4.99USD";
+      if ( pay == 'paypal' ) url =  "https://www.paypal.me/operawang/4.99USD";
       if ( pay == 'mozilla' ) url = "https://addons.thunderbird.net/thunderbird/addon/awesome-auto-archive";
     }
     this.loadUseProtocol(url);
