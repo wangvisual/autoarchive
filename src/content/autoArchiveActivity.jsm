@@ -3,7 +3,6 @@
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchiveActivity"];
 
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");

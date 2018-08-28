@@ -93,7 +93,7 @@
             <caption label="&awsome_auto_archive.perf.donate;"/>
             <vbox align="center">
               <hbox>
-                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('mozilla');" />
+                <image style="cursor:pointer;" src="donate-with-paypal.png" onclick="autoArchiveUtil.loadDonate('paypal');" />
                 <label value="               " flex="100"/>
                 <image style="cursor:pointer;" src="donate-with-alipay.png" tooltip='awsome_auto_archive-perfDialogAlipayDonate' onclick="autoArchiveUtil.loadDonate('alipay');" />
               </hbox>

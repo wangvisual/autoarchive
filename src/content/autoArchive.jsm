@@ -2,7 +2,6 @@
 // GPL V3 / MPL
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchive"];
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/gloda/utils.js");
@@ -228,9 +227,9 @@ let autoArchive = {
     let menuGroupName = 'awsome_auto_archive-schedule';
     menupopup.id = contextMenuID;
     [ 
-      ["?", autoArchivePref.path + "icon.png", function(){ autoArchiveService.starStopNow(); }], // run/stop must be the first menu item
+      ["?", "chrome://awsomeAutoArchive/content/icon.png", function(){ autoArchiveService.starStopNow(); }], // run/stop must be the first menu item
       ["Option", "chrome://mozapps/skin/extensions/themeGeneric.png", function(){autoArchive.openOption(aWindow);}],
-      ["Addon @ Mozilla", "chrome://mozapps/skin/extensions/extensionGeneric.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.mozilla.org/en-US/thunderbird/addon/awesome-auto-archive/"); }],
+      ["Addon @ Mozilla", "chrome://mozapps/skin/extensions/extensionGeneric.png", function(){ autoArchiveUtil.loadUseProtocol("https://addons.thunderbird.net/en-US/thunderbird/addon/awesome-auto-archive/"); }],
       ["Addon @ GitHub", "chrome://awsomeAutoArchive/content/github.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/"); }],
       ["Help", "chrome://global/skin/icons/question-64.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/wiki/Help"); }],
       ["Report Bug", "chrome://global/skin/icons/information-32.png", function(){ autoArchiveUtil.loadUseProtocol("https://github.com/wangvisual/autoarchive/issues"); }],
@@ -243,7 +242,7 @@ let autoArchive = {
         ["Disable Archie till " + Services.appinfo.name + " restart", '',  autoArchive.setHibernate, {hibernate: 0-Services.startup.getStartupInfo().main/1000, name: menuGroupName, type: "radio"}],
         ["Disable Archie forever", '', autoArchive.setHibernate, {hibernate: -1, name: menuGroupName, type: "radio"}],
       ], {id: contextMenuScheduleID} ],
-      ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('mozilla'); }],
+      ["Donate", "chrome://awsomeAutoArchive/content/donate.png", function(){ autoArchiveUtil.loadDonate('paypal'); }],
     ].forEach( function(menu) {
       autoArchive.addMenuItem(menu, doc, menupopup);
     } );

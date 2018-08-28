@@ -2,7 +2,6 @@
 // GPL V3 / MPL
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchiveService"];
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm, stack: Cs } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource:///modules/mailServices.js");
 Cu.import("resource:///modules/MailUtils.js");

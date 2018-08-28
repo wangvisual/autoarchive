@@ -2,17 +2,12 @@
 // GPL V3 / MPL
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchivePref"];
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/log.jsm");
 const mozIJSSubScriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 
 let autoArchivePref = {
   timer: Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer),
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=469673
-  // https://groups.google.com/forum/#!topic/mozilla.dev.extensions/SBGIogdIiwE
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=1415567 Remove {get,set}ComplexValue use of nsISupportsString in Thunderbird
-  oldAPI_58: Services.vc.compare(Services.appinfo.platformVersion, '58') < 0,
   InstantApply: false,
   setInstantApply: function(instant) {
     this.InstantApply = instant;
@@ -74,15 +69,7 @@ let autoArchivePref = {
         this.prefs.setIntPref(key, value);
         break;
       default:
-        if ( key in this.complexPrefs ) {
-          if ( this.oldAPI_58) {
-            let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
-            str.data = value;
-            this.prefs.setComplexValue(key, this.complexPrefs[key], str);
-          } else {
-            this.prefs.setStringPref(key, value);
-          }
-        }
+        if ( key in this.complexPrefs ) this.prefs.setStringPref(key, value);
         else this.prefs.setCharPref(key, value);
     }
   },
@@ -124,7 +111,7 @@ let autoArchivePref = {
           this.options[key] = this.prefs.getBoolPref(key);
           break;
         default:
-          if ( key in this.complexPrefs ) this.options[key] = this.oldAPI_58 ? this.prefs.getComplexValue(key, this.complexPrefs[key]).data : this.prefs.getStringPref(key);
+          if ( key in this.complexPrefs ) this.options[key] = this.prefs.getStringPref(key);
           else this.options[key] = this.prefs.getIntPref(key);
           break;
       }
