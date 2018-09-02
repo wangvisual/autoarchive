@@ -211,7 +211,7 @@ let autoArchiveService = {
     },
   },
   copyListener: function(group) { // this listener is for Copy/Delete/Move actions
-    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]);
+    this.QueryInterface = ChromeUtils.generateQI ? ChromeUtils.generateQI([Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]) : XPCOMUtils.generateQI([Ci.nsIMsgCopyServiceListener, Ci.nsIMsgFolderListener]);
     this.OnStartCopy = function() {
       autoArchiveLog.info("OnStart " + group.action);
       let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
@@ -382,7 +382,7 @@ let autoArchiveService = {
   searchListener: function(rule, srcFolder, destFolder) {
     let mail3PaneWindow = Services.wm.getMostRecentWindow("mail:3pane");
     if (!mail3PaneWindow) return self.doMoveOrArchiveOne();
-    this.QueryInterface = XPCOMUtils.generateQI([Ci.nsISupports, Ci.nsIFolderListener, Ci.nsIMsgSearchNotify]);
+    this.QueryInterface = ChromeUtils.generateQI ? ChromeUtils.generateQI([Ci.nsIFolderListener, Ci.nsIMsgSearchNotify]) : XPCOMUtils.generateQI([Ci.nsIFolderListener, Ci.nsIMsgSearchNotify]);
     this.messages = [];
     this.missingFolders = {};
     this.messagesDest = {};
