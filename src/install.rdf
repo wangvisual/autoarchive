@@ -2,7 +2,7 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
   <Description about="urn:mozilla:install-manifest">
     <em:id>awsomeautoarchive@opera.wang</em:id>
-    <em:version>0.8beta</em:version>
+    <em:version>0.8</em:version>
     <em:type>2</em:type>
     <em:bootstrap>true</em:bootstrap>
     <em:unpack>false</em:unpack>
@@ -12,7 +12,6 @@
     <em:description>Automatically Archive/Copy/Delete/Move emails based on user defined rules</em:description>
     <em:creator>Opera Wang</em:creator>
     <em:optionsURL>chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul</em:optionsURL>
-    <!--em:optionsURL>javascript:opener.openDialog('chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul','_blank',( Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch).getBoolPref("browser.preferences.instantApply") ? '' : 'modal,' ) + 'chrome,titlebar,toolbar,centerscreen,resizable,dialog=yes');window.close();</em:optionsURL-->
     <em:homepageURL>https://github.com/wangvisual/autoArchive</em:homepageURL>
     
     <!-- Target -->

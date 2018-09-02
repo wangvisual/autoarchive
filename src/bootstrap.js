@@ -1,7 +1,6 @@
 // Opera.Wang+autoArchive@gmail.com GPL/MPL
 "use strict";
 
-const { classes: Cc, Constructor: CC, interfaces: Ci, utils: Cu, results: Cr, manager: Cm } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 // if use custom resouce, refer here
 // http://mdn.beonex.com/en/JavaScript_code_modules/Using.html
@@ -82,7 +81,7 @@ function shutdown(aData, aReason) {
       let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
       autoArchive.unLoad(domWindow); // won't check windowtype as unload will check
       // Do CC & GC, comment out allTraces when release
-      domWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).garbageCollect(
+      domWindow.windowUtils.garbageCollect(
         // Cc["@mozilla.org/cycle-collector-logger;1"].createInstance(Ci.nsICycleCollectorListener).allTraces()
       );
     }
