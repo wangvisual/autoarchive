@@ -9,36 +9,38 @@
   <![CDATA[
     function loadList() {
       window.removeEventListener('load', loadList, false);
-      let theList = document.getElementById('awsome_auto_archive-infolist');
-      if ( theList && window.arguments && window.arguments[0]) {
+      let theRows = document.getElementById('awsome_auto_archive-infolist-rows');
+      if ( theRows && window.arguments && window.arguments[0]) {
         window.arguments[0].forEach( function(items) {
-          let row = document.createElement('listitem');
+          let row = document.createElement('row');
           items.forEach( function(item) {
-            let cell = document.createElement('listcell');
-            cell.setAttribute('label', item);
+            let cell = document.createElement('description');
+            cell.setAttribute('value', item);
             cell.setAttribute('tooltiptext', item);
+            cell.setAttribute('crop', 'end');
             row.appendChild(cell);
           } );
-          row.allowEvents = true; // or no tooltiptext, see https://developer.mozilla.org/en-US/docs/XUL/Attribute/allowevents
-          theList.appendChild(row);
+          theRows.appendChild(row);
         } );
       }
     }
     window.addEventListener('load', loadList, false);
   ]]>
 </script>
-<vbox flex="1">
+<vbox flex="1" id='awsome_auto_archive-infobox'>
 <label value="&awsome_auto_archive.info.info;"/>
-<listbox id="awsome_auto_archive-infolist" flex="1">
-  <listhead>
-    <listheader label="Action"/>
-    <listheader label="Item"/>
-    <listheader label="Source Folder"/>
-    <listheader label="Destination Folder"/>
-  </listhead>
-  <listcols>
-    <listcol/><listcol flex="1"/><listcol flex="1"/><listcol flex="1"/>
-  </listcols>
-</listbox>
+<grid id="awsome_auto_archive-infolist" flex="1">
+  <columns>
+    <column /><column  flex="1"/><column  flex="1"/><column  flex="1"/>
+  </columns>
+  <rows id='awsome_auto_archive-infolist-rows'>
+    <row>
+      <label value="Action"/>
+      <label value="Item"/>
+      <label value="Source Folder"/>
+      <label value="Destination Folder"/>
+    </row>
+  </rows>
+</grid>
 </vbox>
 </dialog>

@@ -68,12 +68,18 @@
     list-style-image: url("chrome://messenger/skin/icons/cancel.png");
   }
   
+  #awsome_auto_archive-infobox {
+    max-width: 1800px;
+    max-height: 1000px;
+  }
+  
   #awsome_auto_archive-infolist {
     min-width: 800px;
     min-height: 600px;
+    overflow: auto;
   }
   
-  #awsome_auto_archive-infolist listcol {
+  #awsome_auto_archive-infolist-rows row description {
     max-width: 1000px;
   }
   
