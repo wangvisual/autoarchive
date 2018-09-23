@@ -592,12 +592,12 @@ let autoArchivePrefDialog = {
     let tabbox = doc.getElementById('awsome_auto_archive-tabbox');
     if ( !group || !pane || !tabbox ) return;
     let firstNonNull = null, gIdentities = {}, gAccounts = {};
-    for (let account in fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {
+    for (let account of fixIterator(MailServices.accounts.accounts, Ci.nsIMsgAccount)) {
       let server = account.incomingServer;
       if (aSkipNntp && (!server || server.type != "pop3" && server.type != "imap")) {
         continue;
       }
-      for (let id in fixIterator(account.identities, Ci.nsIMsgIdentity)) {
+      for (let id of fixIterator(account.identities, Ci.nsIMsgIdentity)) {
         // We're only interested in identities that have a real email.
         if (id.email) {
           gIdentities[id.email.toLowerCase()] = id;

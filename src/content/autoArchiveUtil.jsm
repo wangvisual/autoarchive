@@ -175,7 +175,7 @@ let autoArchiveUtil = {
       }
     }
     
-    for ( let searchTerm in fixIterator(session.searchTerms, Ci.nsIMsgSearchTerm) ) {
+    for ( let searchTerm of fixIterator(session.searchTerms, Ci.nsIMsgSearchTerm) ) {
       if (condition.length > 0) condition += " ";
       if (searchTerm.matchAll)
         condition += "ALL";

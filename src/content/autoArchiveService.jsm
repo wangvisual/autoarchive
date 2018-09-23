@@ -799,7 +799,7 @@ let autoArchiveService = {
           self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
           if ( rule.sub == 2 ) {
             let folders = destFolder.descendants /* >=TB21 */;
-            for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
+            for (let folder of fixIterator(folders || [], Ci.nsIMsgFolder)) {
               self.wait4Folders[folder.URI] = self.accessedFolders[folder.URI] = true;
             }
           }
@@ -833,7 +833,7 @@ let autoArchiveService = {
         self.wait4Folders[folder.URI] = (rule.action == 'copy' ? 2 : true); // when copy, don't check if server is online or not
       } );
       let terms = virtFolder.searchTerms;
-      //for (let term in fixIterator(terms, Ci.nsIMsgSearchTerm)) {
+      //for (let term of fixIterator(terms, Ci.nsIMsgSearchTerm)) {
       let count = terms.Count();
       if ( count ) {
         for ( let i = 0; i < count; i++ ) {
@@ -849,7 +849,7 @@ let autoArchiveService = {
       self.wait4Folders[rule.src] = (rule.action == 'copy' ? 2 : true);
       if ( rule.sub ) {
         let folders = srcFolder.descendants /* >=TB21 */;
-        for (let folder in fixIterator(folders || [], Ci.nsIMsgFolder)) {
+        for (let folder of fixIterator(folders || [], Ci.nsIMsgFolder)) {
           // We don't add special sub directories, same as AutoarchiveReloaded
           if ( folder.getFlag(Ci.nsMsgFolderFlags.Virtual) ) continue;
           if ( autoArchivePref.options.ignore_spam_folders && ["move", "archive", "copy"].indexOf(rule.action) >= 0 &&
