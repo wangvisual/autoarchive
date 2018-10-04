@@ -7,7 +7,7 @@
   }
 
   #awsome_auto_archive-prefs .paneDeckContainer {
-    overflow: auto;
+    overflow: auto !important;
   }
 
   #awsome_auto_archive-rules {
