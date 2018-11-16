@@ -24,7 +24,7 @@ const contextMenuScheduleID = "autoArchive-statusbar-contextmenu-schedule";
 const statusbarIconSrc = 'chrome://awsomeAutoArchive/content/icon.png';
 const statusbarIconSrcWait = 'chrome://awsomeAutoArchive/content/icon_wait.png';
 const statusbarIconSrcRun = 'chrome://awsomeAutoArchive/content/icon_run.png';
-const oldAPI_65 = Services.vc.compare(Services.appinfo.platformVersion, '65') < 0;
+const oldAPI_65 = Services.vc.compare(Services.appinfo.platformVersion, '65.0a1') < 0;
 
 let autoArchive = {
   strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
