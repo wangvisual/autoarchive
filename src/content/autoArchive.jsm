@@ -15,6 +15,7 @@ Cu.import("chrome://awsomeAutoArchive/content/autoArchivePrefDialog.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveActivity.jsm");
 
 const XULNS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+const statusbarID = "autoArchive-statusbar";
 const statusbarIconID = "autoArchive-statusbar-icon";
 const popupsetID = "autoArchive-statusbar-popup";
 const contextMenuID = "autoArchive-statusbar-contextmenu";
@@ -23,6 +24,7 @@ const contextMenuScheduleID = "autoArchive-statusbar-contextmenu-schedule";
 const statusbarIconSrc = 'chrome://awsomeAutoArchive/content/icon.png';
 const statusbarIconSrcWait = 'chrome://awsomeAutoArchive/content/icon_wait.png';
 const statusbarIconSrcRun = 'chrome://awsomeAutoArchive/content/icon_run.png';
+const oldAPI_65 = Services.vc.compare(Services.appinfo.platformVersion, '65') < 0;
 
 let autoArchive = {
   strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
@@ -46,14 +48,21 @@ let autoArchive = {
       if ( !contextMenuSplit ) contextMenuSplit = doc.getElementById('mailContext-sep-print'); // SeaMonkey
       if ( status_bar ) { // add status bar icon
         this.createPopup(aWindow); // simple menu popup may can be in statusbarpanel by set that to 'statusbarpanel-menu-iconic', but better not
-        let statusbarPanel = doc.createElementNS(XULNS, "hbox");
+        let statusbarPanel;
+        if ( oldAPI_65 ) {
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=1491660 [de-xbl] Migrate statusbar and statusbarpanel to custom element.
+          statusbarPanel = doc.createElementNS(XULNS, "statusbarpanel");
+        } else {
+          statusbarPanel = doc.createElementNS(XULNS, "hbox");
+          statusbarPanel.classList.add('statusbarpanel');
+        }
         let statusbarIcon = doc.createElementNS(XULNS, "image");
         statusbarIcon.id = statusbarIconID;
         statusbarIcon.setAttribute('src', statusbarIconSrc);
         statusbarIcon.setAttribute('tooltiptext', autoArchiveUtil.Name + " " + autoArchiveUtil.Version);
         statusbarIcon.setAttribute('popup', contextMenuID);
         statusbarIcon.setAttribute('context', contextMenuID);
-        statusbarPanel.classList.add('statusbarpanel');
+        statusbarPanel.id = statusbarID;
         statusbarPanel.insertBefore(statusbarIcon, null);
         status_bar.insertBefore(statusbarPanel, null);
         aWindow._autoarchive.createdElements.push(statusbarPanel);
