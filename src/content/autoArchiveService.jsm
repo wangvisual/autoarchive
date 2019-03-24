@@ -3,8 +3,16 @@
 "use strict";
 var EXPORTED_SYMBOLS = ["autoArchiveService"];
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource:///modules/mailServices.js");
-Cu.import("resource:///modules/MailUtils.js");
+try {
+  Cu.import("resource:///modules/MailServices.jsm");
+} catch (err) {
+  Cu.import("resource:///modules/mailServices.js");
+}
+try {
+  Cu.import("resource:///modules/MailUtils.jsm");
+} catch (err) {
+  Cu.import("resource:///modules/MailUtils.js");
+}
 Cu.import("resource:///modules/virtualFolderWrapper.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray

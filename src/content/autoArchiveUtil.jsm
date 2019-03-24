@@ -4,7 +4,11 @@
 var EXPORTED_SYMBOLS = ["autoArchiveUtil"];
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource:///modules/mailServices.js");
+try {
+  Cu.import("resource:///modules/MailServices.jsm");
+} catch (err) {
+  Cu.import("resource:///modules/mailServices.js");
+}
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://gre/modules/FileUtils.jsm");

@@ -4,12 +4,20 @@
 var EXPORTED_SYMBOLS = ["autoArchivePrefDialog"];
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource:///modules/mailServices.js");
+try {
+  Cu.import("resource:///modules/MailServices.jsm");
+} catch (err) {
+  Cu.import("resource:///modules/mailServices.js");
+}
 Cu.import("resource:///modules/gloda/utils.js");
 //Cu.import("resource://gre/modules/FileUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm");
 Cu.import("resource:///modules/folderUtils.jsm");
-Cu.import("resource:///modules/MailUtils.js");
+try {
+  Cu.import("resource:///modules/MailUtils.jsm");
+} catch (err) {
+  Cu.import("resource:///modules/MailUtils.js");
+}
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
