@@ -10,3 +10,5 @@ Install @ https://addons.thunderbird.net/thunderbird/addon/awesome-auto-archive/
 *    Move messages that from foo with subject bar and 60 days old within src folder and it's sub directory to local folders, keeps the folder hierarchy.
 *    Copy messages from one virtual folder to another folder
 *    Delete all messages from Junk folder after 7 days
+
+<a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg"></a>
