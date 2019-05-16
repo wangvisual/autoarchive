@@ -47,10 +47,15 @@ let autoArchivePrefDialog = {
     return msgFolder.URI.replace(/^.*\/([^\/]+)/,'$1');
   },
   getFolderAndSetLabel: function(folderPicker, setLabel) {
-    let msgFolder = {value: '', prettyName: 'N/A', server: {}};
+    let msgFolder;
     try {
-      msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-    } catch(err) {}
+      msgFolder = MailUtils.getExistingFolder(folderPicker.value);
+    } catch(err) {
+      try {
+        msgFolder = MailUtils.getFolderForURI(folderPicker.value);
+      } catch(err) {}
+    }
+    if ( !msgFolder ) msgFolder = {value: '', prettyName: 'N/A', server: {}};
     if ( !this._doc || !setLabel ) return msgFolder;
     let showFolderAs = this._doc.getElementById('pref.show_folder_as');
     let label = "";
