@@ -1,0 +1,27 @@
+{
+  "applications": {
+    "gecko": {
+      "id": "awsomeautoarchive@opera.wang",
+      "strict_min_version": "60.0",
+      "strict_max_version": "69.0"
+    }
+  },
+  "version": "0.9beta",
+  "manifest_version": 2,
+  "name": "Awesome Auto Archive",
+  "description": "Automatically Archive/Copy/Delete/Move emails based on user defined rules",
+  "author": "Opera Wang",
+  "homepage_url": "https://github.com/wangvisual/autoArchive",
+  "legacy": {
+    "type": "bootstrap",
+    "options": {
+      "page": "chrome://awsomeAutoArchive/content/autoArchivePrefDialog.xul",
+      "open_in_tab": false
+    }
+  },
+  "icons": {
+    "32": "icon.png",
+    "48": "icon.png",
+    "64": "icon.png"
+  }
+}
