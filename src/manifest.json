@@ -2,7 +2,7 @@
   "applications": {
     "gecko": {
       "id": "awsomeautoarchive@opera.wang",
-      "strict_min_version": "68.0",
+      "strict_min_version": "68.3",
       "strict_max_version": "68.9"
     }
   },

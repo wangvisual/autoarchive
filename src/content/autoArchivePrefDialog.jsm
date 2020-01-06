@@ -18,6 +18,7 @@ try {
 } catch (err) {
   Cu.import("resource:///modules/MailUtils.js");
 }
+Cu.import("chrome://awsomeAutoArchive/content/aop.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveService.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchivePref.jsm");
 Cu.import("chrome://awsomeAutoArchive/content/autoArchiveUtil.jsm");
@@ -30,8 +31,10 @@ const ruleHeaderContextMenuID = 'awsome_auto_archive-rule-header-context';
 
 let autoArchivePrefDialog = {
   strBundle: Services.strings.createBundle('chrome://awsomeAutoArchive/locale/awsome_auto_archive.properties'),
+  hookedFunctions: [],
   _doc: null,
   _win: null,
+  _savedRules: '',
   cleanup: function() {
     autoArchiveLog.info("autoArchivePrefDialog cleanup");
     if ( this._win && !this._win.closed ) this._win.close();
@@ -50,14 +53,10 @@ let autoArchivePrefDialog = {
     let msgFolder;
     try {
       msgFolder = MailUtils.getExistingFolder(folderPicker.value);
-    } catch(err) {
-      try {
-        msgFolder = MailUtils.getFolderForURI(folderPicker.value);
-      } catch(err) {}
-    }
+    } catch(err) {}
     if ( !msgFolder ) msgFolder = {value: '', prettyName: 'N/A', server: {}};
     if ( !this._doc || !setLabel ) return msgFolder;
-    let showFolderAs = this._doc.getElementById('pref.show_folder_as');
+	let showFolderAs = Preferences.get('extensions.awsome_auto_archive.show_folder_as');
     let label = "";
     switch ( showFolderAs.value ) {
       case 0:
@@ -150,7 +149,8 @@ let autoArchivePrefDialog = {
     folderPicker.setAttribute("sizetopopup", "none");
     folderPicker.setAttribute("crop", "center");
 
-    folderPopup.setAttribute("type", "folder");
+	folderPopup.setAttribute("mode", "search");
+	folderPopup.setAttribute("showAccountsFileHere", "true");
     if ( !isSrc ) {
       folderPopup.setAttribute("mode", "filing");
       folderPopup.setAttribute("showFileHereLabel", "true");
@@ -178,7 +178,7 @@ let autoArchivePrefDialog = {
           item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
           item.setAttribute('rule', label); // header does not have class ruleClass
         }
-        let preference = doc.getElementById('pref.show_' + label);
+		let preference = Preferences.get('extensions.awsome_auto_archive.show_' + label);
         if ( preference ) {
           let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
           item.style.display = actualValue ? '-moz-box': 'none';
@@ -216,7 +216,7 @@ let autoArchivePrefDialog = {
       menulistAction.setAttribute("rule", 'action');
       
       let menulistSrc = doc.createElementNS(XUL, "menulist");
-      let menupopupSrc = doc.createElementNS(XUL, "menupopup");
+      let menupopupSrc = doc.createElementNS(XUL, "menupopup", {is: "folder-menupopup"});
       menulistSrc.insertBefore(menupopupSrc, null);
       menulistSrc.value = rule.src || '';
       menulistSrc.setAttribute("rule", 'src');
@@ -236,7 +236,7 @@ let autoArchivePrefDialog = {
       menulistSub.setAttribute("tooltiptext", self.strBundle.GetStringFromName('perfdialog.tooltip.scope'));
       
       let menulistDest = doc.createElementNS(XUL, "menulist");
-      let menupopupDest = doc.createElementNS(XUL, "menupopup");
+      let menupopupDest = doc.createElementNS(XUL, "menupopup", {is: "folder-menupopup"});
       menulistDest.insertBefore(menupopupDest, null);
       menulistDest.value = rule.dest || '';
       menulistDest.setAttribute("rule", 'dest');
@@ -257,7 +257,7 @@ let autoArchivePrefDialog = {
           if ( tooltip ) element.tooltip = tooltip;
           if ( type ) element.setAttribute("type", type);
           if ( typeof(min) != 'undefined' ) element.setAttribute("min", "0");
-          let preference = doc.getElementById('pref.show_' + filter);
+		  let preference = Preferences.get('extensions.awsome_auto_archive.show_' + filter);
           let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
           element.style.display = actualValue ? '-moz-box': 'none';
           return element;
@@ -319,16 +319,16 @@ let autoArchivePrefDialog = {
   },
   
   removeRule: function(row) {
-    row.parentNode.removeChild(row); // will cause 'Error: TypeError: temp is null Source file: chrome://global/content/bindings/preferences.xml Line: 1172'
+    row.parentNode.removeChild(row);
     this.syncToPerf(true);
   },
   
   revertRules: function() {
     if ( !this._doc ) return;
     this.syncToPerf(true);
-    let preference = this._doc.getElementById("pref.rules");
+	  let preference = Preferences.get('extensions.awsome_auto_archive.rules');
     autoArchiveLog.info("Revert rules from\n" + preference.value + "\nto\n" + this._savedRules);
-    preference.value = this._savedRules; // perfpane.userChangedValue is the same
+    preference.value = this._savedRules;
   },
 
   checkEnable: function(enable, row) {
@@ -396,29 +396,77 @@ let autoArchivePrefDialog = {
     if ( this._win && this._win != win && !this._win.closed ) this._win.close();
     this._win = win;
     this._doc = win.document;
-    let preference = this._doc.getElementById("pref.rules");
+	let preference = Preferences.get('extensions.awsome_auto_archive.rules');
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
     this.createRulesBasedOnString(actualValue, !win.arguments || !win.arguments[0]); // don't create empty rule if loadPerfWindow will create new rule based on selected email
     //autoArchiveLog.info('syncFromPerf done');
   },
   
   syncToPerf: function(store2pref) { // this need 0.005s for 8 rules
-    //autoArchiveLog.info('syncToPerf');
+    autoArchiveLog.info('syncToPerf');
     let value = JSON.stringify(this.getRules());
     this.oldvalue = value; // need before set preference.value, which will cause syncFromPref
+	  autoArchiveLog.info('syncToPerf:'+ value);
     if ( store2pref ) {
-      let preference = this._doc.getElementById("pref.rules");
+      let preference = Preferences.get('extensions.awsome_auto_archive.rules');
       preference.value = value;
+	  	autoArchiveLog.info('preference:'+ preference.value);
     }
     //autoArchiveLog.info('syncToPerf done');
     return value;
   },
-  
+
+  bindPerfed: false,
+  bindPerf: function() {
+	if ( this.bindPerfed ) return;
+	this.bindPerfed = true;
+	//Preferences.forceEnableInstantApply();
+	Preferences.addAll([
+	  {id: "extensions.awsome_auto_archive.rules", type: "string"},
+    {id: "extensions.awsome_auto_archive.show_folder_as", type: "int", onchange: "autoArchivePrefDialog.changeShowFolderAs();"}, // TODO
+    {id: "extensions.awsome_auto_archive.update_statusbartext", type: "bool"},
+    {id: "extensions.awsome_auto_archive.enable_verbose_info", type: "bool"},
+    {id: "extensions.awsome_auto_archive.dry_run", type: "bool"},
+    {id: "extensions.awsome_auto_archive.enable_tag", type: "bool"},
+    {id: "extensions.awsome_auto_archive.enable_flag", type: "bool"},
+    {id: "extensions.awsome_auto_archive.enable_unread", type: "bool"},
+    {id: "extensions.awsome_auto_archive.age_tag", type: "int"},
+    {id: "extensions.awsome_auto_archive.age_flag", type: "int"},
+    {id: "extensions.awsome_auto_archive.age_unread", type: "int"},
+    {id: "extensions.awsome_auto_archive.startup_delay", type: "int"},
+    {id: "extensions.awsome_auto_archive.idle_delay", type: "int"},
+    {id: "extensions.awsome_auto_archive.start_next_delay", type: "int"},
+    {id: "extensions.awsome_auto_archive.rule_timeout", type: "int"},
+    {id: "extensions.awsome_auto_archive.default_days", type: "int"},
+    {id: "extensions.awsome_auto_archive.messages_number_limit", type: "int"},
+    {id: "extensions.awsome_auto_archive.messages_size_limit", type: "int"},
+    {id: "extensions.awsome_auto_archive.start_exceed_delay", type: "int"},
+    {id: "alerts.disableSlidingEffect", type: "bool"},
+    {id: "extensions.awsome_auto_archive.alert_show_time", type: "int"},
+    {id: "extensions.awsome_auto_archive.delete_duplicate_in_src", type: "bool"},
+    {id: "extensions.awsome_auto_archive.ignore_spam_folders", type: "bool"},
+    {id: "extensions.awsome_auto_archive.generate_rule_use", type: "int"},
+    {id: "extensions.awsome_auto_archive.show_from", type: "bool"},
+    {id: "extensions.awsome_auto_archive.show_recipient", type: "bool"},
+    {id: "extensions.awsome_auto_archive.show_subject", type: "bool"},
+    {id: "extensions.awsome_auto_archive.show_size", type: "bool"},
+    {id: "extensions.awsome_auto_archive.show_tags", type: "bool"},
+    {id: "extensions.awsome_auto_archive.show_age", type: "bool"},
+	]);
+	// hack to enable isElementEditable, https://bugzilla.mozilla.org/show_bug.cgi?id=1557989
+	let alerts = Preferences.get('alerts.disableSlidingEffect');
+	self.hookedFunctions.push( autoArchiveaop.around( {target: alerts.__proto__, method: 'isElementEditable'}, function(invocation) {
+	  let aElement = invocation.arguments[0];
+		autoArchiveLog.info('isElementEditable:' + aElement.localName);
+		return invocation.proceed() || aElement.getAttribute('preference-editable');
+    })[0]);
+  },
+
   PopupShowing: function(event) {
     try {
       let doc = event.view.document;
       let tooltip = doc.getElementById(perfDialogTooltipID);
-      let line1 = tooltip.firstChild.firstChild;
+      let line1 = tooltip.firstChild.nextSibling.firstChild;
       let line2 = line1.nextSibling;
       let line3 = line2.nextSibling;
       let line4 = line3.nextSibling;
@@ -456,12 +504,13 @@ let autoArchivePrefDialog = {
   },
   
   syncFromPerf4Filter: function(obj) {
-    //autoArchiveLog.info('syncFromPerf4Filter:' + obj.getAttribute("preference"));
+    autoArchiveLog.info('syncFromPerf4Filter:' + obj.getAttribute("preference"));
     let doc = obj.ownerDocument;
     let perfID = obj.getAttribute("preference");
-    let preference = doc.getElementById(perfID);
+    let preference = Preferences.get(perfID);
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
     let oldValue = obj.oldValue;
+	obj.setAttribute("checked", actualValue);
     if ( oldValue != actualValue ) {
       obj.setAttribute("checked", actualValue);
       let container = doc.getElementById('awsome_auto_archive-rules');
@@ -469,7 +518,7 @@ let autoArchivePrefDialog = {
       for ( let row of container.childNodes ) {
         for ( let item of row.childNodes ) {
           let key = item.getAttribute('rule');
-          if ( "pref.show_" + key == perfID )
+          if ( "extensions.awsome_auto_archive.show_" + key == perfID )
             item.style.display = actualValue ? '-moz-box': 'none';
         }
       }
@@ -480,7 +529,7 @@ let autoArchivePrefDialog = {
   
   syncToPerf4Filter: function(obj) {
     //autoArchiveLog.info('syncToPerf4Filter:' + obj.getAttribute("preference"));
-    let preference = obj.ownerDocument.getElementById(obj.getAttribute("preference"));
+	let preference = Preferences.get(obj.getAttribute("preference"));
     preference.value = obj.getAttribute("checked") ? true : false;
     return preference.value;
   },
@@ -489,11 +538,11 @@ let autoArchivePrefDialog = {
     try {
       autoArchiveLog.info('loadPerfWindow');
       if ( !this._win ) this.syncFromPerf(win); // SeaMonkey may have one dialog open from addon manager, and then open another one from icon or context menu
-      this.instantApply = this._doc.getElementById('awsome_auto_archive-preferences').instantApply || false;
+      this.instantApply = Preferences.instantApply || false;
       autoArchivePref.setInstantApply(this.instantApply);
       if ( this.instantApply ) { // only use synctopreference for instantApply, else use acceptPerfWindow
         // must be a onsynctopreference attribute, not a event handler, ref preferences.xml
-        this._doc.getElementById('awsome_auto_archive-rules').setAttribute("onsynctopreference", 'return autoArchivePrefDialog.syncToPerf();');
+        this._doc.getElementById('awsome_auto_archive-rules').setAttribute("onsynctopreference", 'return autoArchivePrefDialog.syncToPerf(true);');
         // no need to show 'Apply' button for instantApply
         let extra1 = this._doc.documentElement.getButton("extra1");
         if ( extra1 && extra1.parentNode ) extra1.parentNode.removeChild(extra1);
@@ -552,7 +601,7 @@ let autoArchivePrefDialog = {
       let key = item.getAttribute('rule');
       if ( key ) {
         let value = item.value || item.checked;
-        if ( item.getAttribute("type") == 'number' ) value = item.valueNumber;
+        if ( item.getAttribute("type") == 'number' && typeof(item.valueNumber) != 'undefined' ) value = item.valueNumber;
         if ( key == 'sub' ) value = Number(value); // menulist.value is always 'string'
         rule[key] = value;
       }
@@ -584,6 +633,9 @@ let autoArchivePrefDialog = {
   },
   unLoadPerfWindow: function() {
     if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog || !autoArchiveUtil ) return true;
+	self.hookedFunctions.forEach( function(hooked) {
+      hooked.unweave();
+    } );
     if ( this._savedRules != autoArchivePref.options.rules ) autoArchiveUtil.backupRules(autoArchivePref.options.rules, autoArchivePref.options.rules_to_keep);
     autoArchiveService.removeStatusListener(this.statusCallback);
     let tooltip = this._doc.getElementById(perfDialogTooltipID);
@@ -593,6 +645,7 @@ let autoArchivePrefDialog = {
     delete this._win;
     delete this.oldvalue;
     delete this.instantApply;
+	delete self.hookedFunctions;
     autoArchiveLog.info("prefwindow unload");
     return true;
   },
@@ -627,12 +680,12 @@ let autoArchivePrefDialog = {
       button.addEventListener("command", function(aEvent) { self._win.openDialog("chrome://messenger/content/am-identity-edit.xul", "dlg", "", {identity: gIdentities[id], account: gAccounts[id], result:false }); }, false );
       group.insertBefore(button, null);
     } );
-    pane.style.minHeight = pane.contentHeight + 10 + "px"; // reset the pane height after fill Identities, to prevent vertical scrollbar
+    pane.style.minHeight = pane.clientHeight + 10 + "px"; // reset the pane height after fill Identities, to prevent vertical scrollbar
     
     try {
       let perfDialog = self._doc.getElementById('awsome_auto_archive-prefs');
-      let buttonBox = self._doc.getAnonymousElementByAttribute(perfDialog, "anonid", "dlg-buttons");
-      let targetWinHeight = buttonBox.scrollHeight + pane.contentHeight;
+      let buttonBox = self._doc.getAnonymousElementByAttribute(perfDialog, "anonid", "buttons");
+      let targetWinHeight = buttonBox.scrollHeight + pane.clientHeight;
       if ( targetWinHeight > this._win.screen.availHeight ) targetWinHeight = this._win.screen.availHeight;
       let currentWinHeight = perfDialog.height;
       if ( currentWinHeight < targetWinHeight+62 ) perfDialog.setAttribute('height', targetWinHeight+62);

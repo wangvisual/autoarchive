@@ -13,6 +13,7 @@ try {
 } catch (err) {
   Cu.import("resource:///modules/MailUtils.js");
 }
+let { MessageArchiver } = ChromeUtils.import("resource:///modules/MessageArchiver.jsm"); 
 Cu.import("resource:///modules/virtualFolderWrapper.js");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/iteratorUtils.jsm"); // import toXPCOMArray
@@ -149,7 +150,7 @@ let autoArchiveService = {
     if ( Object.keys(this.accessedFolders).length ) autoArchiveLog.info("autoArchiveService closeAllFoldersDB");
     Object.keys(this.accessedFolders).forEach( function(uri) {
       try {
-        let folder = MailUtils.getFolderForURI(uri);
+        let folder = MailUtils.getExistingFolder(uri);
         if ( !MailServices.mailSession.IsFolderOpenInWindow(folder) && !(folder.flags & (Ci.nsMsgFolderFlags.Trash | Ci.nsMsgFolderFlags.Inbox | Ci.nsMsgFolderFlags.SentMail )) ) {
           autoArchiveLog.info("close msgDatabase for " + uri);
           folder.msgDatabase = null;
@@ -198,7 +199,7 @@ let autoArchiveService = {
         for ( let uri in self.wait4Folders ) {
           let success = false;
           try {
-            let folder = MailUtils.getFolderForURI(uri);
+            let folder = MailUtils.getExistingFolder(uri);
             if ( autoArchivePref.options.update_folders && folder && folder.parent && folder != folder.rootFolder && !folder.noSelect ) {
               autoArchiveLog.info("updateFolder " + uri);
               folder.updateFolder(null); // this might call folderLIstener.OnItemEvent sync!
@@ -273,7 +274,7 @@ let autoArchiveService = {
     Object.keys(self.wait4Folders).forEach( function(uri) {
       let folder;
       try {
-        folder = MailUtils.getFolderForURI(uri);
+        folder = MailUtils.getExistingFolder(uri);
       } catch(err) { autoArchiveLog.logException(err); }
       if ( folder ) {
         if ( self.wait4Folders[uri] != 2 ) folders.push(folder); // if action is copy, do NOT check if server is online or not
@@ -431,8 +432,7 @@ let autoArchiveService = {
       }
       if ( rule.action == 'archive' ) {
         if ( self.folderIsOf(msgHdr.folder, Ci.nsMsgFolderFlags.Archive) && !autoArchivePref.options.archive_archive_folders ) return skipReason.cantArchive++;
-        let getIdentityForHeader = mail3PaneWindow.getIdentityForHeader || mail3PaneWindow.GetIdentityForHeader; // TB & SeaMonkey use different name
-        if ( !getIdentityForHeader || !getIdentityForHeader(msgHdr).archiveEnabled ) return skipReason.cantArchive++;
+        if ( !MailUtils.getIdentityForHeader(msgHdr).archiveEnabled ) return skipReason.cantArchive++;
       }
       
       if ( Services.io.offline && msgHdr.folder.server && msgHdr.folder.server.type != 'none' ) return skipReason.offline++; // https://bugzilla.mozilla.org/show_bug.cgi?id=956598
@@ -454,7 +454,7 @@ let autoArchiveService = {
           realDest = rule.dest + additonal;
         }
         //autoArchiveLog.info(msgHdr.mime2DecodedSubject + " : " + msgHdr.folder.URI + " => " + realDest);
-        let realDestFolder = MailUtils.getFolderForURI(realDest);
+        let realDestFolder = MailUtils.getExistingFolder(realDest);
         if ( Services.io.offline && realDestFolder.server && realDestFolder.server.type != 'none' ) return skipReason.offline++;
         if ( realDestFolder.locked ) return skipReason.destLocked++;
         // BatchMessageMover using createStorageIfMissing/createSubfolder
@@ -617,38 +617,30 @@ let autoArchiveService = {
           }
           self.wait4Folders[rule.src] = true;
           self.summary[rule.action] = ( self.summary[rule.action] || 0 ) + this.messages.length;
-          // from mailWindowOverlay.js
-          let batchMover = new mail3PaneWindow.BatchMessageMover();
-          let callCounter = 0;
-          let myFunc = function(result, where) {
-            autoArchiveLog.info("BatchMessageMover " + where);
-            if ( !batchMover.awsome_auto_archive_done && callCounter <= 1 && ( batchMover._batches == null || Object.keys(batchMover._batches).length == 0 ) ) {
-              autoArchiveLog.info("BatchMessageMover Done");
-              batchMover.awsome_auto_archive_done = true; // prevent call doMoveOrArchiveOne twice
-              self.hookedFunctions.forEach( function(hooked) {
-                hooked.unweave();
-              } );
-              self.hookedFunctions = [];
-              self.updateFolders(); // updateFolders will chain next doMoveOrArchiveOne
-              //self.doMoveOrArchiveOne();
-            }
-            autoArchiveLog.info("BatchMessageMover " + where + " exit");
-            return result;
-          }
-          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopCopy'}, aStatus => { myFunc(aStatus, 'OnStopCopy'); } )[0] );
-          self.hookedFunctions.push( autoArchiveaop.after( {target: batchMover, method: 'OnStopRunningUrl'}, (url, exitCode) => { myFunc(exitCode, 'OnStopRunningUrl'); } )[0] );
+
+          let batchMover = new MessageArchiver();
+          batchMover.folderDisplay = mail3PaneWindow.gFolderDisplay;
+          batchMover.msgWindow = mail3PaneWindow.msgWindow;
+          batchMover.oncomplete = function() {
+            autoArchiveLog.info("BatchMessageMover Done");
+            self.hookedFunctions.forEach( function(hooked) {
+              hooked.unweave();
+            } );
+            self.hookedFunctions = [];
+            self.updateFolders(); // updateFolders will chain next doMoveOrArchiveOne
+            //self.doMoveOrArchiveOne();
+          };
           self.hookedFunctions.push( autoArchiveaop.around( {target: batchMover, method: 'processNextBatch'}, function(invocation) {
-            callCounter++;
             autoArchiveLog.info("BatchMessageMover processNextBatch");
             try {
               if ( !batchMover.awsome_auto_archive_getFolders ) {
                 for ( let key in batchMover._batches ) {
-                  // before https://bugzilla.mozilla.org/show_bug.cgi?id=975795, batchMover._batches = { key: [folder, URI, ..., monthFolderName, msghdr1, msghdr2,...], ... }
+                  // before https://bugzilla.mozilla.org/show_bug.cgi?id=975795 , batchMover._batches = { key: [folder, URI, ..., monthFolderName, msghdr1, msghdr2,...], ... }
                   // after, batchMover._batches = { key: srcFolder: msgHdr.folder, ...,  monthFolderName: monthFolderName, messages: [...] }, ... }
                   let { srcFolder: srcFolder, archiveFolderURI: archiveFolderURI, granularity: granularity, keepFolderStructure: keepFolderStructure, yearFolderName: msgYear, monthFolderName: msgMonth } = batchMover._batches[key];
                   if ( !('srcFolder' in batchMover._batches[key]) ) // instanceof Array won't work, Array.isArray() should, see http://web.mit.edu/jwalden/www/isArray.html 
                     [srcFolder, archiveFolderURI, granularity, keepFolderStructure, msgYear, msgMonth] = batchMover._batches[key];
-                  let archiveFolder = MailUtils.getFolderForURI(archiveFolderURI, false);
+                  let archiveFolder = MailUtils.getExistingFolder(archiveFolderURI, false);
                   let forceSingle = !archiveFolder.canCreateSubfolders;
                   if (!forceSingle && (archiveFolder.server instanceof Ci.nsIImapIncomingServer)) forceSingle = archiveFolder.server.isGMailServer;
                   if (forceSingle) granularity = Ci.nsIMsgIncomingServer.singleArchiveFolder;
@@ -676,9 +668,7 @@ let autoArchiveService = {
             try {
               result = invocation.proceed();
             } catch(err) { autoArchiveLog.logException(err); }
-            myFunc(result, 'processNextBatch check');
             autoArchiveLog.info("BatchMessageMover processNextBatch exit");
-            callCounter--;
             return result;
           } )[0] );
           if ( mail3PaneWindow.gFolderDisplay ) self.hookedFunctions.push( autoArchiveaop.after( {target: mail3PaneWindow.gFolderDisplay, method: 'hintMassMoveStarting'}, function(result) {
@@ -705,10 +695,10 @@ let autoArchiveService = {
       } );
       return runNext();
     }
-    let srcFolder = MailUtils.getFolderForURI(group.src), destFolder = null;
+    let srcFolder = MailUtils.getExistingFolder(group.src), destFolder = null;
     let busy = ( ['move', 'delete'].indexOf(group.action) >= 0 ) ? srcFolder.locked : false;
     if ( group.action != 'delete' ) {
-      destFolder = MailUtils.getFolderForURI(group.dest);
+      destFolder = MailUtils.getExistingFolder(group.dest);
       busy = busy || destFolder.locked;
     }
     if ( busy ) {
@@ -800,9 +790,9 @@ let autoArchiveService = {
     }, autoArchivePref.options.rule_timeout * 1000, Ci.nsITimer.TYPE_ONE_SHOT );
     let srcFolder = null, destFolder = null;
     try {
-      srcFolder = MailUtils.getFolderForURI(rule.src);
+      srcFolder = MailUtils.getExistingFolder(rule.src);
       if ( ["move", "copy"].indexOf(rule.action) >= 0 ) {
-        destFolder = MailUtils.getFolderForURI(rule.dest);
+        destFolder = MailUtils.getExistingFolder(rule.dest);
         if ( autoArchiveUtil.folderExists(destFolder) ) {
           self.wait4Folders[rule.dest] = self.accessedFolders[rule.dest] = true;
           if ( rule.sub == 2 ) {

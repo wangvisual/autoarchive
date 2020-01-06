@@ -26,7 +26,7 @@ let autoArchiveUtil = {
   initName: function() {
     autoArchiveLog.info("autoArchiveUtil initName");
     if ( this.Version != 'unknown' ) return;
-    AddonManager.getAddonByID('awsomeautoarchive@opera.wang', function(addon) {
+    AddonManager.getAddonByID('awsomeautoarchive@opera.wang').then(addon => {
       if ( !self || !autoArchiveLog ) return;
       self.Version = addon.version;
       self.Name = addon.name;
