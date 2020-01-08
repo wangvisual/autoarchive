@@ -56,7 +56,7 @@ let autoArchivePrefDialog = {
     } catch(err) {}
     if ( !msgFolder ) msgFolder = {value: '', prettyName: 'N/A', server: {}};
     if ( !this._doc || !setLabel ) return msgFolder;
-	let showFolderAs = Preferences.get('extensions.awsome_auto_archive.show_folder_as');
+    let showFolderAs = Preferences.get('extensions.awsome_auto_archive.show_folder_as');
     let label = "";
     switch ( showFolderAs.value ) {
       case 0:
@@ -146,17 +146,15 @@ let autoArchivePrefDialog = {
       } catch (err) { autoArchiveLog.logException(err); }
     }, false);
     folderPicker.classList.add("folderMenuItem");
-    folderPicker.setAttribute("sizetopopup", "none");
     folderPicker.setAttribute("crop", "center");
 
-	folderPopup.setAttribute("mode", "search");
-	folderPopup.setAttribute("showAccountsFileHere", "true");
+    folderPopup.setAttribute("mode", "search");
+    folderPopup.setAttribute("showAccountsFileHere", "true");
     if ( !isSrc ) {
       folderPopup.setAttribute("mode", "filing");
       folderPopup.setAttribute("showFileHereLabel", "true");
     }
     folderPopup.classList.add("menulist-menupopup");
-    folderPopup.classList.add("searchPopup");
     self.updateFolderStyle(folderPicker, folderPopup, true);
   },
   createRuleHeader: function() {
@@ -178,7 +176,7 @@ let autoArchivePrefDialog = {
           item.setAttribute('value', label ? self.strBundle.GetStringFromName("perfdialog." + label) : "");
           item.setAttribute('rule', label); // header does not have class ruleClass
         }
-		let preference = Preferences.get('extensions.awsome_auto_archive.show_' + label);
+        let preference = Preferences.get('extensions.awsome_auto_archive.show_' + label);
         if ( preference ) {
           let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
           item.style.display = actualValue ? '-moz-box': 'none';
@@ -257,7 +255,7 @@ let autoArchivePrefDialog = {
           if ( tooltip ) element.tooltip = tooltip;
           if ( type ) element.setAttribute("type", type);
           if ( typeof(min) != 'undefined' ) element.setAttribute("min", "0");
-		  let preference = Preferences.get('extensions.awsome_auto_archive.show_' + filter);
+          let preference = Preferences.get('extensions.awsome_auto_archive.show_' + filter);
           let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
           element.style.display = actualValue ? '-moz-box': 'none';
           return element;
@@ -326,7 +324,7 @@ let autoArchivePrefDialog = {
   revertRules: function() {
     if ( !this._doc ) return;
     this.syncToPerf(true);
-	  let preference = Preferences.get('extensions.awsome_auto_archive.rules');
+    let preference = Preferences.get('extensions.awsome_auto_archive.rules');
     autoArchiveLog.info("Revert rules from\n" + preference.value + "\nto\n" + this._savedRules);
     preference.value = this._savedRules;
   },
@@ -396,7 +394,7 @@ let autoArchivePrefDialog = {
     if ( this._win && this._win != win && !this._win.closed ) this._win.close();
     this._win = win;
     this._doc = win.document;
-	let preference = Preferences.get('extensions.awsome_auto_archive.rules');
+    let preference = Preferences.get('extensions.awsome_auto_archive.rules');
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
     this.createRulesBasedOnString(actualValue, !win.arguments || !win.arguments[0]); // don't create empty rule if loadPerfWindow will create new rule based on selected email
     //autoArchiveLog.info('syncFromPerf done');
@@ -406,11 +404,11 @@ let autoArchivePrefDialog = {
     autoArchiveLog.info('syncToPerf');
     let value = JSON.stringify(this.getRules());
     this.oldvalue = value; // need before set preference.value, which will cause syncFromPref
-	  autoArchiveLog.info('syncToPerf:'+ value);
+    autoArchiveLog.info('syncToPerf:'+ value);
     if ( store2pref ) {
       let preference = Preferences.get('extensions.awsome_auto_archive.rules');
       preference.value = value;
-	  	autoArchiveLog.info('preference:'+ preference.value);
+      autoArchiveLog.info('preference:'+ preference.value);
     }
     //autoArchiveLog.info('syncToPerf done');
     return value;
@@ -418,48 +416,47 @@ let autoArchivePrefDialog = {
 
   bindPerfed: false,
   bindPerf: function() {
-	if ( this.bindPerfed ) return;
-	this.bindPerfed = true;
-	//Preferences.forceEnableInstantApply();
-	Preferences.addAll([
-	  {id: "extensions.awsome_auto_archive.rules", type: "string"},
-    {id: "extensions.awsome_auto_archive.show_folder_as", type: "int", onchange: "autoArchivePrefDialog.changeShowFolderAs();"}, // TODO
-    {id: "extensions.awsome_auto_archive.update_statusbartext", type: "bool"},
-    {id: "extensions.awsome_auto_archive.enable_verbose_info", type: "bool"},
-    {id: "extensions.awsome_auto_archive.dry_run", type: "bool"},
-    {id: "extensions.awsome_auto_archive.enable_tag", type: "bool"},
-    {id: "extensions.awsome_auto_archive.enable_flag", type: "bool"},
-    {id: "extensions.awsome_auto_archive.enable_unread", type: "bool"},
-    {id: "extensions.awsome_auto_archive.age_tag", type: "int"},
-    {id: "extensions.awsome_auto_archive.age_flag", type: "int"},
-    {id: "extensions.awsome_auto_archive.age_unread", type: "int"},
-    {id: "extensions.awsome_auto_archive.startup_delay", type: "int"},
-    {id: "extensions.awsome_auto_archive.idle_delay", type: "int"},
-    {id: "extensions.awsome_auto_archive.start_next_delay", type: "int"},
-    {id: "extensions.awsome_auto_archive.rule_timeout", type: "int"},
-    {id: "extensions.awsome_auto_archive.default_days", type: "int"},
-    {id: "extensions.awsome_auto_archive.messages_number_limit", type: "int"},
-    {id: "extensions.awsome_auto_archive.messages_size_limit", type: "int"},
-    {id: "extensions.awsome_auto_archive.start_exceed_delay", type: "int"},
-    {id: "alerts.disableSlidingEffect", type: "bool"},
-    {id: "extensions.awsome_auto_archive.alert_show_time", type: "int"},
-    {id: "extensions.awsome_auto_archive.delete_duplicate_in_src", type: "bool"},
-    {id: "extensions.awsome_auto_archive.ignore_spam_folders", type: "bool"},
-    {id: "extensions.awsome_auto_archive.generate_rule_use", type: "int"},
-    {id: "extensions.awsome_auto_archive.show_from", type: "bool"},
-    {id: "extensions.awsome_auto_archive.show_recipient", type: "bool"},
-    {id: "extensions.awsome_auto_archive.show_subject", type: "bool"},
-    {id: "extensions.awsome_auto_archive.show_size", type: "bool"},
-    {id: "extensions.awsome_auto_archive.show_tags", type: "bool"},
-    {id: "extensions.awsome_auto_archive.show_age", type: "bool"},
-	]);
-	// hack to enable isElementEditable, https://bugzilla.mozilla.org/show_bug.cgi?id=1557989
-	let alerts = Preferences.get('alerts.disableSlidingEffect');
-	self.hookedFunctions.push( autoArchiveaop.around( {target: alerts.__proto__, method: 'isElementEditable'}, function(invocation) {
-	  let aElement = invocation.arguments[0];
-		autoArchiveLog.info('isElementEditable:' + aElement.localName);
-		return invocation.proceed() || aElement.getAttribute('preference-editable');
-    })[0]);
+    if ( this.bindPerfed ) return;
+    this.bindPerfed = true;
+    //Preferences.forceEnableInstantApply();
+    Preferences.addAll([
+      {id: "extensions.awsome_auto_archive.rules", type: "string"},
+      {id: "extensions.awsome_auto_archive.show_folder_as", type: "int", onchange: "autoArchivePrefDialog.changeShowFolderAs();"}, // TODO
+      {id: "extensions.awsome_auto_archive.update_statusbartext", type: "bool"},
+      {id: "extensions.awsome_auto_archive.enable_verbose_info", type: "bool"},
+      {id: "extensions.awsome_auto_archive.dry_run", type: "bool"},
+      {id: "extensions.awsome_auto_archive.enable_tag", type: "bool"},
+      {id: "extensions.awsome_auto_archive.enable_flag", type: "bool"},
+      {id: "extensions.awsome_auto_archive.enable_unread", type: "bool"},
+      {id: "extensions.awsome_auto_archive.age_tag", type: "int"},
+      {id: "extensions.awsome_auto_archive.age_flag", type: "int"},
+      {id: "extensions.awsome_auto_archive.age_unread", type: "int"},
+      {id: "extensions.awsome_auto_archive.startup_delay", type: "int"},
+      {id: "extensions.awsome_auto_archive.idle_delay", type: "int"},
+      {id: "extensions.awsome_auto_archive.start_next_delay", type: "int"},
+      {id: "extensions.awsome_auto_archive.rule_timeout", type: "int"},
+      {id: "extensions.awsome_auto_archive.default_days", type: "int"},
+      {id: "extensions.awsome_auto_archive.messages_number_limit", type: "int"},
+      {id: "extensions.awsome_auto_archive.messages_size_limit", type: "int"},
+      {id: "extensions.awsome_auto_archive.start_exceed_delay", type: "int"},
+      {id: "alerts.disableSlidingEffect", type: "bool"},
+      {id: "extensions.awsome_auto_archive.alert_show_time", type: "int"},
+      {id: "extensions.awsome_auto_archive.delete_duplicate_in_src", type: "bool"},
+      {id: "extensions.awsome_auto_archive.ignore_spam_folders", type: "bool"},
+      {id: "extensions.awsome_auto_archive.generate_rule_use", type: "int"},
+      {id: "extensions.awsome_auto_archive.show_from", type: "bool"},
+      {id: "extensions.awsome_auto_archive.show_recipient", type: "bool"},
+      {id: "extensions.awsome_auto_archive.show_subject", type: "bool"},
+      {id: "extensions.awsome_auto_archive.show_size", type: "bool"},
+      {id: "extensions.awsome_auto_archive.show_tags", type: "bool"},
+      {id: "extensions.awsome_auto_archive.show_age", type: "bool"},
+    ]);
+    // hack to enable isElementEditable, https://bugzilla.mozilla.org/show_bug.cgi?id=1557989
+    let alerts = Preferences.get('alerts.disableSlidingEffect');
+    self.hookedFunctions.push( autoArchiveaop.around( {target: alerts.__proto__, method: 'isElementEditable'}, function(invocation) {
+      let aElement = invocation.arguments[0];
+      return invocation.proceed() || aElement.getAttribute('preference-editable');
+      })[0]);
   },
 
   PopupShowing: function(event) {
@@ -510,7 +507,7 @@ let autoArchivePrefDialog = {
     let preference = Preferences.get(perfID);
     let actualValue = preference.value !== undefined ? preference.value : preference.defaultValue;
     let oldValue = obj.oldValue;
-	obj.setAttribute("checked", actualValue);
+    obj.setAttribute("checked", actualValue);
     if ( oldValue != actualValue ) {
       obj.setAttribute("checked", actualValue);
       let container = doc.getElementById('awsome_auto_archive-rules');
@@ -529,7 +526,7 @@ let autoArchivePrefDialog = {
   
   syncToPerf4Filter: function(obj) {
     //autoArchiveLog.info('syncToPerf4Filter:' + obj.getAttribute("preference"));
-	let preference = Preferences.get(obj.getAttribute("preference"));
+    let preference = Preferences.get(obj.getAttribute("preference"));
     preference.value = obj.getAttribute("checked") ? true : false;
     return preference.value;
   },
@@ -633,7 +630,7 @@ let autoArchivePrefDialog = {
   },
   unLoadPerfWindow: function() {
     if ( !autoArchiveService || !autoArchivePref || !autoArchiveLog || !autoArchiveUtil ) return true;
-	self.hookedFunctions.forEach( function(hooked) {
+    self.hookedFunctions.forEach( function(hooked) {
       hooked.unweave();
     } );
     if ( this._savedRules != autoArchivePref.options.rules ) autoArchiveUtil.backupRules(autoArchivePref.options.rules, autoArchivePref.options.rules_to_keep);
@@ -645,7 +642,7 @@ let autoArchivePrefDialog = {
     delete this._win;
     delete this.oldvalue;
     delete this.instantApply;
-	delete self.hookedFunctions;
+    delete self.hookedFunctions;
     autoArchiveLog.info("prefwindow unload");
     return true;
   },
