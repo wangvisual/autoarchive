@@ -2,15 +2,15 @@
   "applications": {
     "gecko": {
       "id": "awsomeautoarchive@opera.wang",
-      "strict_min_version": "68.3",
-      "strict_max_version": "68.9"
+      "strict_min_version": "68.0",
+      "strict_max_version": "68.11"
     }
   },
-  "version": "0.9beta",
+  "version": "0.9.68beta-df",
   "manifest_version": 2,
   "name": "Awesome Auto Archive",
   "description": "Automatically Archive/Copy/Delete/Move emails based on user defined rules",
-  "author": "Opera Wang",
+  "author": "Opera Wang, updates David Fiel",
   "homepage_url": "https://github.com/wangvisual/autoArchive",
   "legacy": {
     "type": "bootstrap",
