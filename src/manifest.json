@@ -3,7 +3,7 @@
     "gecko": {
       "id": "awsomeautoarchive@opera.wang",
       "strict_min_version": "68.0",
-      "strict_max_version": "68.11"
+      "strict_max_version": "68.99"
     }
   },
   "version": "0.9.68beta-df",
