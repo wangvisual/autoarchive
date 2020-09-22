@@ -1,6 +1,13 @@
 @namespace url(http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul);
 @-moz-document regexp("chrome://(awsomeautoarchive|global|messenger)/content/.*") {
   /* awsome_auto_archive-prefs -> .paneDeckContainer -> deck -> awsome_auto_archive-perfpane -> .content-box -> awsome_auto_archive-tabbox */
+
+  /* DF 2020-08-06 Added so that long rule lists scroll properly */
+  .dialog-content-box {
+    height: 100%; 
+    overflow: auto;
+  }
+
   #awsome_auto_archive-prefs {
     min-width: 600px;
     min-height: 500px;
